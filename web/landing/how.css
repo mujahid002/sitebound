@@ -93,7 +93,7 @@
 /* ------------------------------------------------------------ the panes: what is on screen at each step */
 .hw-panes { container-type: inline-size; display: grid; gap: var(--s1); }
 .hw-pane {
-  display: grid; gap: 14px; align-content: space-between; min-width: 0; padding: var(--s2);
+  display: grid; gap: 16px; align-content: center; min-width: 0; padding: var(--s2);
   border: 1px solid var(--line); border-radius: var(--r-md); background: var(--field);
 }
 .hw.is-js .hw-pane { grid-area: 1 / 1; opacity: 0; visibility: hidden; transition: opacity 0.3s var(--ease), visibility 0s linear 0.3s; }
