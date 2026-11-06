@@ -11,6 +11,7 @@ rsync -a --exclude dev --exclude demo-shop --exclude attack "$root/web/" "$tmp/p
 printf '/ /landing/ 302\n' > "$tmp/pay/_redirects"
 rsync -a "$root/web/demo-shop/" "$tmp/demo/"
 cp "$root/web/config.js" "$tmp/demo/"
+mkdir -p "$tmp/demo/demo-shop" && cp "$root/web/demo-shop/shop.css" "$tmp/demo/demo-shop/"
 mkdir -p "$tmp/demo/attack" && rsync -a "$root/web/attack/" "$tmp/demo/attack/"
 
 cd /tmp
