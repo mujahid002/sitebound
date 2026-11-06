@@ -7,8 +7,9 @@ import {MockToken} from "./utils/MockToken.sol";
 import {P256Verifier} from "./utils/P256Verifier.sol";
 
 /// Random pays (two buyers, a 70/20/10 split site and a single-wallet site), refunds by owners and an operator,
-/// and attempts that must fail. Ghost totals let the invariants below compare every balance with what was
-/// authorised.
+/// owner drops of split recipients, and attempts that must fail. Ghost totals let the invariants below compare
+/// every balance with what was authorised; a model of each site's split (`shareOf`) follows the drops independently
+/// of the contract.
 contract Handler is Test {
     SiteboundV2 public sb;
     MockToken public usdt;
@@ -36,8 +37,14 @@ contract Handler is Test {
     mapping(address => uint256) public refundsPaidBy;
     uint256 public sumAmounts;
     uint256 public sumFees;
-    uint256 public broken; // count of attempts that should have failed but did not
+    uint256 public broken; // count of attempts that should have failed but did not, or checks that did not hold
     uint256 orderSeq;
+    address public constant OWNER_A = address(0xA0);
+    mapping(address => uint256) public shareOf; // model: bps of each wallet in its site's current split, 0 if none
+    mapping(address => uint256) public expectedReceived; // model: what each wallet should have been paid by pay()
+    mapping(address => bool) public isDropped;
+    mapping(address => uint256) public balanceAtDrop;
+    uint256 public drops;
 
     constructor() {
         vm.etch(address(0x100), address(new P256Verifier()).code);
@@ -54,6 +61,7 @@ contract Handler is Test {
         (toB[0], bpsB[0]) = (address(0xB0), 10_000);
         _register(A, toA, bpsA);
         _register(B, toB, bpsB);
+        (shareOf[toA[0]], shareOf[toA[1]], shareOf[toA[2]], shareOf[toB[0]]) = (7000, 2000, 1000, 10_000);
         for (uint256 i; i < 3; i++) recipients.push(toA[i]);
         recipients.push(toB[0]);
 
@@ -188,6 +196,19 @@ contract Handler is Test {
         paidBy[w] += amount + fee;
         sumAmounts += amount;
         sumFees += fee;
+        if (toA) {
+            // the model's split: each later wallet its floor share, the owner the rest
+            uint256 rest = amount;
+            for (uint256 n = 1; n < 3; n++) {
+                address r = recipients[n];
+                uint256 part = amount * shareOf[r] / 10_000;
+                expectedReceived[r] += part;
+                rest -= part;
+            }
+            expectedReceived[OWNER_A] += rest;
+        } else {
+            expectedReceived[address(0xB0)] += amount;
+        }
     }
 
     function refund(uint256 idSeed, uint256 amount, bool byOperator) external {
@@ -262,6 +283,78 @@ contract Handler is Test {
         try sb.pay(p) { broken++; } catch {}
     }
 
+    /// The owner of A drops a recipient: a live one (must succeed and give its share to the owner) or one already
+    /// dropped (must revert).
+    function dropRecipient(uint256 seed) external {
+        _drop(seed % 2 == 0 ? address(0xA1) : address(0xA2));
+    }
+
+    function _drop(address target) internal {
+        bytes32 siteHash = keccak256(bytes(A));
+        uint256 dropShare = shareOf[target];
+        if (dropShare == 0) {
+            vm.prank(OWNER_A);
+            try sb.dropRecipient(siteHash, target) { broken++; } catch {}
+            return;
+        }
+        uint256 before0 = shareOf[OWNER_A];
+        uint256 v = sb.configVersion(siteHash);
+        vm.prank(OWNER_A);
+        sb.dropRecipient(siteHash, target);
+        if (sb.configVersion(siteHash) != v + 1) broken++;
+        shareOf[OWNER_A] = before0 + dropShare;
+        shareOf[target] = 0;
+        isDropped[target] = true;
+        balanceAtDrop[target] = usdt.balanceOf(target);
+        drops++;
+        if (!splitMatchesModel()) broken++;
+    }
+
+    /// The registered split of A is exactly the model: the owner first with its share, each live recipient with its
+    /// share, no dropped wallet, shares summing to 10000.
+    function splitMatchesModel() public view returns (bool) {
+        (address[] memory to, uint16[] memory bps,,,) = sb.splitOf(keccak256(bytes(A)));
+        uint256 live;
+        for (uint256 n; n < 3; n++) if (shareOf[recipients[n]] != 0) live++;
+        if (to.length != live || to[0] != OWNER_A) return false;
+        uint256 sum;
+        for (uint256 i; i < to.length; i++) {
+            if (bps[i] != shareOf[to[i]] || isDropped[to[i]]) return false;
+            sum += bps[i];
+        }
+        return sum == 10_000;
+    }
+
+    /// Drops that must fail: the owner itself, wallets outside the split, and anyone but the owner as the caller.
+    function badDrop(uint256 seed) external {
+        bytes32 siteHash = keccak256(bytes(A));
+        uint256 mode = seed % 3;
+        if (mode == 0) {
+            vm.prank(OWNER_A);
+            try sb.dropRecipient(siteHash, OWNER_A) { broken++; } catch {}
+        } else if (mode == 1) {
+            address[4] memory outside = [STRANGER, address(0xB0), address(sb), address(0)];
+            vm.prank(OWNER_A);
+            try sb.dropRecipient(siteHash, outside[(seed / 3) % 4]) { broken++; } catch {}
+        } else {
+            address[4] memory callers = [STRANGER, address(0xA1), address(0xA2), OP];
+            address[2] memory targets = [address(0xA1), address(0xA2)];
+            vm.prank(callers[(seed / 3) % 4]);
+            try sb.dropRecipient(siteHash, targets[(seed / 12) % 2]) { broken++; } catch {}
+        }
+    }
+
+    /// Signed for A, then a recipient is dropped, then submitted: must fail (the config version moved).
+    function stalePayAfterDrop(uint256 buyerSeed, uint256 amount, uint256 seed) external {
+        address target = seed % 2 == 0 ? address(0xA1) : address(0xA2);
+        if (shareOf[target] == 0) return;
+        amount = bound(amount, 1, 30e6);
+        SiteboundV2.PayInput memory p = _input(buyerSeed % 2, A, bytes32(uint256(3 << 200) + ++orderSeq), amount, 0);
+        _drop(target);
+        vm.prank(RELAYER);
+        try sb.pay(p) { broken++; } catch {}
+    }
+
     function wait(uint256 dt) external {
         vm.warp(block.timestamp + bound(dt, 1, 2 hours));
     }
@@ -307,6 +400,19 @@ contract SiteboundV2InvariantTest is Test {
         assertEq(t.balanceOf(h.RELAYER()), h.sumFees());
     }
 
+    /// Across drops, each payout wallet received exactly what the model split says (so the owner got its old share
+    /// plus every dropped share, and a dropped wallet got nothing after its drop), the registered split is that model,
+    /// and a dropped wallet's balance has not moved since the drop.
+    function invariant_split_follows_drops() public view {
+        MockToken t = h.usdt();
+        for (uint256 i; i < h.recipientCount(); i++) {
+            address r = h.recipients(i);
+            assertEq(t.balanceOf(r) + h.refundsPaidBy(r) - h.minted(r), h.expectedReceived(r));
+            if (h.isDropped(r)) assertEq(t.balanceOf(r), h.balanceAtDrop(r));
+        }
+        assertTrue(h.splitMatchesModel());
+    }
+
     /// Refunds never exceed the payment, and only the original payer receives them.
     function invariant_refunds_capped_and_only_to_payer() public view {
         MockToken t = h.usdt();
@@ -323,9 +429,95 @@ contract SiteboundV2InvariantTest is Test {
         }
     }
 
-    /// Over-refunds, refunds by others, replayed orders, tampered or wrongly signed payments and payments signed
-    /// before a config change all failed.
+    /// Over-refunds, refunds by others, replayed orders, tampered or wrongly signed payments, payments signed
+    /// before a config change or a drop, and drops by the wrong caller or of the wrong wallet all failed.
     function invariant_bad_attempts_never_execute() public view {
         assertEq(h.broken(), 0);
+    }
+}
+
+/// Targeted checks of dropRecipient on the handler's site A (owner 0xA0, then 0xA1 at 20% and 0xA2 at 10%).
+contract SiteboundV2DropTest is Handler {
+    bytes32 siteA = keccak256(bytes(A));
+
+    function _payA(bytes32 orderId, uint256 amount, uint256 fee) internal returns (bytes32) {
+        SiteboundV2.PayInput memory p = _input(0, A, orderId, amount, fee);
+        vm.prank(RELAYER);
+        return sb.pay(p);
+    }
+
+    function _split() internal view returns (bytes memory) {
+        (address[] memory to, uint16[] memory bps,,,) = sb.splitOf(siteA);
+        return abi.encode(to, bps);
+    }
+
+    function _two(address a, address b, uint16 x, uint16 y) internal pure returns (bytes memory) {
+        address[] memory to = new address[](2);
+        uint16[] memory bps = new uint16[](2);
+        (to[0], to[1], bps[0], bps[1]) = (a, b, x, y);
+        return abi.encode(to, bps);
+    }
+
+    function test_drop_middle_recipient_moves_its_share_to_the_owner() public {
+        uint256 v = sb.configVersion(siteA);
+        vm.expectEmit(true, true, false, false);
+        emit SiteboundV2.RecipientDropped(siteA, address(0xA1));
+        vm.prank(OWNER_A);
+        sb.dropRecipient(siteA, address(0xA1));
+        assertEq(_split(), _two(OWNER_A, address(0xA2), 9000, 1000)); // 7000 + 2000 to the owner
+        assertEq(sb.configVersion(siteA), v + 1);
+
+        uint256 a0 = usdt.balanceOf(OWNER_A);
+        uint256 a1 = usdt.balanceOf(address(0xA1));
+        uint256 a2 = usdt.balanceOf(address(0xA2));
+        _payA(bytes32(uint256(77)), 10e6, 1e6);
+        assertEq(usdt.balanceOf(OWNER_A), a0 + 9e6);
+        assertEq(usdt.balanceOf(address(0xA2)), a2 + 1e6);
+        assertEq(usdt.balanceOf(address(0xA1)), a1); // the dropped wallet gets nothing
+        assertEq(usdt.balanceOf(RELAYER), 1e6);
+        assertEq(usdt.balanceOf(address(sb)), 0);
+    }
+
+    function test_drop_of_the_owner_or_a_stranger_reverts() public {
+        bytes memory before = _split();
+        vm.startPrank(OWNER_A);
+        vm.expectRevert("not a recipient");
+        sb.dropRecipient(siteA, OWNER_A);
+        vm.expectRevert("not a recipient");
+        sb.dropRecipient(siteA, STRANGER);
+        vm.stopPrank();
+        assertEq(_split(), before);
+        // dropping the same wallet twice: the second time it is no longer a recipient
+        vm.startPrank(OWNER_A);
+        sb.dropRecipient(siteA, address(0xA2));
+        vm.expectRevert("not a recipient");
+        sb.dropRecipient(siteA, address(0xA2));
+        vm.stopPrank();
+    }
+
+    function test_only_the_owner_can_drop() public {
+        bytes memory before = _split();
+        address[4] memory callers = [STRANGER, address(0xA1), address(0xA2), OP]; // OP is the refund operator
+        for (uint256 i; i < callers.length; i++) {
+            vm.prank(callers[i]);
+            vm.expectRevert("not payout");
+            sb.dropRecipient(siteA, address(0xA1));
+        }
+        vm.prank(address(0xB0)); // the owner of another site
+        vm.expectRevert("not payout");
+        sb.dropRecipient(siteA, address(0xA1));
+        assertEq(_split(), before);
+    }
+
+    function test_payment_signed_before_a_drop_fails_and_a_fresh_one_works() public {
+        SiteboundV2.PayInput memory stale = _input(1, A, bytes32(uint256(88)), 5e6, 0);
+        vm.prank(OWNER_A);
+        sb.dropRecipient(siteA, address(0xA1));
+        vm.prank(RELAYER);
+        vm.expectRevert("bad challenge");
+        sb.pay(stale);
+        uint256 a0 = usdt.balanceOf(OWNER_A);
+        _payA(bytes32(uint256(88)), 5e6, 0); // same order id, signed for the new version
+        assertEq(usdt.balanceOf(OWNER_A), a0 + 4.5e6 + 0); // 9000 bps of 5e6 = 4.5e6 (0xA2 gets 0.5e6)
     }
 }
