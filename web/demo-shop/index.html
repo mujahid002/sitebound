@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Halden Coffee Supply</title>
+  <meta name="color-scheme" content="light dark">
+  <link rel="stylesheet" href="shop.css">
+  <!-- Deployed shops load these from the Sitebound frame host. Here they sit next to the shop; see README "Demo shop". -->
+  <script src="../config.js"></script>
+  <script src="../button/sitebound.js" defer></script>
+  <script src="shop.js" defer></script>
+</head>
+<body>
+  <header class="bar">
+    <a class="logo" href="./">Halden <span>Coffee Supply</span></a>
+    <a class="cart-link" href="#cart">Cart <span id="cart-count">0</span></a>
+  </header>
+
+  <main class="wrap">
+    <section aria-labelledby="shop-h">
+      <h1 id="shop-h">Brew gear</h1>
+      <p class="lede">Pour-over gear and fresh beans. Prices in USDT.</p>
+
+      <ul class="grid" id="products">
+        <li class="card" data-sku="DRP-02" data-name="Ceramic pour-over dripper" data-cents="1200">
+          <div class="swatch" style="--c: #d8cfc0"></div>
+          <h2>Ceramic pour-over dripper</h2>
+          <p>Size 02, fits 1 to 4 cups.</p>
+          <div class="row"><b>12.00</b><button type="button">Add</button></div>
+        </li>
+        <li class="card" data-sku="FLT-100" data-name="Paper filters, 100 pack" data-cents="450">
+          <div class="swatch" style="--c: #efe8da"></div>
+          <h2>Paper filters, 100 pack</h2>
+          <p>Unbleached, for size 02 drippers.</p>
+          <div class="row"><b>4.50</b><button type="button">Add</button></div>
+        </li>
+        <li class="card" data-sku="GRD-HND" data-name="Hand burr grinder" data-cents="3800">
+          <div class="swatch" style="--c: #8a8f94"></div>
+          <h2>Hand burr grinder</h2>
+          <p>Steel conical burrs, 40 click settings.</p>
+          <div class="row"><b>38.00</b><button type="button">Add</button></div>
+        </li>
+        <li class="card" data-sku="BEAN-250" data-name="Chikmagalur medium roast, 250 g" data-cents="950">
+          <div class="swatch" style="--c: #6b4a33"></div>
+          <h2>Chikmagalur medium roast, 250 g</h2>
+          <p>Washed arabica. Roasted this week.</p>
+          <div class="row"><b>9.50</b><button type="button">Add</button></div>
+        </li>
+      </ul>
+    </section>
+
+    <aside id="cart" class="cart" aria-labelledby="cart-h">
+      <h2 id="cart-h">Your cart</h2>
+      <ul id="lines" class="lines"></ul>
+      <p id="empty" class="muted">Nothing here yet.</p>
+      <p class="total">Total <b id="total">0.00 USDT</b></p>
+      <button id="checkout" class="btn" type="button" disabled>Checkout</button>
+
+      <div id="pay" class="pay" hidden>
+        <p class="muted">Order <code id="order-id"></code></p>
+        <div id="pay-slot"></div>
+        <p class="fine">Whitechain testnet USDT. You confirm the site and amount with Touch ID in the Sitebound frame.</p>
+      </div>
+
+      <div id="done" class="done" hidden role="status">
+        <h3>Order confirmed</h3>
+        <p>Thanks. Order <code id="done-order"></code> is paid.</p>
+        <p><a id="done-tx" href="#" target="_blank" rel="noopener">View the payment on the explorer</a></p>
+        <button id="again" class="quiet" type="button">Start a new order</button>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="foot wrap">
+    <p>Demo store for Sitebound on Whitechain testnet. Nothing ships. This checkout has no wallet address in its code; view source to check.</p>
+  </footer>
+</body>
+</html>
