@@ -130,15 +130,25 @@ async function takeDaily(env, key, limit) {
 
 // ------------------------------------------------------------------ endpoints
 
-async function dnsCheck(body) {
+// Demo sites on hosts whose DNS we don't control (pages.dev): DEMO_SITES="<origin>=<payout>,..." pins the payout.
+// Nothing else bypasses the TXT check, and a pinned site can only register its pinned payout.
+async function payoutFor(site, env) {
+  for (const pair of (env.DEMO_SITES || "").split(",")) {
+    const [origin, payout] = pair.trim().split("=");
+    if (origin === site && payout) return getAddress(payout);
+  }
+  return dnsPayout(site);
+}
+
+async function dnsCheck(body, env) {
   const site = canonicalSite(body.site);
-  return { ok: true, site, payout: await dnsPayout(site) };
+  return { ok: true, site, payout: await payoutFor(site, env) };
 }
 
 async function register(body, env) {
   const site = canonicalSite(body.site);
   const payout = getAddress(body.payout);
-  if ((await dnsPayout(site)) !== payout) bad("payout does not match the DNS TXT record");
+  if ((await payoutFor(site, env)) !== payout) bad("payout does not match the DNS TXT record");
 
   const { chainId, wallet, sb } = chain(env);
   const siteHash = keccak256(toUtf8Bytes(site));
