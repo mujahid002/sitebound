@@ -152,10 +152,12 @@
           <dl class="vfacts">
             <div><dt>Code on chain, keccak256</dt><dd id="vc-live">not read yet</dd></div>
             <div><dt>Expected, from the repo</dt><dd id="vc-exp">not read yet</dd></div>
+            <div><dt>Constructor values in the code</dt><dd id="vc-imm">not read yet</dd></div>
           </dl>
           <p id="vc-result" class="vresult">Waiting to run</p>
-          <p class="hint">Your browser reads the contract's code with eth_getCode from <span id="vc-rpc">the network</span>, hashes it here, and compares
-            it with the hash in <a href="../verify/expected.json">verify/expected.json</a>. To rebuild that hash from source yourself, see the repo.</p>
+          <p class="hint">Your browser reads the contract's code with eth_getCode from <span id="vc-rpc">the network</span>, zeroes the constructor values
+            baked into it, hashes it here, and compares it with <a href="../verify/expected.json">verify/expected.json</a>.
+            <span class="mono">scripts/verify.sh</span> in the repo rebuilds the same hash from source.</p>
         </div>
         <div class="vcard">
           <p class="tag">Built from</p>
@@ -163,6 +165,7 @@
             <div><dt>Source</dt><dd><a href="https://github.com/mujahid002/sitebound" target="_blank" rel="noopener">github.com/mujahid002/sitebound</a></dd></div>
             <div><dt>Commit</dt><dd id="vc-commit">see verify/expected.json</dd></div>
             <div><dt>Compiler</dt><dd id="vc-solc">solc 0.8.28, via_ir, optimizer 200 runs, EVM cancun</dd></div>
+            <div id="vc-sourcify-row" hidden><dt>Independent match</dt><dd id="vc-sourcify"></dd></div>
             <div><dt>Tests</dt><dd><a href="https://github.com/mujahid002/sitebound/tree/main/test" target="_blank" rel="noopener">Foundry tests</a> and an
               <a href="https://github.com/mujahid002/sitebound/tree/main/e2e" target="_blank" rel="noopener">end-to-end browser run</a></dd></div>
           </dl>

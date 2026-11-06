@@ -183,19 +183,40 @@ async function runCheck() {
       $('vc-commit').replaceChildren(a);
     }
     if (exp?.solc) {
-      set('vc-solc', [`solc ${exp.solc}`, exp.viaIR ?? exp.via_ir ? 'via_ir' : null, exp.optimizerRuns ? `optimizer ${exp.optimizerRuns} runs` : null,
-        exp.evmVersion || exp.evm_version ? `EVM ${exp.evmVersion || exp.evm_version}` : null].filter(Boolean).join(', '));
+      const runs = exp.optimizer?.enabled ? exp.optimizer.runs : exp.optimizerRuns;
+      set('vc-solc', [`solc ${exp.solc}`, exp.viaIR ? 'via_ir' : null, runs ? `optimizer ${runs} runs` : null,
+        exp.evmVersion ? `EVM ${exp.evmVersion}` : null].filter(Boolean).join(', '));
+    }
+    if (exp?.sourcify?.match && /^https:\/\/sourcify\.dev\//.test(exp.sourcify.url || '')) {
+      const a = Object.assign(document.createElement('a'), { href: exp.sourcify.url, target: '_blank', rel: 'noopener', textContent: `Sourcify: ${exp.sourcify.match.replace(/_/g, ' ')}` });
+      $('vc-sourcify').replaceChildren(a);
+      $('vc-sourcify-row').hidden = false;
     }
     rpcCall('eth_call', [{ to: C.address, data: ethers.id('delay()').slice(0, 10) }, 'latest'])
       .then((d) => { for (const el of document.querySelectorAll('[data-delay]')) el.textContent = words(Number(BigInt(d))); })
       .catch(() => {});
     if (!code || code === '0x') { set('vc-live', 'no code'); return mark('bad', 'Mismatch: there is no contract code at this address.'); }
-    const live = ethers.keccak256(code);
-    set('vc-live', live);
-    const want = exp && [exp.runtimeCodeHash, exp.codeHash, exp.runtimeKeccak, exp.keccak256].find((h) => /^0x[0-9a-fA-F]{64}$/.test(h || ''));
-    if (!want) { set('vc-exp', 'not published yet'); return mark('warn', 'The expected hash is not published yet, so there is nothing to compare with.'); }
-    set('vc-exp', want);
+    const want = exp && /^0x[0-9a-fA-F]{64}$/.test(exp.runtimeCodeHashMasked || '') ? exp.runtimeCodeHashMasked : null;
+    if (!want) { set('vc-live', ethers.keccak256(code)); set('vc-exp', 'not published yet'); return mark('warn', 'The expected hash is not published yet, so there is nothing to compare with.'); }
     if (exp.address && exp.address.toLowerCase() !== C.address.toLowerCase()) return mark('bad', 'Mismatch: verify/expected.json describes a different contract address.');
+    // Recipe from expected.json: zero every immutable's byte ranges, then keccak256. Before zeroing, check each
+    // immutable holds the value the file lists (the token, the RP ID hash, the payout delay).
+    const bytes = ethers.getBytes(code);
+    const wrong = [];
+    for (const [name, im] of Object.entries(exp.immutables || {})) {
+      for (const off of im.offsets || []) {
+        const at = bytes.slice(off, off + im.length);
+        if (at.length !== im.length || (im.value != null && BigInt(ethers.hexlify(at)) !== BigInt(im.value))) wrong.push(name);
+        bytes.fill(0, off, off + im.length);
+      }
+    }
+    const live = ethers.keccak256(bytes);
+    set('vc-live', live);
+    set('vc-exp', want);
+    const names = Object.keys(exp.immutables || {});
+    set('vc-imm', names.length ? (wrong.length ? `differ: ${[...new Set(wrong)].join(', ')}` : `${names.join(', ')}: as listed`) : 'none listed');
+    const off = [...new Set(wrong)];
+    if (off.length) return mark('bad', `Mismatch: the deployed ${off.join(', ')} ${off.length === 1 ? 'differs' : 'differ'} from the repo's file.`);
     if (live.toLowerCase() === want.toLowerCase()) mark('ok', 'Match: the code on chain is the code the repo says it is.');
     else mark('bad', 'Mismatch: the code on chain differs from the repo\'s expected hash.');
   } catch {
