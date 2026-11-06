@@ -1,0 +1,211 @@
+/* How it works. One picture of the whole path: your site, one DNS record, the registry on Whitechain, the buyer's Touch ID, your wallet.
+   Colours come only from the tokens in style.css, so the theme toggle needs nothing here. Keep url() and relative parent paths out of this
+   file: deploy/pages.sh rewrites them only in index.html, main.js and kit.js.
+   The finished state is the default (no script, or reduced motion). how.js adds .is-js and then drives everything from one clock:
+   .is-lit / .is-act on the nodes, .is-on / .is-done on the rows, .is-cur on the open pane, .is-running while it plays. */
+
+.hw-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.hw-i { display: block; flex: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.how .section-title { max-width: none; }
+.hw-lede { margin-top: var(--s2); max-width: 46ch; color: var(--muted); font-size: var(--fs-lg); line-height: 1.5; text-wrap: pretty; }
+
+.hw {
+  position: relative; margin-top: var(--s5); display: grid; gap: var(--s3); padding: var(--s2);
+  border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow);
+}
+@media (min-width: 900px) {
+  .hw { grid-template-columns: 296px minmax(0, 1fr); gap: var(--s4); padding: var(--s3); }
+}
+
+/* ------------------------------------------------------------ the three steps: also the way to jump to one */
+.hw-steps { display: grid; gap: 4px; grid-auto-rows: 1fr; }
+.hw-steps li { display: grid; }
+.hw-step {
+  position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr); column-gap: 8px; align-items: start;
+  width: 100%; align-content: center; padding: 14px 14px 14px 18px; border: 0; border-radius: var(--r-md); background: transparent;
+  color: var(--muted); font: inherit; text-align: left; cursor: pointer;
+  transition: background-color 0.25s var(--ease), color 0.25s var(--ease);
+}
+.hw-step:hover { background: rgba(var(--rl), 0.04); }
+.hw-step b { grid-column: 2; font-size: var(--fs-md); font-weight: 600; letter-spacing: -0.015em; line-height: 1.3; color: inherit; }
+.hw-step > span:last-child { grid-column: 2; margin-top: 2px; font-size: var(--fs-sm); line-height: 1.5; text-wrap: pretty; }
+.hw-sn { grid-row: 1; grid-column: 1; padding-top: 2px; font: 500 var(--fs-xs) var(--mono); color: var(--muted); transition: color 0.25s; }
+/* the rail on the left: grey, with an accent line that fills while the step plays */
+.hw-step::before, .hw-step::after { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 2px; border-radius: 2px; }
+.hw-step::before { background: var(--line-2); }
+.hw-step::after { background: var(--accent); transform: scaleY(var(--p, 1)); transform-origin: top center; }
+.hw-step.is-cur { background: var(--sunk); color: var(--muted); }
+.hw-step.is-cur b { color: var(--ink); }
+.hw-step.is-cur .hw-sn { color: var(--accent); }
+
+/* ------------------------------------------------------------ the view */
+.hw-view { min-width: 0; display: grid; gap: var(--s2); align-content: start; }
+.hw-bar { display: flex; align-items: center; gap: 12px; min-height: 36px; }
+.hw-cap { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; font-size: var(--fs-sm); font-weight: 500; line-height: 1.3; }
+.hw-cap::before { content: ""; width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--accent); }
+.hw-cap-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hw-play {
+  display: none; place-items: center; flex: none; width: 36px; height: 36px; padding: 0;
+  border: 1px solid var(--line-2); border-radius: 50%; background: var(--field); color: var(--muted); cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+.hw-play:hover { color: var(--ink); border-color: var(--hover-line); }
+.hw-play .hw-i { width: 14px; height: 14px; fill: currentColor; stroke: none; }
+.hw.is-js:not(.is-static) .hw-play { display: grid; }
+.hw.is-paused .hw-i-pause, .hw:not(.is-paused) .hw-i-play { display: none; }
+
+/* the flow: five nodes on one rail */
+.hw-flow { position: relative; }
+.hw-rail { position: absolute; left: 10%; right: 10%; top: 23px; height: 2px; border-radius: 2px; background: var(--line-2); }
+.hw-seg { position: absolute; top: 0; left: calc(var(--a) * 100%); width: calc(var(--w) * 100%); height: 2px; }
+.hw-seg i { position: absolute; inset: 0; border-radius: 2px; background: var(--accent); transform: scaleX(var(--k, 1)); transform-origin: left center; }
+.hw-seg.is-rev i { transform-origin: right center; }
+.hw-pk {
+  position: absolute; top: 1px; left: calc(var(--x, 0) * 100%); width: 12px; height: 12px; margin: -6px 0 0 -6px; box-sizing: border-box;
+  border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--ring); opacity: var(--o, 0); pointer-events: none;
+}
+.hw-pk.is-sig { background: var(--surface); border: 2px solid var(--accent); }
+
+.hw-nodes { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.hw-node { display: grid; justify-items: center; align-content: start; min-width: 0; text-align: center; transition: color 0.3s; }
+.hw-node b { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.3; }
+.hw-node small { display: none; margin-top: 2px; font: 500 0.6875rem/1.3 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+@media (min-width: 560px) { .hw-node small { display: block; } }
+.hw-ic {
+  position: relative; display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line-2)); border-radius: 50%;
+  background: var(--field); color: var(--ink);
+  transition: border-color 0.3s var(--ease), background-color 0.3s var(--ease), color 0.3s var(--ease), box-shadow 0.3s var(--ease);
+}
+.hw-ic .hw-i { width: 22px; height: 22px; }
+.hw-txt { font: 700 0.75rem/1 var(--mono); letter-spacing: 0.04em; }
+.hw-bd {
+  position: absolute; top: -4px; right: -4px; display: grid; place-items: center; width: 17px; height: 17px;
+  border-radius: 50%; background: var(--accent); color: var(--accent-ink); box-shadow: 0 0 0 2px var(--surface);
+  transition: opacity 0.25s var(--ease), transform 0.25s var(--ease);
+}
+.hw-bd .hw-i { width: 11px; height: 11px; stroke-width: 3; }
+.hw-node.is-act .hw-ic { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--field)); color: var(--accent); box-shadow: 0 0 0 4px var(--ring); }
+.hw-node.is-act .hw-bd, .hw.is-js .hw-node:not(.is-lit) .hw-bd { opacity: 0; transform: scale(0.4); }
+.hw.is-js .hw-node:not(.is-lit) .hw-ic { border-color: var(--line-2); background: var(--field); color: var(--muted); }
+.hw.is-js .hw-node:not(.is-lit) b { color: var(--muted); }
+
+/* ------------------------------------------------------------ the panes: what is on screen at each step */
+.hw-panes { container-type: inline-size; display: grid; gap: var(--s1); }
+.hw-pane {
+  display: grid; gap: 14px; align-content: space-between; min-width: 0; padding: var(--s2);
+  border: 1px solid var(--line); border-radius: var(--r-md); background: var(--field);
+}
+.hw.is-js .hw-pane { grid-area: 1 / 1; opacity: 0; visibility: hidden; transition: opacity 0.3s var(--ease), visibility 0s linear 0.3s; }
+.hw.is-js .hw-pane.is-cur { opacity: 1; visibility: visible; transition-delay: 0s; }
+
+/* a row that goes from waiting, to working, to done */
+.hw-ln { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 12px; align-items: start; transition: opacity 0.3s var(--ease); }
+.hw-ln p { min-width: 0; }
+.hw-ln b { display: block; font-size: var(--fs-sm); font-weight: 600; line-height: 1.4; letter-spacing: -0.005em; }
+.hw-ln span { display: block; margin-top: 1px; color: var(--muted); font-size: var(--fs-xs); line-height: 1.45; }
+.hw-tk {
+  display: grid; place-items: center; width: 20px; height: 20px; box-sizing: border-box; margin-top: 0;
+  border: 1.5px solid var(--accent); border-radius: 50%; background: var(--accent); color: var(--accent-ink);
+  transition: background-color 0.25s var(--ease), border-color 0.25s var(--ease), color 0.25s var(--ease);
+}
+.hw-tk .hw-i { width: 12px; height: 12px; stroke-width: 3; }
+.hw.is-js .hw-ln:not(.is-on) { opacity: 0.5; }
+.hw.is-js .hw-ln:not(.is-done) .hw-tk { background: transparent; border-color: var(--line-2); color: transparent; }
+.hw.is-js .hw-ln.is-on:not(.is-done) .hw-tk { border-color: var(--accent) var(--accent) var(--accent) transparent; }
+
+/* pane 1: the record, laid out like a registrar's form */
+.hw-rec { display: grid; gap: 0; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--sunk); }
+.hw-rec > div { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 10px 12px; }
+.hw-rec > div + div { border-top: 1px solid var(--line); }
+.hw-rec dt { font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.hw-rec dd { font: 500 0.8125rem/1.5 var(--mono); overflow-wrap: anywhere; }
+
+/* typed text: the full text is always laid out (hidden), so nothing moves while it types */
+.ty-g { visibility: hidden; }
+.ty.is-typing .ty-v::after {
+  content: ""; display: inline-block; width: 2px; height: 1.05em; margin-left: 1px; vertical-align: -0.17em; background: var(--accent);
+}
+.c-t { color: var(--ink); }
+.c-a { color: var(--muted); }
+.c-s { color: var(--accent); }
+
+/* pane 2: the tag, and what it turns into */
+.hw-code {
+  padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--sunk);
+  font: 500 0.875rem/1.8 var(--mono); color: var(--ink);
+}
+.hw-col .hw-code { height: 100%; box-sizing: border-box; display: grid; align-content: center; }
+.hw-code .ty { display: block; white-space: pre; }
+.hw-col { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 8px; min-width: 0; }
+.hw-lb { font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+/* the page the tag sits on, as the buyer sees it */
+.hw-pg { display: grid; grid-template-rows: auto minmax(0, 1fr); border: 1px solid var(--line-2); border-radius: var(--r-md); background: var(--surface); box-shadow: var(--edge); overflow: hidden; }
+.hw-pg-bar { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--line); background: var(--sunk); font: 500 var(--fs-xs) var(--mono); color: var(--muted); }
+.hw-pg-bar .hw-i { width: 14px; height: 14px; }
+.hw-pg-body { display: grid; justify-items: start; align-content: center; gap: 14px; padding: 16px; }
+.hw-pg-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; width: 100%; font-size: var(--fs-sm); color: var(--muted); }
+.hw-pg-top b { color: var(--ink); font-size: var(--fs-lg); font-weight: 700; letter-spacing: -0.02em; }
+.hw-btn {
+  display: inline-flex; justify-self: start; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: var(--r-md);
+  background: var(--ink); color: var(--bg); font-size: var(--fs-sm); font-weight: 600; transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+}
+.hw-btn .hw-i { width: 16px; height: 16px; }
+.hw-chip {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 30px; padding: 4px 12px; border: 1px dashed var(--line-2); border-radius: 999px;
+  color: var(--muted); font-size: var(--fs-sm); line-height: 1.3; transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+}
+.hw-chip s { font: 500 var(--fs-xs) var(--mono); text-decoration-color: var(--err); text-decoration-thickness: 1.5px; }
+.hw.is-js .hw-btn:not(.is-on), .hw.is-js .hw-chip:not(.is-on) { opacity: 0; transform: translateY(5px); }
+
+/* pane 3: the frame the buyer sees, and the contract's checks beside it */
+.hw-p3 { gap: var(--s3); }
+.hw-fr { display: grid; align-content: start; padding: 14px 16px 16px; border: 1px solid var(--line-2); border-radius: var(--r-md); background: var(--surface); box-shadow: var(--edge); }
+.hw-fr-top { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: var(--fs-xs); font-weight: 600; }
+.hw-fr-top .hw-i { width: 16px; height: 16px; }
+.hw-fr-top span { color: var(--muted); font-weight: 500; }
+.hw-fr-k { font-size: var(--fs-xs); color: var(--muted); }
+.hw-fr-site { margin-top: 2px; font-size: var(--fs-lg); font-weight: 650; letter-spacing: -0.02em; line-height: 1.3; overflow-wrap: anywhere; }
+.hw-fr-amt { margin-top: 6px; font-size: 1.75rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
+.hw-fr-amt small { font-size: var(--fs-sm); font-weight: 600; color: var(--muted); letter-spacing: 0; }
+.hw-go {
+  display: flex; align-items: center; justify-content: center; gap: 8px; height: 44px; margin-top: 14px; padding: 0 16px; border-radius: var(--r-md);
+  background: var(--accent); color: var(--accent-ink); font-size: var(--fs-sm); font-weight: 600;
+  transition: box-shadow 0.3s var(--ease);
+}
+.hw-go .hw-i { width: 20px; height: 20px; }
+.hw-go-a, .hw-go-m, .hw-go-c { display: none; }
+.hw.is-js .hw-go:not(.is-on) .hw-go-a, .hw.is-js .hw-go.is-on:not(.is-done) .hw-go-m, .hw.is-js .hw-go.is-done:not(.is-end) .hw-go-c { display: inline; }
+.hw.is-js .hw-go:not(.is-end) .hw-go-b { display: none; }
+.hw.is-js .hw-go.is-on:not(.is-done) { box-shadow: 0 0 0 4px var(--ring); }
+.hw-fr-fee { margin-top: 12px; color: var(--muted); font-size: var(--fs-xs); line-height: 1.5; }
+
+.hw-lg { display: grid; gap: 14px; align-content: start; }
+.hw-lg-h { display: flex; align-items: center; gap: 8px; font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.hw-lg-h .hw-i { width: 16px; height: 16px; }
+.hw-lg .hw-ln span { display: none; }
+.hw-p2 { gap: var(--s3); align-content: stretch; }
+@container (min-width: 480px) {
+  .hw-p3, .hw-p2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .hw-p3 { align-items: start; }
+  .hw-lg .hw-ln span { display: block; }
+}
+
+/* ------------------------------------------------------------ motion */
+@keyframes hw-spin { to { transform: rotate(360deg); } }
+@keyframes hw-blink { 50% { opacity: 0; } }
+@keyframes hw-in { from { opacity: 0; transform: translateY(3px); } }
+@keyframes hw-ping { from { transform: scale(1); opacity: 0.55; } to { transform: scale(1.45); opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  .hw-cap-t.is-new { animation: hw-in 0.35s var(--ease) both; }
+  .hw.is-js .hw-ln.is-on:not(.is-done) .hw-tk { animation: hw-spin 0.8s linear infinite; animation-play-state: paused; }
+  .hw.is-js .ty.is-typing .ty-v::after { animation: hw-blink 1s steps(1) infinite; animation-play-state: paused; }
+  .hw.is-js .hw-node.is-act .hw-ic::after {
+    content: ""; position: absolute; inset: -1px; border: 1.5px solid var(--accent); border-radius: 50%; pointer-events: none;
+    animation: hw-ping 1.8s var(--ease) infinite; animation-play-state: paused;
+  }
+  .hw.is-running .hw-ln.is-on:not(.is-done) .hw-tk, .hw.is-running .ty.is-typing .ty-v::after, .hw.is-running .hw-node.is-act .hw-ic::after { animation-play-state: running; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hw *, .hw *::after { transition-duration: 0s !important; transition-delay: 0s !important; animation: none !important; }
+}
