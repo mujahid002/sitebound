@@ -216,8 +216,8 @@ footer{margin-top:72px;padding-top:28px;border-top:1px solid var(--line);text-al
 .coffee-status:empty{display:none}
 .coffee-note{margin:12px 0 0;font-size:13px;color:var(--mute)}
 .coffee-note code{font:12.5px var(--mono);color:var(--soft)}
-.coffee-note a{color:var(--soft);text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:2px}
-.coffee-note a:hover{color:var(--fg)}
+.coffee-line a,.coffee-note a{color:var(--soft);text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:2px}
+.coffee-line a:hover,.coffee-note a:hover{color:var(--fg)}
 </style>
 </head>
 <body>
@@ -285,15 +285,15 @@ footer{margin-top:72px;padding-top:28px;border-top:1px solid var(--line);text-al
   </section>
 
   <section class="rv" id="coffee">
-    <h2>Buy me a coffee</h2>
-    <p class="coffee-line">If something here helped you, send a few USDT.</p>
+    <h2>Support my open-source work</h2>
+    <p class="coffee-line">Send a few USDT, no wallet address to copy. Checkout by <a href="https://sitebound-pay.pages.dev" target="_blank" rel="noopener">Sitebound</a>: pick an amount and confirm with Touch ID. Try it here.</p>
     <div class="tiers" id="coffee-tiers">
       <div class="slot" data-amount="3"></div>
       <div class="slot" data-amount="5"></div>
       <div class="slot" data-amount="10"></div>
     </div>
     <div class="coffee-status" id="coffee-status" role="status" aria-live="polite"></div>
-    <p class="coffee-note">Test USDT on Whitechain Sepolia, no real value. Paid via <a href="https://sitebound-pay.pages.dev" target="_blank" rel="noopener">Sitebound</a> to the wallet registered on-chain for <code>0xmujahid.xyz</code>.</p>
+    <p class="coffee-note">Whitechain Sepolia test USDT, no real value. Money goes only to the wallet registered on-chain for <code>0xmujahid.xyz</code>, so a hacked page cannot redirect it.</p>
     <noscript><p class="coffee-note">Payments need JavaScript, which is switched off here.</p></noscript>
   </section>
 
