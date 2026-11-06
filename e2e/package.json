@@ -1,0 +1,12 @@
+{
+  "name": "sitebound-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node run.mjs"
+  },
+  "dependencies": {
+    "ethers": "6.17.0",
+    "playwright-core": "1.57.0"
+  }
+}
