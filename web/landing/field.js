@@ -87,13 +87,18 @@ export function mountField(canvas, { gap = 28, radius = 200 } = {}) {
     kick();
   };
   const onOut = (e) => { if (!e.relatedTarget) { glowAim = 0; kick(); } };
-  const onDown = (e) => {
-    if (e.pointerType === 'mouse') return;
+  // A ripple only for a tap: lifted within 300 ms and 10 px of where it went down, so scrolling stays quiet.
+  let down = null;
+  const onDown = (e) => { down = e.pointerType === 'mouse' ? null : { x: e.clientX, y: e.clientY, t: e.timeStamp }; };
+  const onUp = (e) => {
+    if (!down || e.timeStamp - down.t > 300 || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 10) return;
     ripples.push({ x: e.clientX, y: e.clientY, t: 0 });
+    down = null;
     kick();
   };
   addEventListener('pointermove', onMove, { passive: true });
   addEventListener('pointerdown', onDown, { passive: true });
+  addEventListener('pointerup', onUp, { passive: true });
   document.addEventListener('mouseout', onOut);
   addEventListener('resize', size);
   size();
@@ -102,6 +107,7 @@ export function mountField(canvas, { gap = 28, radius = 200 } = {}) {
     cancelAnimationFrame(raf);
     removeEventListener('pointermove', onMove);
     removeEventListener('pointerdown', onDown);
+    removeEventListener('pointerup', onUp);
     document.removeEventListener('mouseout', onOut);
     removeEventListener('resize', size);
   };

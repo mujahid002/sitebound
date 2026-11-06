@@ -83,7 +83,7 @@ main, .foot { position: relative; z-index: 1; }
 .orbit-rings ellipse { fill: none; stroke: rgba(255, 255, 255, 0.06); stroke-width: 1; }
 .orb-chip {
   position: absolute; left: 0; top: 0; z-index: 3; display: block; padding: 0; border: 0; background: none;
-  color: var(--ink); font: 500 0.82rem/1 inherit; letter-spacing: -0.005em;
+  color: var(--ink); font-size: 0.82rem; font-weight: 500; line-height: 1; letter-spacing: -0.005em;
   pointer-events: auto; cursor: pointer; transform-origin: 50% 50%; will-change: transform, opacity;
 }
 .orb-chip[hidden] { display: none; }
@@ -274,11 +274,13 @@ main, .foot { position: relative; z-index: 1; }
 @media (prefers-reduced-motion: no-preference) {
   @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
   @keyframes beat { 0%, 70%, 100% { box-shadow: 0 0 0 0 var(--ring); } 35% { box-shadow: 0 0 0 5px transparent; } }
-  .hero-h, .tagline, .search, .trust, .hero-links, .orbit { animation: rise 0.9s var(--ease) both; }
+  .hero-h, .tagline, .search, .trust, .hero-links { animation: rise 0.9s var(--ease) both; }
+  @keyframes fade { from { opacity: 0; } }
   .tagline { animation-delay: 0.06s; }
   .search { animation-delay: 0.12s; }
   .trust, .hero-links { animation-delay: 0.18s; }
-  .orbit { animation-delay: 0.3s; animation-duration: 1.4s; }
+  /* Not on .orbit itself: an animation there would make it a stacking context and pin every chip behind the text. */
+  .orbit-rings { animation: fade 1.4s var(--ease) 0.3s both; }
   .live-chip .live-dot { animation: beat 2.8s ease-out 1.2s infinite; }
 }
 @media (prefers-reduced-motion: reduce) {
