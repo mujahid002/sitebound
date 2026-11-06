@@ -217,7 +217,7 @@ export function Shop({ cfg, site, onChangeSite, onInfo, snippetExtra }) {
         hint="Saves your payout wallet on chain.">
         <${RegisterStep} cfg=${cfg} site=${site} chain=${chain} reg=${reg} account=${account} onRegister=${register} />
       <//>
-      <${Step} n=${4} state=${state(4)} title="Paste the snippet" hint="Three lines on your checkout page.">
+      <${Step} n=${4} state=${state(4)} title="Paste the snippet" hint="Adds the pay button to your checkout page.">
         <${SnippetStep} cfg=${cfg} site=${site} extra=${snippetExtra} />
       <//>
     </ol>`;
@@ -347,7 +347,7 @@ function SnippetStep({ cfg, site, extra }) {
   const origin = cfg.frameOrigin || location.origin;
   const code = snippetFor(origin);
   return html`
-    <p>Paste this where your checkout button goes. There is no address in it, and there never will be.</p>
+    <p>Paste this where your checkout button goes. There is no payment address in it.</p>
     <div class="code-wrap">
       <div class="code-top"><span class="kv-label">HTML</span><${CopyButton} text=${code} label="Copy snippet" /></div>
       <pre class="code" tabindex="0" aria-label="Integration snippet"><code>${code}</code></pre>
