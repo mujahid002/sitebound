@@ -2,7 +2,9 @@
 // the payee comes from the on-chain registry entry for this page's origin, not from here.
 
 const EXPLORER = 'https://explorer.testnet.whitechain.io';
+const HERE = document.currentScript.src;
 const cart = new Map(); // sku -> { name, cents, qty }
+let current = null; // the open checkout: { order, amount }, set by this page, not by the payment event
 const $ = (id) => document.getElementById(id);
 
 // Prices are kept in integer cents so the amount attribute is always exact, e.g. "16.50".
@@ -61,6 +63,7 @@ function add(card) {
 
 function openCheckout() {
   const order = newOrderId();
+  current = { order, amount: fmt(totalCents()) };
   const btn = document.createElement('sitebound-pay');
   btn.setAttribute('amount', fmt(totalCents()));
   btn.setAttribute('order', order);
@@ -78,15 +81,44 @@ function closeCheckout() {
   $('checkout').hidden = false;
 }
 
-function paid({ orderId, txHash }) {
-  $('done-order').textContent = orderId;
-  $('done-tx').href = `${EXPLORER}/tx/${txHash}`;
-  $('done').hidden = false;
+// Page script can fire `sitebound:paid` too, so the shop ships only when the chain says this order was paid
+// this amount, to this site. A real website does this on its server.
+async function paid({ txHash, paymentId }) {
+  const want = current;
   $('pay').hidden = true;
+  $('checkout').hidden = true;
+  $('done').hidden = false;
+  $('done-link').hidden = true;
+  $('done-title').textContent = 'Checking the payment…';
+  $('done-text').textContent = 'Asking Whitechain, not the page.';
+  let r;
+  try {
+    const { verifyPayment } = await import(new URL('../merchant/sitebound-merchant.mjs', HERE).href);
+    const C = window.SITEBOUND;
+    r = await verifyPayment({ rpcUrl: C.rpcUrl, contract: C.address, expectedSite: location.origin, expectedAmount: want.amount, orderId: want.order, paymentId });
+  } catch {
+    r = { ok: false, reason: 'Whitechain could not be reached' };
+  }
+  if (!r.ok) {
+    $('done-title').textContent = 'Not shipped';
+    $('done-text').textContent = `The page said order ${want.order} was paid. The chain says: ${r.reason}.`;
+    return;
+  }
+  $('done-title').textContent = 'Order confirmed';
+  $('done-text').textContent = `Thanks. Order ${want.order} is paid: ${want.amount} USDT, checked on Whitechain.`;
+  $('done-tx').href = `${EXPLORER}/tx/${txHash}`;
+  $('done-link').hidden = false;
   cart.clear();
   render();
   $('checkout').hidden = true;
 }
+
+// What a hacked script on this page could do: claim the order is paid. The check above refuses it.
+$('forge').onclick = () => {
+  const btn = $('pay-slot').querySelector('sitebound-pay');
+  const fake = '0x' + [...crypto.getRandomValues(new Uint8Array(32))].map((b) => b.toString(16).padStart(2, '0')).join('');
+  btn?.dispatchEvent(new CustomEvent('sitebound:paid', { detail: { orderId: current.order, txHash: fake, paymentId: fake } }));
+};
 
 for (const card of document.querySelectorAll('#products .card')) {
   card.querySelector('button').onclick = () => add(card);

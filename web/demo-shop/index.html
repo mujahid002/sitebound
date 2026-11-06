@@ -25,6 +25,9 @@
     s.src = (['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://localhost:8002' : 'https://sitebound-pay.pages.dev') + '/button/sitebound.js';
     document.head.append(s);
   </script>
+  <!-- For the payment check in shop.js (a real website runs it on its server: README "Verify on your server"). -->
+  <script src="../vendor/ethers-6.17.0.umd.min.js" defer></script>
+  <script src="../config.js" defer></script>
   <script src="shop.js" defer></script>
 </head>
 <body>
@@ -77,12 +80,13 @@
         <p class="muted">Order <code id="order-id"></code></p>
         <div id="pay-slot"></div>
         <p class="fine">Whitechain testnet USDT. You confirm the site and amount with Touch ID in the Sitebound frame.</p>
+        <button id="forge" class="quiet" type="button">Demo: fire a forged “paid” event</button>
       </div>
 
       <div id="done" class="done" hidden role="status">
-        <h3>Order confirmed</h3>
-        <p>Thanks. Order <code id="done-order"></code> is paid.</p>
-        <p><a id="done-tx" href="#" target="_blank" rel="noopener">View the payment on the explorer</a></p>
+        <h3 id="done-title">Order confirmed</h3>
+        <p id="done-text"></p>
+        <p id="done-link"><a id="done-tx" href="#" target="_blank" rel="noopener">View the payment on the explorer</a></p>
         <button id="again" class="quiet" type="button">Start a new order</button>
       </div>
     </aside>
