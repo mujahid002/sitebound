@@ -77,14 +77,8 @@ URL: `https://sitebound-pay.pages.dev/`. The wizard opens inline on the same pag
 2. Click the search bar ("yourwebsite.com"), type `0xmujahid.xyz`, click **Bring your website**. The wizard opens:
    - "Set up payments for" over `0xmujahid.xyz`.
    - A five-step rail: Website, Wallet, DNS record, Register, Add to site.
-3. "Step 2 of 5", **Your payout wallet**: "Sitebound creates it for you in this browser. Buyers send USDT straight to it,
-   and Sitebound never holds the money." The panel reads "No extension and no gas needed. The wallet is created here
-   and stays in this browser." Click **Create my wallet**.
-   - It shows "Your wallet address" and a "Recovery phrase" of 12 words, with "This is shown once. Anyone with these
-     words controls the money, and Sitebound cannot recover them."
-   - **Blur the 12 words in editing.** The wallet is a testnet payout wallet, but the phrase on screen is its key.
-   - Tick "I saved my recovery phrase. Sitebound cannot recover it.", then click **Continue**. (Continue stays disabled
-     until the box is ticked.) The rail shows the address on Wallet.
+3. The payout wallet is created automatically in this browser, with nothing to copy or save, and the wizard moves
+   straight to the DNS step. The rail shows the address on Wallet. (A quiet "Back up this wallet" note is optional.)
    - Do not click **I already have a wallet** in the video. It keeps the old flow: **Connect wallet** with MetaMask or
      Rabby, on Whitechain Sepolia.
 4. "Step 3 of 5", **Add one DNS record**: Type TXT, Name `_sitebound.0xmujahid.xyz`, Value `sitebound=<wallet>`. Click
@@ -100,7 +94,7 @@ URL: `https://sitebound-pay.pages.dev/`. The wizard opens inline on the same pag
 
 Spoken:
 > "Now a real website, 0xmujahid.xyz. The owner types the domain and Sitebound creates the payout wallet right here in
-> the browser. No extension, no gas. The owner saves the twelve words, adds one DNS record to prove they own the
+> the browser. No extension, no gas. The owner adds one DNS record to prove they own the
 > domain, and the relayer registers that wallet on Whitechain for this site only. The snippet has no address in it."
 
 ## 3. Coffee payment with Touch ID (2:00 to 2:35)

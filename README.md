@@ -31,8 +31,8 @@ Built for ETHGlobal Mumbai (Nov 2026) on Whitechain Sepolia testnet. Not audited
     relayer as the only attestor.
   - The website pastes one script tag and a `<sitebound-pay amount="12.00" order="A123">` element. There is no
     address in its code.
-  - The onboarding wizard creates the payout wallet in the browser: no extension, no gas. It shows a 12-word recovery
-    phrase once and keeps the wallet in that browser. "I already have a wallet" connects MetaMask or Rabby instead.
+  - The onboarding wizard creates the payout wallet in the browser: no extension, no gas, nothing to copy. The wallet
+    stays in that browser, with an optional backup. "I already have a wallet" connects MetaMask or Rabby instead.
 - **Buyer, first time.** In a popup on the Sitebound origin, the buyer:
   - connects a wallet;
   - signs a capped EIP-2612 permit;
