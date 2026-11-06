@@ -61,6 +61,21 @@ const ringSites = () => [
   ...BASE.filter((b) => b.kind !== 'live'),
 ];
 
+// Theme: index.html sets data-theme before first paint; the toggle flips it and remembers the choice.
+const themeBtn = $('theme');
+function paintTheme() {
+  const dark = document.documentElement.dataset.theme === 'dark';
+  themeBtn.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#07080a' : '#fafaf7');
+}
+themeBtn.addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem('sitebound.theme', next); } catch { /* private mode */ }
+  paintTheme();
+});
+paintTheme();
+
 mountField($('field'));
 const orbit = mountOrbit($('orbit'), {
   sites: ringSites(),

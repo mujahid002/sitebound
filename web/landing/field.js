@@ -9,7 +9,11 @@ const TAU = Math.PI * 2;
 export function mountField(canvas, { gap = 28, radius = 200 } = {}) {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return () => {};
   const ctx = canvas.getContext('2d');
-  const DOT = '#a6f3d2';
+  let tone = '63, 214, 154'; // the accent's rgb, read from --spot so the light follows the theme
+  const readTone = () => { tone = getComputedStyle(canvas).getPropertyValue('--spot').trim() || tone; };
+  readTone();
+  const themeWatch = new MutationObserver(() => { readTone(); kick(); });
+  themeWatch.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   let W = 0, H = 0, raf = 0, last = 0, glow = 0, glowAim = 0, visible = true;
   const pos = { x: 0, y: 0 }, aim = { x: 0, y: 0 }; // aim: where the pointer is, in the viewport; pos: the eased light, in canvas px
   const ripples = [];
@@ -54,18 +58,18 @@ export function mountField(canvas, { gap = 28, radius = 200 } = {}) {
     if (glow > 0.005) {
       const R = radius * 1.7;
       const g = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, R);
-      g.addColorStop(0, `rgba(63, 214, 154, ${0.085 * glow})`);
-      g.addColorStop(1, 'rgba(63, 214, 154, 0)');
+      g.addColorStop(0, `rgba(${tone}, ${0.085 * glow})`);
+      g.addColorStop(1, `rgba(${tone}, 0)`);
       ctx.globalAlpha = 1;
       ctx.fillStyle = g;
       ctx.fillRect(pos.x - R, pos.y - R, 2 * R, 2 * R);
-      ctx.fillStyle = DOT;
+      ctx.fillStyle = `rgb(${tone})`;
       dots(pos.x, pos.y, radius, (d) => {
         const u = 1 - d / radius;
         return u > 0 ? u * u * (3 - 2 * u) * glow * 0.8 : 0;
       });
     }
-    ctx.fillStyle = DOT;
+    ctx.fillStyle = `rgb(${tone})`;
     for (let n = ripples.length - 1; n >= 0; n--) {
       const r = ripples[n];
       r.t += dt / 0.9;
@@ -128,7 +132,7 @@ export function mountField(canvas, { gap = 28, radius = 200 } = {}) {
     removeEventListener('pointerdown', onDown);
     removeEventListener('pointerup', onUp);
     document.removeEventListener('mouseout', onOut);
-    ro.disconnect(); io.disconnect();
+    ro.disconnect(); io.disconnect(); themeWatch.disconnect();
     removeEventListener('scroll', onScroll);
   };
 }

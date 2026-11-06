@@ -15,8 +15,15 @@
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Sitebound: kill the checkout address. Every payment is bound to the site.">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="color-scheme" content="dark">
-  <meta name="theme-color" content="#07080a">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fafaf7">
+  <script>
+    try {
+      var t = localStorage.getItem('sitebound.theme');
+      if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.dataset.theme = t;
+    } catch (e) { document.documentElement.dataset.theme = 'light'; }
+  </script>
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
   <!-- The inline setup kit reuses the onboarding and dashboard components and their styles. -->
@@ -51,6 +58,10 @@
       <a data-demo-shop href="https://sitebound-demo.pages.dev/">Live demo</a>
       <a href="#verify">Verify us</a>
       <a href="https://github.com/mujahid002/sitebound">GitHub</a>
+      <button id="theme" class="theme" type="button" aria-label="Switch to dark theme">
+        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
     </nav>
   </header>
 
