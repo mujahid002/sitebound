@@ -6,9 +6,9 @@
   <title>Halden Coffee Supply</title>
   <meta name="color-scheme" content="light dark">
   <link rel="stylesheet" href="shop.css">
-  <!-- Deployed shops load these from the Sitebound frame host. Here they sit next to the shop; see README "Demo shop". -->
-  <script src="../config.js"></script>
-  <script src="../button/sitebound.js" defer></script>
+  <!-- The button must come from the Sitebound frame host: it opens the frame next to its own URL,
+       and the frame has to be cross-origin to this shop. Local dev: web/dev/serve.py. See README "Demo shop". -->
+  <script src="http://localhost:8002/button/sitebound.js" defer></script>
   <script src="shop.js" defer></script>
 </head>
 <body>

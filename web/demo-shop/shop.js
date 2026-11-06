@@ -1,6 +1,7 @@
 // Cart and checkout for the demo shop. The only payment code is the <sitebound-pay> element:
 // the payee comes from the on-chain registry entry for this page's origin, not from here.
 
+const EXPLORER = 'https://explorer.testnet.whitechain.io';
 const cart = new Map(); // sku -> { name, cents, qty }
 const $ = (id) => document.getElementById(id);
 
@@ -78,9 +79,8 @@ function closeCheckout() {
 }
 
 function paid({ orderId, txHash }) {
-  const explorer = (window.SITEBOUND && window.SITEBOUND.explorer) || 'https://explorer.testnet.whitechain.io';
   $('done-order').textContent = orderId;
-  $('done-tx').href = `${explorer}/tx/${txHash}`;
+  $('done-tx').href = `${EXPLORER}/tx/${txHash}`;
   $('done').hidden = false;
   $('pay').hidden = true;
   cart.clear();
