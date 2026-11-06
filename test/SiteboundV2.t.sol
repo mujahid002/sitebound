@@ -217,8 +217,9 @@ contract SiteboundV2Test is Test {
 
     /// Builds clientDataJSON and signs it with the passkey, like Chrome does for the frame.
     function _input(Opts memory o) internal view returns (SiteboundV2.PayInput memory p) {
+        bytes32 siteHash = keccak256(bytes(o.top));
         bytes32 challenge = keccak256(
-            abi.encode(block.chainid, address(sb), keccak256(bytes(o.top)), o.orderId, o.amount, o.fee, o.deadline)
+            abi.encode(block.chainid, address(sb), siteHash, sb.configVersion(siteHash), o.orderId, o.amount, o.fee, o.deadline)
         );
         string memory json = string.concat(
             '{"type":"', o.typ, '","challenge":"', _b64(challenge), '","origin":"', o.origin, '","crossOrigin":',
@@ -254,9 +255,10 @@ contract SiteboundV2Test is Test {
 
     // ------------------------------------------- real browser assertion
 
-    /// Replays an assertion captured from Chromium inside a cross-origin iframe (test/fixtures).
+    /// Replays an assertion captured from Chromium inside a cross-origin iframe, over v2's challenge
+    /// (test/fixtures/frame_assertion_v2.json, made by e2e/capture-fixture.mjs).
     function test_replays_real_browser_assertion() public {
-        string memory j = vm.readFile("test/fixtures/frame_assertion.json");
+        string memory j = vm.readFile("test/fixtures/frame_assertion_v2.json");
         address at = vm.parseJsonAddress(j, ".contract");
         vm.chainId(vm.parseJsonUint(j, ".chainId"));
         deployCodeTo(
@@ -278,6 +280,7 @@ contract SiteboundV2Test is Test {
 
         string memory top = vm.parseJsonString(j, ".topOrigin");
         _register(top, shopWallet);
+        assertEq(sb.configVersion(keccak256(bytes(top))), vm.parseJsonUint(j, ".configVersion"));
         cred = keccak256(vm.parseJsonBytes(j, ".credId"));
         px = vm.parseJsonUint(j, ".pubX");
         py = vm.parseJsonUint(j, ".pubY");
@@ -686,8 +689,65 @@ contract SiteboundV2Test is Test {
         sb.pay(p);
         vm.prank(shopWallet);
         sb.unfreeze(keccak256(bytes(SHOP)));
+        vm.expectRevert("bad challenge"); // signed before the unfreeze
+        sb.pay(p);
+        sb.pay(_input(o3));
+        assertEq(usdt.balanceOf(shopWallet), 10e6); // the pending change died with the freeze
+    }
+
+    // ------------------------------------------------------ config version
+
+    function test_payment_signed_before_a_payout_change_cannot_execute_after_it() public {
+        SiteboundV2.PayInput memory p = _input(_opts("V1"));
+        _register(SHOP, address(0x2222)); // proposal: bumps the version at once
+        vm.expectRevert("bad challenge");
+        sb.pay(p);
+        sb.pay(_input(_opts("V1"))); // re-signed: pays the current wallet, the change is still pending
+        assertEq(usdt.balanceOf(shopWallet), 10e6);
+    }
+
+    function test_payment_signed_before_a_pending_change_takes_effect_reverts() public {
+        bytes32 siteHash = keccak256(bytes(SHOP));
+        _register(SHOP, address(0x2222));
+        Opts memory o = _opts("V2");
+        o.deadline = block.timestamp + 2 hours;
+        SiteboundV2.PayInput memory p = _input(o);
+        uint256 v = sb.configVersion(siteHash);
+        vm.warp(block.timestamp + DELAY);
+        assertEq(sb.configVersion(siteHash), v + 1); // the view counts the change that is now due
+        vm.expectRevert("bad challenge");
+        sb.pay(p);
+        sb.pay(_input(o));
+        assertEq(usdt.balanceOf(address(0x2222)), 10e6);
+        assertEq(sb.configVersion(siteHash), v + 1); // applied once, not twice
+    }
+
+    function test_unchanged_config_payment_executes() public {
+        Opts memory o = _opts("V3");
+        o.deadline = block.timestamp + 2 hours;
+        SiteboundV2.PayInput memory p = _input(o);
+        _register(EVIL, evilWallet); // another site's change does not touch this site's version
+        vm.warp(block.timestamp + DELAY);
         sb.pay(p);
         assertEq(usdt.balanceOf(shopWallet), 10e6);
+    }
+
+    function test_every_config_change_bumps_the_version() public {
+        bytes32 siteHash = keccak256(bytes(SHOP));
+        assertEq(sb.configVersion(siteHash), 1); // registered in setUp
+        assertEq(sb.configVersion(keccak256("https://nobody.example")), 0);
+        vm.startPrank(shopWallet);
+        sb.setRefundOperator(siteHash, address(0x0FF1CE));
+        assertEq(sb.configVersion(siteHash), 2);
+        vm.warp(block.timestamp + DELAY);
+        assertEq(sb.configVersion(siteHash), 3); // the operator change is due
+        sb.freeze(siteHash); // applies it (no bump twice) and bumps for the freeze
+        assertEq(sb.configVersion(siteHash), 4);
+        sb.unfreeze(siteHash);
+        assertEq(sb.configVersion(siteHash), 5);
+        vm.stopPrank();
+        _register(SHOP, address(0x2222));
+        assertEq(sb.configVersion(siteHash), 6);
     }
 
     function test_new_attestation_while_frozen_reverts() public {

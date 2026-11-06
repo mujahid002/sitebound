@@ -32,6 +32,9 @@ contract SiteboundV2 {
         address refundOperator;
         address pendingOperator;
         uint64 operatorAt; // 0: no operator change pending
+        /// Bumped by every change to the site's split, refund operator or frozen state, including a pending
+        /// change taking effect. The buyer signs it, so a payment signed before a change cannot execute after it.
+        uint256 version;
     }
 
     struct Buyer {
@@ -244,6 +247,7 @@ contract SiteboundV2 {
             sigs
         );
         st.nonce++;
+        st.version++;
 
         if (st.payout.to.length == 0) {
             st.payout = Split(to, bps);
@@ -294,6 +298,7 @@ contract SiteboundV2 {
         _promote(st);
         require(msg.sender == _first(st.payout), "not payout");
         st.frozen = true;
+        st.version++;
         delete st.pending;
         emit Frozen(siteHash);
     }
@@ -302,6 +307,7 @@ contract SiteboundV2 {
         Site storage st = _sites[siteHash];
         require(msg.sender == _first(st.payout), "not payout");
         st.frozen = false;
+        st.version++;
         emit Unfrozen(siteHash);
     }
 
@@ -316,6 +322,7 @@ contract SiteboundV2 {
         require(msg.sender == _first(st.payout), "not payout");
         st.pendingOperator = operator;
         st.operatorAt = uint64(block.timestamp) + delay;
+        st.version++;
         emit RefundOperatorProposed(siteHash, operator, st.operatorAt);
     }
 
@@ -324,15 +331,26 @@ contract SiteboundV2 {
         return (st.refundOperator, st.pendingOperator, st.operatorAt);
     }
 
+    /// The version a payment must sign now: the stored one plus each pending change whose delay has passed,
+    /// which the next transaction touching the site applies.
+    function configVersion(bytes32 siteHash) external view returns (uint256 v) {
+        Site storage st = _sites[siteHash];
+        v = st.version;
+        if (st.pending.to.length != 0 && block.timestamp >= st.activeAt) v++;
+        if (st.operatorAt != 0 && block.timestamp >= st.operatorAt) v++;
+    }
+
     function _promote(Site storage st) internal {
         if (st.pending.to.length != 0 && block.timestamp >= st.activeAt) {
             st.payout = st.pending;
             delete st.pending;
+            st.version++;
         }
         if (st.operatorAt != 0 && block.timestamp >= st.operatorAt) {
             st.refundOperator = st.pendingOperator;
             st.pendingOperator = address(0);
             st.operatorAt = 0;
+            st.version++;
         }
     }
 
@@ -388,7 +406,8 @@ contract SiteboundV2 {
 
     // --------------------------------------------------------------------- pay
 
-    /// Permissionless: anyone can submit, the signature fixes site, order, amount and fee.
+    /// Permissionless: anyone can submit, the signature fixes site, the site's config version, order, amount
+    /// and fee.
     /// The payout is never an input; it comes from the registry entry of the signed topOrigin.
     function pay(PayInput calldata p) external nonReentrant returns (bytes32 paymentId) {
         require(!paused, "paused");
@@ -420,11 +439,13 @@ contract SiteboundV2 {
         require(_at(cd, p.crossOriginIdx, '"crossOrigin":true'), "not cross-origin");
         require(_at(cd, p.topOriginIdx, '"topOrigin":"'), "no topOrigin");
         siteHash = _siteHash(cd, p.topOriginIdx + 13);
+        Site storage st = _sites[siteHash];
+        _promote(st); // so the version below counts any change whose delay has passed
 
         require(block.timestamp <= p.deadline, "deadline passed");
         bytes32 challenge = keccak256(
             abi.encode(
-                block.chainid, address(this), siteHash, p.orderId, p.amount, p.relayerFee, p.deadline
+                block.chainid, address(this), siteHash, st.version, p.orderId, p.amount, p.relayerFee, p.deadline
             )
         );
         require(_at(cd, p.challengeIdx, bytes.concat('"challenge":"', _b64url(challenge), '"')), "bad challenge");
@@ -440,7 +461,6 @@ contract SiteboundV2 {
         Site storage st = _sites[siteHash];
         require(st.payout.to.length != 0, "site not registered");
         require(!st.frozen, "frozen");
-        _promote(st);
 
         paymentId = keccak256(abi.encode(siteHash, p.orderId));
         payments[paymentId] = Payment(wallet, siteHash, p.amount, 0);
