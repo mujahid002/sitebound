@@ -117,8 +117,8 @@ function App() {
   return html`<header class="bar"><${Brand} /></header><main id="main" class="page">${body}</main>`;
 }
 
-function Dashboard({ cfg, site }) {
-  const wallet = useWallet(cfg);
+// Orders for one site, read from chain events. Also used inline by the landing page (web/landing/kit.js).
+export function useOrders(cfg, site) {
   const [chain, setChain] = useState({ status: 'loading' });
   const [feed, setFeed] = useState({ rows: [], from: null, head: null, loading: true, error: '', more: false });
   const [refund, setRefund] = useState(null);
@@ -153,13 +153,18 @@ function Dashboard({ cfg, site }) {
   useEffect(() => { load(false); }, [load]);
 
   const info = chain.status === 'ok' ? chain.info : null;
-  const isPayout = !!info && sameAddr(wallet.account, info.payout);
-
   const rowDone = async (id, txHash) => {
     const pm = await reader(cfg).payments(id);
     setFeed((f) => ({ ...f, rows: f.rows.map((r) => (r.id === id ? { ...r, refunded: pm.refunded, refundTxs: [...r.refundTxs, txHash] } : r)) }));
     setRefund((r) => (r && r.id === id ? { ...r, refunded: pm.refunded } : r));
   };
+  return { chain, info, feed, load, refund, setRefund, rowDone };
+}
+
+function Dashboard({ cfg, site }) {
+  const wallet = useWallet(cfg);
+  const { chain, info, feed, load, refund, setRefund, rowDone } = useOrders(cfg, site);
+  const isPayout = !!info && sameAddr(wallet.account, info.payout);
 
   let content;
   if (chain.status === 'none') {
@@ -206,7 +211,7 @@ function SiteLine({ cfg, info }) {
   </p>`;
 }
 
-function WalletChip({ wallet, isPayout }) {
+export function WalletChip({ wallet, isPayout }) {
   if (!wallet.hasWallet) return html`<span class="hint">No wallet found</span>`;
   if (!wallet.account || !wallet.onChain) {
     return html`<button class="btn ghost sm" onClick=${wallet.connect} disabled=${wallet.busy}>
@@ -218,7 +223,7 @@ function WalletChip({ wallet, isPayout }) {
 
 // ---------------------------------------------------------------- totals + orders
 
-function Totals({ feed }) {
+export function Totals({ feed }) {
   const count = feed.rows.length;
   const volume = feed.rows.reduce((s, r) => s + r.amount, 0n);
   const refunded = feed.rows.reduce((s, r) => s + r.refunded, 0n);
@@ -231,7 +236,7 @@ function Totals({ feed }) {
   </section>`;
 }
 
-function Orders({ cfg, site, feed, load, onRefund }) {
+export function Orders({ cfg, site, feed, load, onRefund }) {
   const { rows, loading, error, more } = feed;
   const exportCsv = () => download(`sitebound-${site.hostname}-orders.csv`, toCsv(rows));
   let inner;
@@ -287,7 +292,7 @@ function OrderRow({ cfg, r, onRefund }) {
 
 // ---------------------------------------------------------------- refund dialog
 
-function RefundDialog({ cfg, row, info, wallet, isPayout, onClose, onDone }) {
+export function RefundDialog({ cfg, row, info, wallet, isPayout, onClose, onDone }) {
   const ref = useRef();
   const left = row.amount - row.refunded;
   const [val, setVal] = useState(inputOf(left));
@@ -442,4 +447,6 @@ function Webhook({ site }) {
   </section>`;
 }
 
-render(html`<${App} />`, document.getElementById('app'));
+// The landing page imports the pieces above and has no #app, so only the dashboard page renders here.
+const root = document.getElementById('app');
+if (root) render(html`<${App} />`, root);

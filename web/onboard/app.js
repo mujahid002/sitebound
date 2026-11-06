@@ -77,7 +77,8 @@ function BadSite({ site }) {
   return html`<${Empty} title="We need your site first" action=${html`<a class="btn" href="../landing/index.html#site">Type your website</a>`}>${msg}<//>`;
 }
 
-function Shop({ cfg, site }) {
+// Also used inline by the landing page (web/landing/kit.js), which passes the optional props.
+export function Shop({ cfg, site, onChangeSite, onInfo, snippetExtra }) {
   const wallet = useWallet(cfg);
   const { account } = wallet;
   const [chain, setChain] = useState({ status: 'loading' });
@@ -100,6 +101,7 @@ function Shop({ cfg, site }) {
   useEffect(() => { refresh(); }, [refresh]);
 
   const info = chain.status === 'ok' ? chain.info : null;
+  useEffect(() => { onInfo?.(info); }, [info]);
   const walletDone = !!account && wallet.onChain;
   const mine = info?.registered && (sameAddr(info.payout, account) || sameAddr(info.pending, account));
   const dnsOk = dns.state === 'ok' && sameAddr(dns.payout, account);
@@ -169,7 +171,9 @@ function Shop({ cfg, site }) {
       <p class="eyebrow">Connect your shop</p>
       <h1 class="h1">${site.host}</h1>
       <p class="lede">Four short steps. Your checkout code never holds a payment address.</p>
-      <a class="quiet-link" href="../landing/index.html#site">Not your site? Change it</a>
+      ${onChangeSite
+        ? html`<button type="button" class="quiet-link link-btn" onClick=${onChangeSite}>Not your site? Change it</button>`
+        : html`<a class="quiet-link" href="../landing/index.html#site">Not your site? Change it</a>`}
     </div>
 
     ${chain.status === 'none' && html`<${Notice} kind="warn" title="The Sitebound contract is not deployed yet">
@@ -196,7 +200,7 @@ function Shop({ cfg, site }) {
         <${RegisterStep} cfg=${cfg} chain=${chain} reg=${reg} account=${account} onRegister=${register} />
       <//>
       <${Step} n=${4} state=${state(4)} title="Paste the snippet" hint="Three lines on your checkout page.">
-        <${SnippetStep} cfg=${cfg} site=${site} />
+        <${SnippetStep} cfg=${cfg} site=${site} extra=${snippetExtra} />
       <//>
     </ol>`;
 }
@@ -306,7 +310,7 @@ function RegisterStep({ cfg, chain, reg, account, onRegister }) {
 
 // ---------------------------------------------------------------- 4 snippet
 
-function SnippetStep({ cfg, site }) {
+function SnippetStep({ cfg, site, extra }) {
   const origin = cfg.frameOrigin || location.origin;
   const code = snippetFor(origin);
   return html`
@@ -319,6 +323,7 @@ function SnippetStep({ cfg, site }) {
       <li>Every <span class="mono">order</span> must be unique per payment. The contract rejects an order id it has already seen for your site.</li>
       <li>Set <span class="mono">amount</span> and <span class="mono">order</span> on your server, not from anything a buyer can edit.</li>
     </ul>
+    ${extra}
     <div class="row">
       <a class="btn" href=${'../dashboard/index.html?site=' + encodeURIComponent(site.origin)}>Open dashboard</a>
     </div>`;
@@ -383,4 +388,6 @@ function SiteStatus({ cfg, site, info, wallet, refresh }) {
   </section>`;
 }
 
-render(html`<${App} />`, document.getElementById('app'));
+// The landing page imports Shop from this module and has no #app, so only the onboarding page renders here.
+const root = document.getElementById('app');
+if (root) render(html`<${App} />`, root);
