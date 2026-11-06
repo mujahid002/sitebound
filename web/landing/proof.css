@@ -304,3 +304,7 @@
 .foot-credit { max-width: 1040px; margin-inline: auto; padding: 0 var(--pad) var(--s4); color: var(--muted); font-size: var(--fs-xs); line-height: 1.6; text-align: center; text-wrap: balance; }
 .foot-credit a { color: inherit; text-underline-offset: 3px; text-decoration-color: var(--line-2); transition: color 0.2s, text-decoration-color 0.2s; }
 .foot-credit a:hover { color: var(--ink); text-decoration-color: currentColor; }
+
+/* Whitechain lockup inside the hero subline */
+.wc-inline { display: inline-flex; vertical-align: -0.2em; margin: 0 0.15em; }
+.wc-inline .wc-img { width: auto; height: 1.15em; }
