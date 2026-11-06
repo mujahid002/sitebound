@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Sitebound: kill the checkout address</title>
+  <meta name="description" content="Addressless stablecoin checkout for any website. Every payment is bound to the site the buyer is on.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fafaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0d0f11" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' rx='8' fill='none' stroke='%23888' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%230b7a5a'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <script src="landing.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#site">Skip to search</a>
+
+  <header class="top">
+    <nav aria-label="Primary">
+      <a href="#shops">For shops</a>
+      <a href="#buyers">For buyers</a>
+      <a href="https://github.com/mujahid002/sitebound">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="brand">
+      <div class="hero-inner">
+        <h1 id="brand" class="brand">
+          <svg class="mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+            <rect class="mark-frame" x="3" y="3" width="26" height="26" rx="8" fill="none" stroke="currentColor" stroke-width="3"/>
+            <circle class="mark-dot" cx="16" cy="16" r="5" />
+          </svg>
+          <span>Sitebound</span>
+        </h1>
+        <p class="tagline">Kill the checkout address.<br><span>Every payment is bound to the site.</span></p>
+
+        <form id="site-form" class="search" novalidate>
+          <label class="sr-only" for="site">Your website</label>
+          <div class="pill">
+            <svg class="pill-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
+              <ellipse cx="12" cy="12" rx="3.8" ry="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
+              <path d="M3 12h18" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            </svg>
+            <input id="site" name="site" type="text" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false"
+                   placeholder="Type your website, e.g. shop.com" aria-describedby="site-msg" required>
+          </div>
+          <p id="site-msg" class="msg" role="alert"></p>
+          <div class="actions">
+            <button class="btn" type="submit">Connect my shop</button>
+            <a class="quiet" href="#how">How it works</a>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section id="how" class="band" aria-labelledby="how-h">
+      <h2 id="how-h" class="section-title">Three ways crypto checkout goes wrong. <span>One fix each.</span></h2>
+      <ol class="fixes">
+        <li>
+          <span class="n" aria-hidden="true">1</span>
+          <p class="problem"><b class="tag">Problem</b>Hacked checkout code swaps the address.</p>
+          <div class="fix">
+            <b class="tag">Fix</b>
+            <h3>Every payment is bound to the site the buyer is on.</h3>
+            <p>The buyer's browser signs which site they are on, and the contract pays only the wallet registered for that site. Hacked checkout code can change what the page says, but not who gets paid.</p>
+          </div>
+        </li>
+        <li>
+          <span class="n" aria-hidden="true">2</span>
+          <p class="problem"><b class="tag">Problem</b>Addresses make checkout painful.</p>
+          <div class="fix">
+            <b class="tag">Fix</b>
+            <h3>Addressless.</h3>
+            <p>The shop never puts an address in its code, and the buyer never sees one. Nothing to copy, paste or compare.</p>
+          </div>
+        </li>
+        <li>
+          <span class="n" aria-hidden="true">3</span>
+          <p class="problem"><b class="tag">Problem</b>Crypto has no 3-D Secure.</p>
+          <div class="fix">
+            <b class="tag">Fix</b>
+            <h3>A confirmation frame that shows the site and the amount.</h3>
+            <p>The frame shows the site as reported by the browser, and the amount. The buyer confirms with Touch ID, and spending caps apply.</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <section class="band strips" aria-label="Getting started">
+      <div id="shops" class="strip" aria-labelledby="shops-h">
+        <h2 id="shops-h" class="strip-title">For shops</h2>
+        <ol class="steps">
+          <li><h3>Type your domain</h3><p>The site you own, like shop.com.</p></li>
+          <li><h3>Add one DNS TXT record</h3><p>Proves you control the domain, once.</p></li>
+          <li><h3>Paste a ~20-line snippet</h3><p>Your checkout opens the Sitebound frame. No address in your code.</p></li>
+        </ol>
+      </div>
+      <div id="buyers" class="strip" aria-labelledby="buyers-h">
+        <h2 id="buyers-h" class="strip-title">For buyers</h2>
+        <ol class="steps">
+          <li><h3>First time</h3><p>Connect your wallet and create a passkey.</p></li>
+          <li><h3>After that: Touch ID</h3><p>Check the site and the amount, then confirm.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="closing" aria-label="Get started">
+      <a class="btn" href="#site" data-focus-search>Connect my shop</a>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p class="meta">Whitechain Sepolia testnet · MIT · <a href="https://github.com/mujahid002/sitebound">GitHub</a></p>
+    <p class="limits">Limits: testnet only and not audited. The site shown is what the browser reports, and Sitebound does not vouch for what a shop sells.</p>
+  </footer>
+</body>
+</html>
