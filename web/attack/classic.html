@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Halden Coffee Supply: classic crypto checkout (attack demo)</title>
+  <meta name="color-scheme" content="light dark">
+  <link rel="stylesheet" href="../demo-shop/shop.css">
+  <link rel="stylesheet" href="attack.css">
+  <script src="attack.js" defer></script>
+</head>
+<body>
+  <p class="demo-banner demo-ui">Attack demo 1 of 3. The "hacked script" below only edits this page. <a href="./">All demos</a></p>
+
+  <header class="bar">
+    <span class="logo">Halden <span>Coffee Supply</span></span>
+    <span class="cart-link">Classic crypto checkout</span>
+  </header>
+
+  <main class="wrap split">
+    <section class="cart">
+      <h2>Pay with USDT</h2>
+      <ul class="lines">
+        <li><span>Ceramic pour-over dripper</span><span>1</span><b>12.00</b></li>
+        <li><span>Paper filters, 100 pack</span><span>1</span><b>4.50</b></li>
+      </ul>
+      <p class="total">Total <b>16.50 USDT</b></p>
+      <p class="muted">Send exactly 16.50 USDT on Whitechain to:</p>
+      <p class="addr"><code>0x5409000000000000000000000000000000005409</code></p>
+      <button class="btn" type="button" data-copy="0x5409000000000000000000000000000000005409">Copy</button>
+      <label class="paste">Paste what you copied here, as you would in your wallet:
+        <input type="text" spellcheck="false" autocomplete="off" placeholder="0x...">
+      </label>
+      <p class="fine">Demo address, not a real wallet. Do not send funds to it.</p>
+    </section>
+
+    <section class="demo-ui notes">
+      <h2>What happens</h2>
+      <p>This is how most stores take stablecoins today: the checkout code holds the shop's address and the buyer copies it.</p>
+      <p>Copy the address, then inject the script and copy again. The script swaps the address on the page and in the clipboard. A buyer who checks only the first and last few characters can miss it; address-poisoning attackers pick lookalike addresses for exactly that reason.</p>
+      <button id="inject" class="btn danger" type="button">Inject the hacked script</button>
+      <h3>Log</h3>
+      <ol id="log" class="log"></ol>
+      <p><a href="sitebound.html">Next: the same script against the Sitebound checkout</a></p>
+    </section>
+  </main>
+</body>
+</html>

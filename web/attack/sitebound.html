@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Halden Coffee Supply: Sitebound checkout (attack demo)</title>
+  <meta name="color-scheme" content="light dark">
+  <link rel="stylesheet" href="../demo-shop/shop.css">
+  <link rel="stylesheet" href="attack.css">
+  <script src="../config.js"></script>
+  <script src="../button/sitebound.js" defer></script>
+  <script src="attack.js" defer></script>
+</head>
+<body>
+  <p class="demo-banner demo-ui">Attack demo 2 of 3. Same shop, same origin, same hacked script. <a href="./">All demos</a></p>
+
+  <header class="bar">
+    <span class="logo">Halden <span>Coffee Supply</span></span>
+    <span class="cart-link">Sitebound checkout</span>
+  </header>
+
+  <main class="wrap split">
+    <section class="cart">
+      <h2>Checkout</h2>
+      <ul class="lines">
+        <li><span>Ceramic pour-over dripper</span><span>1</span><b>12.00</b></li>
+        <li><span>Paper filters, 100 pack</span><span>1</span><b>4.50</b></li>
+      </ul>
+      <p class="total">Total <b>16.50 USDT</b></p>
+      <div id="pay-slot" data-amount="16.50"></div>
+    </section>
+
+    <section class="demo-ui notes">
+      <h2>What happens</h2>
+      <p>Inject the same script. It finds no address to swap, because this checkout has none. The frame is on another origin, so page code cannot read or edit what it shows.</p>
+      <p>The payee is not in the page at all. The browser writes this page's origin into the passkey signature, and the contract pays only the wallet registered for that origin (<code>test_hacked_page_cannot_redirect_payee</code>). Editing the signed origin afterwards breaks the signature check (<code>test_calldata_topOrigin_swap_after_signing_reverts</code>). Swapping in a lookalike frame on the attacker's own origin fails too, because the signed origin is not the Sitebound frame (<code>test_wrong_origin_reverts</code>).</p>
+      <button id="inject" class="btn danger" type="button">Inject the hacked script</button>
+
+      <div class="limit">
+        <b>Known limit</b>
+        <p>Hacked page code can still change the amount it asks for. The buyer sees that amount in the frame and has to confirm it, and the per-payment and total caps set at setup bound it. The money still goes only to this shop.</p>
+        <p>Hacked code could also hide the Sitebound button and show an old pay-to-address box instead. Sitebound protects payments made through its frame, not ones the buyer makes elsewhere.</p>
+        <button id="tamper" class="btn ghost" type="button">Change the amount to 49.00</button>
+      </div>
+
+      <h3>Log</h3>
+      <ol id="log" class="log"></ol>
+      <p><a href="phish.html">Next: a fake site embedding the frame</a> (open it from a second origin, see the index)</p>
+    </section>
+  </main>
+</body>
+</html>

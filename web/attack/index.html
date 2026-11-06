@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sitebound attack demos</title>
+  <meta name="color-scheme" content="light dark">
+  <link rel="stylesheet" href="../demo-shop/shop.css">
+  <link rel="stylesheet" href="attack.css">
+</head>
+<body>
+  <main class="wrap index">
+    <h1>Attack demos</h1>
+    <p class="lede">Three pages built on the Halden demo shop. The injected script only edits its own page and sends nothing.</p>
+    <ol class="demos">
+      <li>
+        <a href="classic.html">Classic crypto checkout</a>
+        <p>Pay-to-address with a copy button. A hacked script swaps the address on the page and in the clipboard.</p>
+      </li>
+      <li>
+        <a href="sitebound.html">Sitebound checkout, same script</a>
+        <p>No address to swap. The payee comes from the registry entry for the origin the browser signed.</p>
+      </li>
+      <li>
+        <a href="phish.html">Fake site embedding the frame</a>
+        <p>Open it from a different origin than the shop, e.g. <code>http://127.0.0.1:8003/attack/phish.html</code> while the shop runs on <code>http://127.0.0.1:8001</code>. Includes the overlay case, a known limit.</p>
+      </li>
+    </ol>
+  </main>
+</body>
+</html>

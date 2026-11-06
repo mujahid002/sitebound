@@ -1,0 +1,41 @@
+/* Additions on top of ../demo-shop/shop.css for the attack pages. */
+:root { --warn: #b42318; --warn-bg: #fdecea; --note: #fff7e0; }
+@media (prefers-color-scheme: dark) {
+  :root { --warn: #ff9a90; --warn-bg: #2c1513; --note: #2a2414; }
+}
+
+.demo-banner { margin: 0; padding: 8px 16px; background: var(--warn-bg); color: var(--warn); font-size: 0.85rem; text-align: center; }
+.demo-banner a { color: inherit; }
+
+.split { align-items: start; }
+@media (min-width: 860px) { .split { grid-template-columns: 380px 1fr; } }
+
+.lines li { grid-template-columns: 1fr auto auto; }
+.addr code { display: block; padding: 10px; margin: 6px 0 10px; border: 1px solid var(--line); border-radius: 6px; word-break: break-all; font-size: 0.9rem; }
+.hacked .addr code { border-color: var(--warn); color: var(--warn); }
+.paste { display: grid; gap: 6px; margin-top: 14px; font-size: 0.85rem; color: var(--muted); }
+.paste input { padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--ink); font: 0.85rem ui-monospace, monospace; }
+
+.notes { display: grid; gap: 12px; max-width: 64ch; }
+.notes h2 { font-size: 1.2rem; }
+.notes h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.notes .btn { width: auto; justify-self: start; padding: 0 20px; }
+.btn.danger { background: var(--warn); }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.log { margin: 0; padding: 10px 10px 10px 30px; min-height: 3em; border: 1px solid var(--line); border-radius: 8px; font: 0.82rem/1.5 ui-monospace, monospace; }
+.limit { display: grid; gap: 8px; padding: 12px 14px; border-radius: 8px; background: var(--note); }
+.limit > b { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
+
+.redress-wrap { position: relative; min-height: 72px; }
+.fake-header {
+  display: none; position: absolute; inset: 0 0 auto 0; height: 72px; padding: 12px 14px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  pointer-events: none; font-size: 0.95rem;
+}
+.fake-header span { color: var(--muted); }
+.redress .fake-header { display: block; }
+
+.index { padding: 40px 0; display: grid; gap: 12px; }
+.demos { display: grid; gap: 16px; margin: 12px 0 0; padding-left: 20px; }
+.demos a { font-weight: 600; }
+.demos p { color: var(--muted); }
