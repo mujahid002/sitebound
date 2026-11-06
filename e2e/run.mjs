@@ -3,8 +3,8 @@
 // web/dev/serve.py, and headless Chromium with a CDP virtual authenticator and a window.ethereum that forwards
 // to anvil's unlocked dev accounts (no key in the page).
 // Flow: shop registers -> buyer sets up (passkey, permit, bind) -> pays via the relayer -> pays from the wallet
-// -> shop refunds in the dashboard. Each step checks the chain, not just the UI.
-// Run: cd e2e && npm install && npm test. Env: CHROME=<binary>, E2E_HEADED=1 to watch.
+// (popup path, then a wallet inside the iframe) -> shop refunds in the dashboard. Each step checks the chain.
+// Run: cd e2e && npm install && npm test. Env: CHROME=<binary>, E2E_HEADED=1 to watch, E2E_BLOCK_TIME=<s>.
 import { spawn, execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
@@ -115,8 +115,11 @@ async function until(root, ok, err, timeout = 60_000) {
   throw new Error(`timed out waiting for ${ok}`);
 }
 
-// Injected into every frame: an EIP-1193 provider for one anvil dev account. Anvil holds the key.
-function walletStub({ rpc, account, chainId }) {
+// An EIP-1193 provider for one anvil dev account; anvil holds the key. Top-level pages only, unless `inFrames`:
+// whether a real wallet answers inside a cross-origin iframe is not checked, so by default the frame takes its
+// popup path (send.html), as it would with no wallet in the iframe.
+function walletStub({ rpc, account, chainId, inFrames }) {
+  if (window.top !== window && !inFrames) return;
   let n = 0;
   const own = (a) => String(a).toLowerCase() === account.toLowerCase();
   window.ethereum = {
@@ -168,9 +171,10 @@ const bal = async (a) => token.balanceOf(a);
 async function main() {
   await step('anvil: chain 1874, P-256 verifier etched at 0x100', async () => {
     // prague has no native 0x100, so the etched contract is what runs (osaka would shadow it).
-    // One block per second, like a real chain. With instant automine the worker's /setup sends bind with the
-    // permit's nonce: ethers caches getTransactionCount for 250 ms (cacheTimeout) and the permit's receipt comes back sooner.
-    start('anvil', ['--chain-id', '1874', '--port', String(ANVIL_PORT), '--hardfork', 'prague', '--block-time', '1', '--silent']);
+    // Instant automine by default: a receipt within 250 ms is what exposed the relayer's cached-nonce bug (b379c0c).
+    // E2E_BLOCK_TIME=1 mines like a real chain instead.
+    const blockTime = process.env.E2E_BLOCK_TIME ? ['--block-time', process.env.E2E_BLOCK_TIME] : [];
+    start('anvil', ['--chain-id', '1874', '--port', String(ANVIL_PORT), '--hardfork', 'prague', ...blockTime, '--silent']);
     await waitHttp(RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"jsonrpc":"2.0","id":1,"method":"eth_chainId","params":[]}' });
     const accounts = await provider.send('eth_accounts', []);
     expect([deployer, relayer, buyer, shop].every((w, i) => w.address.toLowerCase() === accounts[i].toLowerCase()), 'anvil accounts differ from the dev mnemonic');
@@ -243,7 +247,7 @@ async function main() {
   })};\n`;
 
   browser = await chromium.launch({ executablePath: CHROME, headless: !process.env.E2E_HEADED });
-  const context = async (account) => {
+  const context = async (account, inFrames = false) => {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
     // Routed pages don't come from a loopback socket, so Chrome 148's Local Network Access treats their calls to
@@ -257,7 +261,7 @@ async function main() {
       if (u.pathname === '/config.js') return route.fulfill({ contentType: 'text/javascript', body: config });
       return route.fulfill({ response: await route.fetch({ url: `http://127.0.0.1:${webPort}${u.pathname}${u.search}` }) });
     });
-    await ctx.addInitScript(walletStub, { rpc: RPC, account: account.address, chainId: '0x752' });
+    await ctx.addInitScript(walletStub, { rpc: RPC, account: account.address, chainId: '0x752', inFrames });
     return { ctx, page };
   };
 
@@ -266,7 +270,7 @@ async function main() {
   track('shop', page);
   const shopAuth = await authenticator(page);
   const frame = page.frameLocator('sitebound-pay iframe');
-  let credentialHash;
+  let credentialHash, passkey;
 
   await step('buyer opens the shop and the Sitebound frame', async () => {
     await page.goto(`${SHOP}/dev/shop.html`);
@@ -287,7 +291,8 @@ async function main() {
     await until(popup, '#finish', '#msg.err', 90_000);
     const creds = await popupAuth.list();
     expect(creds.length === 1, `popup authenticator holds ${creds.length} credentials`);
-    credentialHash = keccak256(Buffer.from(creds[0].credentialId, 'base64'));
+    passkey = creds[0];
+    credentialHash = keccak256(Buffer.from(passkey.credentialId, 'base64'));
     const b = await sb.buyers(credentialHash);
     expect(b.wallet === buyer.address, `buyers(credentialHash).wallet is ${b.wallet}`);
     const allowance = await token.allowance(buyer.address, sb.target);
@@ -314,16 +319,36 @@ async function main() {
     return 'shop +12, relayer +0.01, buyer -12.01; sitebound:paid reached the shop page';
   });
 
-  await step('buyer pays 12 USDT for A124 from the wallet (no relayer)', async () => {
+  await step('buyer pays 12 USDT for A124 from the wallet, via the send.html popup', async () => {
     await frame.locator('#done').click();
     await page.locator('sitebound-pay').evaluate((el) => el.setAttribute('order', 'A124'));
     await page.locator('sitebound-pay button.pay').click();
     await frame.locator('#pay-wallet').click();
+    await until(frame, '#continue', '#msg.err', 30_000);
+    const [popup] = await Promise.all([buyerCtx.waitForEvent('page'), frame.locator('#continue').click()]);
+    track('send', popup);
+    await popup.locator('#send:enabled').click({ timeout: 10_000 });
     await until(frame, '#receipt', '#msg.err', 60_000);
     const pm = await sb.payments(paymentId('A124'));
     expect(pm.wallet === buyer.address && pm.amount === USDT(12), `payments(A124) = ${pm}`);
     expect((await bal(shop.address)) === USDT(24), `shop holds ${await bal(shop.address)}`);
-    return 'shop holds 24 USDT';
+    return 'no wallet in the iframe -> Continue -> popup sent pay(); shop holds 24 USDT';
+  });
+
+  await step('buyer pays 12 USDT for A125 from a wallet injected into the iframe', async () => {
+    const { page: other } = await context(buyer, true);
+    track('shop-2', other);
+    await (await authenticator(other)).add(passkey);
+    await other.goto(`${SHOP}/dev/shop.html`);
+    await other.locator('sitebound-pay').evaluate((el) => el.setAttribute('order', 'A125'));
+    await other.locator('sitebound-pay button.pay').click();
+    const f = other.frameLocator('sitebound-pay iframe');
+    await f.locator('#pay-wallet').click();
+    await until(f, '#receipt', '#msg.err', 60_000);
+    const pm = await sb.payments(paymentId('A125'));
+    expect(pm.wallet === buyer.address && pm.amount === USDT(12), `payments(A125) = ${pm}`);
+    expect((await bal(shop.address)) === USDT(36), `shop holds ${await bal(shop.address)}`);
+    return 'frame sent pay() through window.ethereum directly; shop holds 36 USDT';
   });
 
   // ---------------------------------------------------------------- shop
@@ -338,7 +363,7 @@ async function main() {
     await until(dash, 'text=Refund sent', '.notice.error', 60_000);
     const pm = await sb.payments(paymentId('A123'));
     expect(pm.refunded === USDT(12), `refunded on-chain ${pm.refunded}`);
-    expect((await bal(buyer.address)) === USDT(100 - 12.01 - 12 + 12), `buyer holds ${await bal(buyer.address)}`);
+    expect((await bal(buyer.address)) === USDT(100 - 12.01 - 12 - 12 + 12), `buyer holds ${await bal(buyer.address)}`);
     const shown = (await dash.locator('.c-order').allTextContents()).join(', ');
     return `payments(A123).refunded = 12 USDT, back in the buyer wallet; dashboard lists orders as: ${shown}`;
   });
