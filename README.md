@@ -10,7 +10,7 @@ phishing protection. A lookalike domain that registers its own wallet is a separ
 it, along with the overlay limit. Full trust model: [docs/THREAT-MODEL.md](docs/THREAT-MODEL.md).
 
 Built for ETHGlobal Mumbai (Nov 2026) on Whitechain Sepolia testnet. Not audited. The code on `main` is SiteboundV2
-(`src/SiteboundV2.sol`). The live deployment is still v1 (`src/Sitebound.sol`) until V2 is deployed.
+(`src/SiteboundV2.sol`), live at `0x64117398C837a8708a816818b31C36Df5a968596`. v1 (`src/Sitebound.sol`) is deprecated.
 
 ## The problems
 
@@ -27,7 +27,7 @@ Built for ETHGlobal Mumbai (Nov 2026) on Whitechain Sepolia testnet. Not audited
 - **Website, once.** It proves it controls its domain with a DNS TXT record (`_sitebound.<host>` =
   `sitebound=<payout>`). Attestors check the record and sign, and anyone can submit `register()`.
   - The registry maps `keccak256("https://shop.com")` to the website's payout split.
-  - The contract needs `threshold` signatures from the active attestor set. The planned deploy is 1-of-1, with the
+  - The contract needs `threshold` signatures from the active attestor set. The deployment is 1-of-1, with the
     relayer as the only attestor.
   - The website pastes one script tag and a `<sitebound-pay amount="12.00" order="A123">` element. There is no
     address in its code.
@@ -58,7 +58,7 @@ The first wallet of a site's split is its **owner**. Every change below bumps th
 buyer's passkey signs that version, so a payment signed before a change cannot execute after it.
 
 - **Split payouts.** Up to 5 wallets, in basis points summing to 10000. The owner gets the rounding dust. Changing
-  the split needs the attestors and waits `delay` (1 hour planned).
+  the split needs the attestors and waits `delay` (1 hour on the deployment).
 - **Drop a recipient.** The owner can remove a non-owner recipient at once, for example one the token refuses to pay.
   Its share goes to the owner.
 - **Refund operator, admins (up to 3), quote signer.** The owner sets each one and it takes effect after `delay`.
@@ -118,7 +118,7 @@ quote signer can be a contract wallet (ERC-1271).
 
 | Part | Path | What it does |
 |---|---|---|
-| Contract | `src/SiteboundV2.sol` | Site registry with splits and site roles, k-of-n attestors, passkey bindings with caps, `pay()`, refunds. v1, still live: `src/Sitebound.sol`. |
+| Contract | `src/SiteboundV2.sol` | Site registry with splits and site roles, k-of-n attestors, passkey bindings with caps, `pay()`, refunds. Deprecated v1: `src/Sitebound.sol`. |
 | Frame | `web/frame/` | Checkout iframe (`get()` only) and the first-time setup popup. Vanilla JS and vendored ethers 6.17.0. |
 | Button | `web/button/sitebound.js` | The `<sitebound-pay>` element. It opens the frame from its own host and fires `sitebound:paid`. |
 | Merchant helper | `web/merchant/sitebound-merchant.mjs` | `verifyPayment` and `signQuote`, for the website's server. |
@@ -188,10 +188,15 @@ Buyers set up again too: v1 bindings and allowances do not carry over.
 
 ## Deployments (Whitechain Sepolia, chain 1874)
 
-- SiteboundV2: `0x64117398C837a8708a816818b31C36Df5a968596`
-- v1 Sitebound (what the live frame uses until then):
-  [`0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73`](https://explorer.testnet.whitechain.io/address/0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73)
-  (token: Whitechain USDT, `DELAY` 1 hour, frame origin `https://sitebound-pay.pages.dev`)
+- SiteboundV2 (live): [`0x64117398C837a8708a816818b31C36Df5a968596`](https://explorer.testnet.whitechain.io/address/0x64117398C837a8708a816818b31C36Df5a968596?tab=contract)
+  - Deploy tx `0xc54c53e26ecfaeac2b85b712ce52096f5f7f264d620b1d9635f2acde3f0446d5`, block 12,389,848, built from
+    commit 100c615.
+  - Token: Whitechain USDT. `DELAY` 1 hour. Frame origin `https://sitebound-pay.pages.dev`.
+  - One attestor, the relayer `0xDf54063Eb6FEF689965d470c6b5aab0489eA5b4A`, threshold 1.
+  - No guardian (`address(0)`), so no one can pause it.
+  - Measured on chain 23:02 to 23:07 IST, 6 Nov.
+- Deprecated v1 Sitebound, superseded by V2: [`0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73`](https://explorer.testnet.whitechain.io/address/0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73). Its sites, bindings and
+  allowances do not carry over.
 - Frame, landing, onboarding, dashboard: https://sitebound-pay.pages.dev
 - Demo shop: https://sitebound-demo.pages.dev
 - Relayer Worker: https://sitebound-relayer.sitebound-relayer.workers.dev (`/health`)
@@ -205,22 +210,25 @@ There are three independent ways to check that a deployed contract is the code i
 
 - **From source, on your machine:** `sh scripts/verify.sh`.
   - It rebuilds with `forge`, reads the deployed code with `cast`, zeroes the immutables in both, and compares.
-  - SiteboundV2 has five immutables: token, rpIdHash, delay, maxRelayerFee and guardian. Pass `ADDRESS=` once V2 is
-    deployed. On a throwaway local deploy it prints `MATCH 0xc9c9a99f…49e6`.
+  - SiteboundV2 has five immutables: token, rpIdHash, delay, maxRelayerFee and guardian. With no arguments it checks
+    the live V2 and prints `MATCH 0xc9c9a99f74a8066af413321ad482f1aa0da0a9620ba248423284edd25b1c49e6` (measured 6 Nov,
+    23:02 IST).
   - For v1: `CONTRACT=Sitebound ADDRESS=0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73 sh scripts/verify.sh` prints
     `MATCH 0xaa7fc4f738a41cc4ff55b7dfc84353a4ee48244e2074ddbdeecab73c19633f1f` (measured 6 Nov, 22:50 IST).
   - It needs only Foundry; the public RPC is the default.
-- **Sourcify (v1): exact match** for both the creation and the runtime code:
-  https://repo.sourcify.dev/1874/0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73
+- **Sourcify and the Whitechain explorer.**
+  - Sourcify reports an exact match for the creation and the runtime code of both versions.
+    - V2: https://repo.sourcify.dev/1874/0x64117398C837a8708a816818b31C36Df5a968596 (verified 23:00:50 IST, 6 Nov).
+    - Deprecated v1: https://repo.sourcify.dev/1874/0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73
+  - The explorer shows V2's verified source: https://explorer.testnet.whitechain.io/address/0x64117398C837a8708a816818b31C36Df5a968596?tab=contract (name SiteboundV2, solc v0.8.28, verified 23:00:53
+    IST).
 - **In your browser:** "Verify us" on https://sitebound-pay.pages.dev/#verify reads the code with `eth_getCode`,
   applies the same masking, and compares the hash with `web/verify/expected.json`. It also checks that the
   immutables baked into the code are the values that file lists.
 
-Blockscout verification is currently failing on Whitechain's side. Our submissions end in "Fail - Unable to
-verify", even though the local build output equals the deployed creation bytecode byte for byte. The explorer
-verified 40 contracts between 12:09 and 15:03 IST on 6 Nov and none after that, and its verification config lists
-no compiler versions (both checked 17:10 IST). Details are in WHITECHAIN_FEEDBACK.md. For the standard-JSON input,
-run `forge verify-contract --show-standard-json-input`.
+The deprecated v1 is still unverified on the explorer (`is_verified: false` at 23:06 IST, 6 Nov). Our v1
+submissions earlier on 6 Nov ended in "Fail - Unable to verify". That history is in WHITECHAIN_FEEDBACK.md. For the
+standard-JSON input, run `forge verify-contract --show-standard-json-input`.
 
 ## Threat model (summary)
 
@@ -253,7 +261,7 @@ The full version, with line references, is [docs/THREAT-MODEL.md](docs/THREAT-MO
   wallet with no fee.
 - **Trusted roles, bounded.**
   - The attestors can register sites, and change a site's split only after `delay`, while the owner can freeze.
-  - The planned 1-of-1 set is one key, held by the relayer.
+  - The deployed 1-of-1 set is one key, held by the relayer.
   - Roadmap: an on-chain DNSSEC proof instead of the attestor.
 - **Walkaway.** The contract never holds funds; each payment moves wallet to payout in one transaction. If we
   disappear, buyers revoke with `unbind()` or `approve(0)`, and websites keep what they were paid. Refunds keep

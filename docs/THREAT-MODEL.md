@@ -1,9 +1,10 @@
 # Sitebound threat model
 
-This covers SiteboundV2 (`src/SiteboundV2.sol`) as of commit 1051525, the frame (`web/frame/`) and the relayer
-(`worker/src/index.js`). Line numbers refer to those files. The live deployment on Whitechain Sepolia is still v1
-(`src/Sitebound.sol`, `0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73`) until V2 is deployed at
-`0x64117398C837a8708a816818b31C36Df5a968596`. Testnet only. An independent AI review of V2 found no
+This covers SiteboundV2 (`src/SiteboundV2.sol`), the frame (`web/frame/`) and the relayer (`worker/src/index.js`).
+Line numbers refer to those files at commit 1051525. The contract and the relayer are unchanged from there to 100c615,
+the commit V2 was deployed from. V2 is live on Whitechain Sepolia at `0x64117398C837a8708a816818b31C36Df5a968596`. Its source is verified on Sourcify
+(exact match) and on the Whitechain explorer. The deprecated v1 (`src/Sitebound.sol`, `0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73`) is superseded.
+Testnet only. An independent AI review of V2 found no
 critical or high issues and its fixes are in. There has been no professional audit.
 
 ## What it stops
@@ -51,12 +52,12 @@ There is no contract owner, no proxy and no upgrade path (`delegatecall` and `se
 
 ## Trade-offs we chose
 
-- **1-of-1 attestor is one trusted authority, not decentralized.** The deploy plan is `THRESHOLD=1` with the relayer
-  as the only attestor. With k = 1, rotation adds no safety: the one key can rotate the set to itself or to any key.
+- **1-of-1 attestor is one trusted authority, not decentralized.** The deployment is 1-of-1: `quorum()` returns threshold 1,
+  and the relayer is the only attestor (measured 23:02 IST, 6 Nov). With k = 1, rotation adds no safety: the one key can rotate the set to itself or to any key.
   A k-of-n set (tested at 2-of-3) only helps once the keys are held by different parties.
 - **The attestor's DNS check is off-chain.** The relayer reads `_sitebound.<host>` TXT over Cloudflare DNS-over-HTTPS
   without DNSSEC (`worker/src/index.js:55`–`:71`). Anyone who takes over a site's DNS, or the attestor key, can get a
-  new split attested. For an existing site it waits `delay` (3600 s planned; the constructor allows 1 s to 30 days,
+  new split attested. For an existing site it waits `delay` (3600 s on the deployment; the constructor allows 1 s to 30 days,
   `:192`), and the owner can freeze it in that window.
 - **No DNS TXT format for splits yet.** The relayer always attests one wallet: `to = [payout]`, `bps = [10000]`
   (`worker/src/index.js:164`–`:171`). Splits need a separately signed attestation.
@@ -75,7 +76,8 @@ There is no contract owner, no proxy and no upgrade path (`delegatecall` and `se
 - **Refunds are merchant-funded.** The refunder pays from its own allowance to the original payer only. The total is
   capped at the payment's amount; the relayer fee is not refundable (`refund`, `:694`–`:709`).
 - **The guardian is immutable.** It has no rotation or timeout. A stolen guardian key can keep payments paused until
-  the contract is redeployed. `address(0)` means no one can pause. It adds a liveness risk only: a pause stops new
+  the contract is redeployed. `address(0)` means no one can pause, and that is
+  what the deployment has (`guardian()` read 23:02 IST, 6 Nov). It adds a liveness risk only: a pause stops new
   payments and moves nothing.
 - **Daily caps and the minimum fee are enforced by the relayer only, not on-chain.** The defaults are 20 pays per
   passkey, 3 setups per wallet, 3 registrations per site, and a 0.01 USDT minimum fee (`worker/src/index.js:174`,

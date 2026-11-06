@@ -1,8 +1,8 @@
 # Sitebound demo video: storyboard (about 3:55)
 
 Seven scenes in order, opening on the attack. Each one lists its time slot, page URL, on-screen steps and spoken
-line. Button and heading text is copied from the code as of 1c70197 (6 Nov 2026, 15:45 IST). The landing has changed
-since (4243dda, a five-step setup wizard), so re-copy scene 2's text before recording: not checked. Wallet pop-ups,
+line. Button and heading text is copied from the code as of 1c70197 (6 Nov 2026, 15:45 IST), except two scenes.
+Scene 2 is copied from the live landing (6 Nov, 23:06 IST, after the V2 deploy), and scene 4 from a88b1a7. Wallet pop-ups,
 Touch ID sheets and explorer pages are not our code, so their wording is described, not quoted.
 Cut every wait for a block in editing. Whitechain's block time is not checked.
 
@@ -24,12 +24,11 @@ Hosts (layout from `deploy/pages.sh`; status checked 15:29 to 15:43 IST):
   returned the demo shop's HTML, so scenes 1 and 5 rendered unstyled. `deploy/pages.sh` now copies `shop.css` to
   `demo-shop/shop.css` on the demo and fake-site hosts. Live after a redeploy: not checked.
 - [ ] **Redeploy the frame host** so `web/assets/` (favicons, share image) goes live. `/assets/favicon.svg` was 404 at 15:32 IST.
-- [ ] **Register the demo shop** on the contract the frame uses (V2 after the migration: every site registers again).
-  - On v1, `sites(keccak("https://sitebound-demo.pages.dev"))` had payout 0x0 at 15:28 IST, so it was not registered.
-  - pages.dev gives us no DNS, so `worker/wrangler.toml` pins it:
-    `DEMO_SITES = "https://sitebound-demo.pages.dev=0x2bb9…F275"`. The Worker must be deployed with that.
-  - Registration happens once. After it, the onboarding page opens on "Registered on Sitebound". Either record scene 2
-    in one take, or register beforehand and narrate over the registered state.
+- [x] **Register the demo shop** on V2 (measured).
+  - Done in tx `0xc84abef3f73fd9cc00bb25dba16b1af6f86a68958a2f515375c9324e44c2c4ae`.
+  - At 23:03 IST, `splitOf(keccak("https://sitebound-demo.pages.dev"))` returned `[0x2bb9…F275]`, `[10000]`.
+  - pages.dev gives us no DNS, so `worker/wrangler.toml` pins it: `DEMO_SITES = "https://sitebound-demo.pages.dev=0x2bb9…F275"`.
+  - Because the site is registered, scene 2 films the registered state, not the register flow.
 - [ ] **Relayer.**
   - Measured at 15:29 IST: `https://sitebound-relayer.sitebound-relayer.workers.dev/health` answers `ok: true`, and its
     address `0xDf54…5b4A` has `isAttestor = true` and 1.99 WBT.
@@ -49,9 +48,9 @@ Hosts (layout from `deploy/pages.sh`; status checked 15:29 to 15:43 IST):
     `<fakeShop>/attack/phish.html` (`web/attack/attack.js:94`).
   - The overlay's site name comes from `demoShop` in `web/config.js` (`web/attack/attack.js:92`).
   - Live: not checked.
-- [ ] **Explorer.** The v1 contract source is not verified there: `/api/v2/addresses/0x43bb…` returned `is_verified: false` at 15:28 IST.
-  `WHITECHAIN_FEEDBACK.md` records Blockscout verification failing (the verifier lists no compilers). Until that is
-  fixed, scene 7 shows the transactions, not the source.
+- [x] **Explorer** (measured).
+  - V2's source is verified there: `is_verified: true`, name SiteboundV2, solc v0.8.28, verified 23:00:53 IST. Scene 7 can show the Contract tab.
+  - The deprecated v1 is still unverified (`is_verified: false` at 23:06 IST). Don't show it.
 - **Fallback: local stack.**
   - Run `python3 web/dev/serve.py`. The demo shop is on `http://127.0.0.1:8001` and the frame on `http://localhost:8002`. For scene 5, also run
     `python3 -m http.server 8003 --bind 127.0.0.1 --directory web`.
@@ -83,22 +82,47 @@ Spoken:
 
 URL: `https://sitebound-pay.pages.dev/`. The setup opens inline on the same page.
 
-1. Landing. Hold on the hero for 2 seconds: "Addressless checkout for your website.", the website chips orbiting the
-   search bar, and the "Live on Whitechain Sepolia" chip. Move the pointer once: the dot field lights up under it.
+The demo site is already registered on V2, so its DNS and register steps cannot be filmed again. This scene shows the
+registered state and narrates those steps over the progress rail.
+
+Text sources:
+- Steps 1 and 2: the live landing, rendered headless with no wallet (6 Nov, 23:06 IST).
+- Steps 3 to 5: the code at f262837. Marked "from code" below, because no wallet was connected.
+- The pointer light in step 1: from the earlier script. Not re-checked.
+
+1. Landing. Hold on the hero for 2 seconds:
+   - "Addressless checkout for your website."
+   - The tagline: "No one has to trust the page: who gets paid comes from the contract and the site the buyer's browser signs."
+   - The website chips orbiting the search bar, and the "Live on Whitechain Sepolia" chip.
+
+   Move the pointer once: the dot field lights up under it.
 2. Click the search bar ("yourwebsite.com"). Type `sitebound-demo.pages.dev`, then click **Bring your website** (or
-   click the `sitebound-demo.pages.dev` chip). The setup opens below the hero on "Connect your website", with "Four
-   short steps. Your checkout code never holds a payment address."
-3. Step 1 "Connect your wallet": click **Connect wallet** and approve in the wallet. Use the payout wallet pinned in DEMO_SITES.
-4. Step 2 "Add the DNS record": show the TXT Name `_sitebound.sitebound-demo.pages.dev` and the Value `sitebound=0x…`.
-   Click **Verify domain**. The step summary becomes "Record found".
-5. Step 3 "Register your site": click **Register site**. The button shows "Waiting for the chain…", then the panel
-   reads "Registered on Sitebound" with the badge "Active".
-6. Step 4 "Paste the snippet": point at the code (no address in it), then click **Copy snippet**.
+   click the `sitebound-demo.pages.dev` chip). The setup opens below the hero:
+   - "Set up payments for" over `sitebound-demo.pages.dev`.
+   - A five-step rail: Website, Wallet, DNS record, Register, Add to site.
+   - "Step 2 of 5", "Connect your wallet", "Buyers send USDT straight to this wallet. Sitebound never holds the money."
+   - Under it, before any wallet is connected, the panel already reads "Registered on Sitebound", with the badge
+     "Active" and the payout wallet `0x2bb9Dfd0ee0674c5C1034B6AE4b57A61b9bdF275`.
+3. Click **Connect wallet** and approve with the payout wallet `0x2bb9…F275` on Whitechain Sepolia. From code: on
+   another chain, the button reads "Switch to <chain>" first.
+4. From code: the wizard jumps to:
+   - "Step 5 of 5, done", "Your site is live".
+   - "Payments for sitebound-demo.pages.dev go to <payout, shortened>. Add the button below to start taking them."
+   - On the rail: Wallet shows the address, DNS record "Already verified", Register "Registered".
+   - Below: **Test checkout**, **Receipt example**, **Pay-link generator**, **Dashboard**.
+5. From code: point at the snippet ("Paste this where your checkout button goes. There is no address in it, and there
+   never will be."), then click **Copy snippet**.
+
+Don't connect any wallet but the payout wallet here.
+- Another wallet gets "The record names a different wallet" at the DNS step, because the relayer pins this site's payout.
+- **Request payout change** would also fail. Whether a refused request still uses up one of the 3 registers per site per
+  day: not checked.
 
 Spoken:
-> "So Sitebound removes the address. A site owner types the domain, connects the wallet that gets paid, proves the domain with
-> one DNS record, and the relayer registers that wallet on Whitechain for this site only. On this pages.dev demo we
-> can't add DNS, so the relayer pins this one site's wallet instead. The snippet the owner pastes has no address in it."
+> "So Sitebound removes the address. A site owner types the domain, connects the wallet that gets paid, proves the
+> domain with one DNS record, and the relayer registers that wallet on Whitechain for this site only. On this pages.dev
+> demo we can't add DNS, so the relayer pins this one site's wallet; it's already registered. The snippet the owner
+> pastes has no address in it."
 
 ## 3. Buyer first-time setup (1:30 to 2:05)
 
@@ -175,15 +199,16 @@ Spoken:
 URLs:
 - `https://explorer.testnet.whitechain.io/tx/<scene 4 tx>`, reached from "View the payment on the explorer" in the
   demo shop or "Tx" on the dashboard.
-- `https://explorer.testnet.whitechain.io/address/0x64117398C837a8708a816818b31C36Df5a968596` (v1 until
-  then: `0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73`). It is reached from the landing's footer strip "Live on
-  Whitechain Sepolia" → **View on the explorer** (`https://sitebound-pay.pages.dev/#live`). That link follows
-  `web/config.js`.
+- `https://explorer.testnet.whitechain.io/address/0x64117398C837a8708a816818b31C36Df5a968596?tab=contract`.
+  The landing's footer strip "Live on Whitechain Sepolia" → **View on the explorer**
+  (`https://sitebound-pay.pages.dev/#live`) opens the address page, without the tab, so click **Contract** there.
+  That link follows `web/config.js`.
 
 1. Show the payment transaction: USDT from the buyer to the demo shop's payout wallet (12.00) and to the relayer (0.01).
    How the explorer labels these: not checked.
 2. On the landing, click the "Live on Whitechain Sepolia" chip, then **View on the explorer**. Show the contract's
-   transactions (register, bind, pay, refund). Show the source only if verification works by then.
+   transactions (register, bind, pay, refund). Then open the **Contract** tab: the source is verified (SiteboundV2,
+   solc v0.8.28).
 
 Spoken:
 > "It's all on Whitechain Sepolia: the payment, the refund, and the contract that decides who gets paid. Sitebound is

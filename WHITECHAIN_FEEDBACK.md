@@ -49,6 +49,12 @@ Draft. Only things we measured; the rest is marked "not checked".
   between 12:09 and 15:03 IST, including three solc 0.8.28 via-IR builds, and none after that. So the verifier did
   work for these settings until about 15:03 IST. Whether our first failed attempts were before or after that: not
   checked.
+- **Update, 23:06 IST, 6 Nov (measured): verification works again for our V2 contract.**
+  - SiteboundV2 `0x64117398C837a8708a816818b31C36Df5a968596` shows as verified on the explorer: `is_verified: true`, name SiteboundV2,
+    compiler v0.8.28, `verified_at` 23:00:53 IST.
+  - Sourcify reports `exact_match` for its creation and runtime code (23:00:50 IST).
+  - V2 went to Sourcify first and then to Blockscout. Why it worked this time: not checked.
+  - The v1 contract above is still unverified on the explorer (`is_verified: false` at 23:06 IST).
 
 ## Not checked yet
 
