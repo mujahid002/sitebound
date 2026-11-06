@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Sitebound · pay from your wallet</title>
+  <link rel="stylesheet" href="frame.css">
+  <script src="../config.js"></script>
+  <script src="../vendor/ethers-6.17.0.umd.min.js"></script>
+</head>
+<body>
+  <main class="card page">
+    <h1 class="title">Pay from your wallet</h1>
+    <p id="lead" class="lead">Waiting for the checkout…</p>
+    <div class="stack">
+      <button id="send" class="btn" type="button" disabled>Connect wallet and pay</button>
+      <p class="note">Your wallet sends the payment your passkey signed. You pay gas in WBT; no relayer fee.</p>
+      <p id="msg" class="msg" role="status" aria-live="polite"></p>
+    </div>
+  </main>
+  <script type="module">
+    import { sendPay } from './wallet.js';
+    import { errText } from './lib.js';
+    const $ = (id) => document.getElementById(id);
+    const tell = (m) => opener?.postMessage(m, location.origin);
+    let input;
+
+    addEventListener('message', (e) => {
+      if (e.origin !== location.origin || e.source !== opener || e.data?.type !== 'sitebound:send') return;
+      input = JSON.parse(e.data.input);
+      $('lead').textContent = `Pay ${e.data.amount} USDT to ${e.data.site}.`;
+      $('send').disabled = false;
+    });
+
+    $('send').onclick = async () => {
+      $('send').disabled = true;
+      $('msg').className = 'msg';
+      $('msg').textContent = 'Confirm in your wallet…';
+      try {
+        tell({ type: 'sitebound:sent', txHash: await sendPay(window.ethereum, input) });
+        $('msg').textContent = 'Sent. You can close this window.';
+        setTimeout(close, 1200);
+      } catch (e) {
+        $('send').disabled = false;
+        $('msg').className = 'msg err';
+        $('msg').textContent = errText(e);
+        tell({ type: 'sitebound:send-error', error: errText(e) });
+      }
+    };
+
+    if (!opener) $('lead').textContent = 'Open this from a Sitebound checkout.';
+    tell({ type: 'sitebound:send-ready' });
+  </script>
+</body>
+</html>

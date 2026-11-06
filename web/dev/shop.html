@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Demo shop</title>
+  <style>
+    body { margin: 0; font: 16px/1.5 system-ui, sans-serif; background: Canvas; color: CanvasText; }
+    main { max-width: 520px; margin: 0 auto; padding: 48px 20px; display: grid; gap: 16px; }
+    h1 { margin: 0; font-size: 1.6rem; letter-spacing: -0.02em; }
+    p { margin: 0; opacity: 0.75; }
+    pre { margin: 0; padding: 12px; border: 1px solid color-mix(in srgb, CanvasText 15%, transparent); border-radius: 12px; font-size: 12px; white-space: pre-wrap; }
+  </style>
+  <!-- The whole integration: one script from the Sitebound origin, one element, one event. -->
+  <script src="http://localhost:8002/button/sitebound.js" defer></script>
+</head>
+<body>
+  <main>
+    <h1>Linen shirt</h1>
+    <p>Demo shop on 127.0.0.1:8001. Checkout runs in Sitebound's frame on localhost:8002.</p>
+    <sitebound-pay amount="12.00" order="A123"></sitebound-pay>
+    <pre id="log">Waiting for payment…</pre>
+  </main>
+  <script>
+    document.addEventListener('sitebound:paid', (e) => {
+      document.getElementById('log').textContent = 'sitebound:paid ' + JSON.stringify(e.detail, null, 2);
+    });
+  </script>
+</body>
+</html>

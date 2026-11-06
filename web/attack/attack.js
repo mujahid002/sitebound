@@ -57,11 +57,28 @@ if (tamper) {
   };
 }
 
+// The button opens the frame in a modal <dialog>, which sits in the top layer. A popover shown after it
+// stacks above it, which is what a real overlay attack would use. The button's shadow root is open.
 const overlay = document.getElementById('overlay-toggle');
-if (overlay) {
+const fake = document.getElementById('fake');
+if (overlay && fake) {
+  let on = false;
+  const place = (dialog) => {
+    if (on && dialog.open) {
+      const r = dialog.getBoundingClientRect();
+      Object.assign(fake.style, { top: `${r.top + 56}px`, left: `${r.left}px`, width: `${r.width}px` });
+      fake.showPopover();
+    } else if (fake.matches(':popover-open')) {
+      fake.hidePopover();
+    }
+  };
+  const dialog = document.querySelector('sitebound-pay')?.shadowRoot?.querySelector('dialog');
+  if (dialog) new MutationObserver(() => place(dialog)).observe(dialog, { attributes: true, attributeFilter: ['open'] });
   overlay.onclick = () => {
-    const on = document.body.classList.toggle('redress');
+    on = !on;
     overlay.textContent = on ? 'Remove the overlay' : 'Draw the overlay';
+    window.demoLog(on ? 'overlay armed: it covers the frame when it opens' : 'overlay removed');
+    if (dialog) place(dialog);
   };
 }
 

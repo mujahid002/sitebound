@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Sitebound · set up</title>
+  <link rel="stylesheet" href="frame.css">
+  <script src="../config.js"></script>
+  <script src="../vendor/ethers-6.17.0.umd.min.js"></script>
+  <script type="module" src="setup.js"></script>
+</head>
+<body>
+  <main class="card page">
+    <span class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="3" width="26" height="26" rx="8" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="16" cy="16" r="5"/></svg>
+      Sitebound
+    </span>
+    <div>
+      <h1 class="title">Pay with a passkey, on any site</h1>
+      <p class="lead">One-time setup. Your wallet signs twice; after that, each payment is one Touch ID. You can revoke at any time.</p>
+    </div>
+
+    <section id="s-connect" class="stack">
+      <button id="connect" class="btn" type="button">Connect wallet</button>
+      <p class="note">Any browser wallet. Whitechain Testnet (1874) is added if needed.</p>
+    </section>
+
+    <form id="s-caps" class="stack" hidden novalidate>
+      <p class="meta">Wallet <span id="account" class="mono"></span></p>
+      <fieldset class="fields">
+        <legend class="sr-only">Limits</legend>
+        <label>Per payment (USDT)<input id="perPay" inputmode="decimal" value="50" required></label>
+        <label>Total (USDT)<input id="total" inputmode="decimal" value="200" required></label>
+        <label>Expires in (days)<input id="days" inputmode="numeric" value="30" required></label>
+      </fieldset>
+      <p class="note">Sitebound can never move more than these limits, and only to a site you are paying on.</p>
+      <button id="go" class="btn" type="submit">Create passkey and sign</button>
+    </form>
+
+    <ol id="steps" class="steps" hidden>
+      <li data-k="passkey">Create your passkey</li>
+      <li data-k="permit">Sign the USDT allowance (permit)</li>
+      <li data-k="bind">Sign the passkey binding and limits</li>
+      <li data-k="submit">Save it on Whitechain</li>
+    </ol>
+
+    <div class="stack">
+      <button id="self" class="ghost" type="button" hidden>Submit from my wallet instead (you pay gas)</button>
+      <p id="msg" class="msg" role="status" aria-live="polite"></p>
+      <button id="finish" class="btn" type="button" hidden>Back to checkout</button>
+    </div>
+  </main>
+</body>
+</html>

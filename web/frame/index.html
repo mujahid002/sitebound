@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="referrer" content="no-referrer">
+  <title>Sitebound checkout</title>
+  <link rel="stylesheet" href="frame.css">
+  <script src="../config.js"></script>
+  <script src="../vendor/ethers-6.17.0.umd.min.js"></script>
+  <script type="module" src="frame.js"></script>
+</head>
+<body>
+  <main class="card">
+    <header class="head">
+      <span class="brand">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="3" width="26" height="26" rx="8" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="16" cy="16" r="5"/></svg>
+        Sitebound
+      </span>
+      <button id="close" class="x" type="button" aria-label="Close">&times;</button>
+    </header>
+
+    <section id="checkout">
+      <p class="eyebrow">Checkout</p>
+      <p class="amount"><span id="amount">&mdash;</span> <small>USDT</small></p>
+      <h1 id="line" class="line">Pay <span id="line-amount"></span> USDT to <b id="site"></b></h1>
+      <p id="order" class="meta"></p>
+    </section>
+
+    <p id="warn" class="warn" role="note" hidden></p>
+
+    <div id="actions" class="stack">
+      <button id="pay" class="btn" type="button">Pay with passkey</button>
+      <p id="fee" class="note"></p>
+      <button id="pay-wallet" class="ghost" type="button">Pay from my wallet</button>
+      <p class="note">No fee. Your wallet sends the payment and pays gas in WBT.</p>
+      <button id="continue" class="btn" type="button" hidden>Continue in wallet window</button>
+      <p id="msg" class="msg" role="status" aria-live="polite"></p>
+      <p id="first" class="note">First time? <a id="setup" class="link" href="setup.html" target="_blank" rel="opener">Set up</a></p>
+    </div>
+
+    <section id="receipt" class="stack" hidden aria-live="polite">
+      <div class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <h2 class="title center">Paid</h2>
+      <dl class="rows">
+        <div><dt>Amount</dt><dd id="r-amount"></dd></div>
+        <div><dt>To</dt><dd id="r-site"></dd></div>
+        <div><dt>Order</dt><dd id="r-order"></dd></div>
+        <div><dt>Transaction</dt><dd><a id="r-tx" class="link mono" target="_blank" rel="noopener"></a></dd></div>
+      </dl>
+      <button id="done" class="btn" type="button">Done</button>
+    </section>
+  </main>
+</body>
+</html>
