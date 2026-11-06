@@ -22,7 +22,7 @@ const orderId = orderIdOf(order);
 const siteHash = topOrigin ? siteHashOf(topOrigin) : null;
 const paymentId = siteHash && paymentIdOf(siteHash, orderId);
 const problem =
-  window.top === window ? 'Open this checkout from a shop.'
+  window.top === window ? 'Open this checkout from a website.'
   : !validAmount ? 'This checkout has an invalid amount.'
   : !order ? 'This checkout has no order id.'
   : !topOrigin ? 'Your browser does not say which site opened this checkout.'
