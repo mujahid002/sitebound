@@ -90,4 +90,18 @@ ok('Bind and Permit type strings match the contract / EIP-2612');
 assert.equal(L.paymentIdOf(siteHash, fx.orderId), ethers.keccak256(ethers.concat([siteHash, fx.orderId])));
 assert.equal(L.errText(new Error('fetch https://rpc.example/v2/SECRET failed')), 'fetch [url] failed');
 ok('paymentId and error redaction');
+const M = await import('../merchant/sitebound-merchant.mjs');
+const quote = await M.signQuote(new ethers.Wallet('0x' + 'C0DE'.padStart(64, '0')), {
+  chainId: 31337, contract: '0x00000000000000000000000000000000005B7e02', token: '0x00000000000000000000000000000000000070CE',
+  site: 'http://127.0.0.1:8001', order: 'Q7', amount: '10', expiry: 1900000000,
+});
+assert.equal(quote, '1900000000.0xae2b65dedccd9e35bc022e60221189e287305e4bcb5c3d71ee3abdfc259861202aeb64335ceca0f93524c325797c9189e957bd706bfd86422908c6d77758e9f71b');
+assert.deepEqual(L.quoteOf(quote), { expiry: 1900000000n, sig: quote.slice(11) });
+ok('merchant signQuote reproduces the quote test_quote_signature_from_ethers_is_accepted pays with, and the frame parses it');
+for (const o of ['fixture-2', 'x'.repeat(40), 'naïve']) assert.equal(M.orderIdOf(o), L.orderIdOf(o));
+assert.equal(M.paymentIdOf(fx.topOrigin, 'fixture-2'), L.paymentIdOf(siteHash, fx.orderId));
+ok('merchant orderIdOf / paymentIdOf equal the frame\'s');
+const forged = await M.verifyPayment({ rpcUrl: 'http://127.0.0.1:1', contract: fx.contract, expectedSite: fx.topOrigin, expectedAmount: '12', orderId: 'fixture-2', paymentId: '0x' + '11'.repeat(32) });
+assert.equal(forged.ok, false); assert.equal(forged.reason, 'paymentId is not this site and order');
+ok('verifyPayment refuses a paymentId that is not this site and order, before any RPC call');
 console.log('all checks passed');
