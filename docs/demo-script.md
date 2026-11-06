@@ -1,63 +1,55 @@
-# Sitebound demo video: storyboard (about 3:55)
+# Sitebound demo video: storyboard (about 2:55)
 
-Seven scenes in order, opening on the attack. Each one lists its time slot, page URL, on-screen steps and spoken
-line. Button and heading text is copied from the code as of 1c70197 (6 Nov 2026, 15:45 IST), except two scenes.
-Scene 2 is copied from the live landing (6 Nov, 23:06 IST, after the V2 deploy), and scene 4 from a88b1a7. Wallet pop-ups,
-Touch ID sheets and explorer pages are not our code, so their wording is described, not quoted.
-Cut every wait for a block in editing. Whitechain's block time is not checked.
+Four scenes in order: the attack, onboarding a real domain, a coffee payment with Touch ID, the explorer.
+Target length 2 to 4 minutes. No music, voice only. Record at 720p or higher.
 
-Hosts (layout from `deploy/pages.sh`; status checked 15:29 to 15:43 IST):
-- Frame host `https://sitebound-pay.pages.dev` serves `web/` without `dev/`, `demo-shop/` and `attack/`. Since
-  27f6daf the landing is the site root `/`, and `deploy/pages.sh` adds 301 redirects from `/landing` and `/landing/`
-  to `/`. Live after the next deploy: not checked.
-  - Measured before that change: `/button/sitebound.js` 200.
-  - `/frame/index.html?...` redirects (308) to `/frame/?...` with the query kept.
-  - The live `/config.js` has the contract address and the relayer URL.
-- Demo host `https://sitebound-demo.pages.dev` serves the demo shop at `/` and the attack pages at `/attack/`.
-  - Measured: `/shop.css` 200 (CSS) and `/attack/` 200. `/attack/classic.html` redirects (308) to `/attack/classic`.
-  - Unknown paths return 200 with the demo shop's HTML (Pages fallback), so a 200 on a wrong URL proves nothing.
-- Fake-site host `https://sitebound-phish.pages.dev` (`fakeShop` in `web/config.js`) serves the attack pages for scene 5.
+Each scene lists its time slot, page URL, on-screen steps and spoken line. Button and heading text is copied from the
+code at 0701c14 (7 Nov 2026). Wallet pop-ups, Touch ID sheets and explorer pages are not our code, so their wording is
+described, not quoted. Cut every wait for a block in editing. Whitechain's block time is not checked.
 
-## Before recording (not done yet unless marked measured)
+The real domain is `https://0xmujahid.xyz`, the owner's portfolio. It has a "Buy me a coffee" section (3, 5 and 10
+USDT) that uses the `<sitebound-pay>` button (`web/portfolio/index.html`). The owner onboards that domain in scene 2,
+then a buyer pays it in scene 3.
 
-- [ ] **Attack pages' stylesheet on the demo host.** They load `../demo-shop/shop.css`. At 15:43 IST that path
-  returned the demo shop's HTML, so scenes 1 and 5 rendered unstyled. `deploy/pages.sh` now copies `shop.css` to
-  `demo-shop/shop.css` on the demo and fake-site hosts. Live after a redeploy: not checked.
-- [ ] **Redeploy the frame host** so `web/assets/` (favicons, share image) goes live. `/assets/favicon.svg` was 404 at 15:32 IST.
-- [x] **Register the demo shop** on V2 (measured).
-  - Done in tx `0xc84abef3f73fd9cc00bb25dba16b1af6f86a68958a2f515375c9324e44c2c4ae`.
-  - At 23:03 IST, `splitOf(keccak("https://sitebound-demo.pages.dev"))` returned `[0x2bb9…F275]`, `[10000]`.
-  - pages.dev gives us no DNS, so `worker/wrangler.toml` pins it: `DEMO_SITES = "https://sitebound-demo.pages.dev=0x2bb9…F275"`.
-  - Because the site is registered, scene 2 films the registered state, not the register flow.
-- [ ] **Relayer.**
-  - Measured at 15:29 IST: `https://sitebound-relayer.sitebound-relayer.workers.dev/health` answers `ok: true`, and its
-    address `0xDf54…5b4A` has `isAttestor = true` and 1.99 WBT.
-  - `/setup` and `/pay` against the live contract: not checked.
-  - Daily caps eat into rehearsals: 3 setups per wallet, 20 pays per passkey, 3 registers per site.
-- [ ] **Buyer wallet.** A browser wallet (MetaMask or Rabby) holding testnet USDT `0xcedf…55a7`:
-  - 12.01 for scene 4 (12.00 plus the 0.01 relayer fee).
-  - The relayer path needs no WBT. "Pay from my wallet" does.
-  - Where to get testnet USDT: not checked.
-- [ ] **Payout wallet** (the demo shop's). It needs WBT for two transactions in scene 6 (approve, then refund). The
-  refund comes out of its own USDT, which it received in scene 4.
-- [ ] **Browser.** Desktop Chrome, with pop-ups allowed for `sitebound-pay.pages.dev` (setup window).
-  - Chrome writes `topOrigin`. Safari may omit it (not measured), and Firefox is not checked.
-  - The passkey lives under rpId `sitebound-pay.pages.dev`.
-- [ ] **Third origin for scene 5.**
-  - `deploy/pages.sh` deploys the attack pages to the `sitebound-phish` Pages project. Links marked `data-fake` point at
-    `<fakeShop>/attack/phish.html` (`web/attack/attack.js:94`).
-  - The overlay's site name comes from `demoShop` in `web/config.js` (`web/attack/attack.js:92`).
-  - Live: not checked.
-- [x] **Explorer** (measured).
-  - V2's source is verified there: `is_verified: true`, name SiteboundV2, solc v0.8.28, verified 23:00:53 IST. Scene 7 can show the Contract tab.
-  - The deprecated v1 is still unverified (`is_verified: false` at 23:06 IST). Don't show it.
-- **Fallback: local stack.**
-  - Run `python3 web/dev/serve.py`. The demo shop is on `http://127.0.0.1:8001` and the frame on `http://localhost:8002`. For scene 5, also run
-    `python3 -m http.server 8003 --bind 127.0.0.1 --directory web`.
-  - On localhost, `config.js` uses address 0x0. The frame then shows "Sitebound is not deployed yet: set address in config.js."
-    and disables Pay, so locally only scene 1 and the site line in scene 5 work.
-  - On-chain scenes need a local anvil, the way `e2e/run.mjs` does it (headless). A headed manual version is not built:
-    not checked.
+Hosts:
+- Frame host `https://sitebound-pay.pages.dev`: the landing and onboarding wizard at `/`, the button script at
+  `/button/sitebound.js`, the frame at `/frame/`. Live state of the latest deploy: not checked.
+- Demo host `https://sitebound-demo.pages.dev`: the demo site at `/` and the attack pages at `/attack/`.
+  Unknown paths return 200 with the demo site's HTML (Pages fallback), so a 200 on a wrong URL proves nothing.
+- Real domain `https://0xmujahid.xyz`: loads the button from the frame host.
+
+## Before recording (not done unless marked)
+
+- [ ] **Attack pages' stylesheet.** They load the demo site's stylesheet by a relative path. At 15:43 IST on 6 Nov that path returned HTML, so
+  the pages rendered unstyled. `deploy/pages.sh` now copies it. Live after a redeploy: not checked.
+- [ ] **Frame host redeploy**, so the current frame, wizard and `web/assets/` are live. Not checked.
+- [ ] **0xmujahid.xyz must not be registered yet.** If it has a payout wallet already, the wizard offers a payout change
+  that waits `delay` (1 hour), which cannot be filmed. Current on-chain state: not checked. Read it from the contract
+  with `splitOf(keccak256("https://0xmujahid.xyz"))`.
+- [ ] **DNS access for 0xmujahid.xyz.** The wallet is created on camera, so the TXT value is only known in step 2 of the
+  wizard. Have the DNS provider's page open in another tab. The wizard checks every 5 s for about 3 minutes, so a slow
+  provider needs the cut.
+  - Fallback without DNS: create the wallet on camera, then run `sh scripts/add-site.sh https://0xmujahid.xyz <wallet>`
+    off camera (needs the admin token; see README) and film the registered state instead of the DNS step.
+- [ ] **Relayer.** Measured at 15:29 IST on 6 Nov: `/health` answers `ok: true` and its address `0xDf54…5b4A` is the
+  attestor with 1.99 WBT. `/register` and `/pay` against the live contract: not checked. Daily caps eat into
+  rehearsals: 3 setups per wallet, 20 pays per passkey, 3 registers per site.
+- [ ] **Buyer, set up once before recording.** Scene 3 is a paying buyer, not a first-time one.
+  - A browser wallet (MetaMask or Rabby) with testnet USDT `0xcedf…55a7`: at least 3.01 (3 plus the 0.01 fee).
+    It needs no WBT. Where to get testnet USDT: not checked.
+  - Open the frame's setup (`https://sitebound-pay.pages.dev/frame/setup.html`, or **Set up** inside any checkout).
+    The page reads "Set up once, then pay with Touch ID". Connect the wallet, keep the limits (50 per payment, 200
+    total, 30 days), click **Confirm with Touch ID**, and sign twice in the wallet. It reads "Done. From now on each
+    payment is one Touch ID." The buyer pays no gas for any of it.
+- [ ] **Browser.** Desktop Chrome, pop-ups allowed for `sitebound-pay.pages.dev`. Chrome writes `topOrigin`. Safari
+  may omit it (not measured), and Firefox is not checked. The passkey lives under rpId `sitebound-pay.pages.dev`, so
+  use the same Chrome profile for setup and for scene 3.
+- [ ] **Screen recording**, not tab recording, so the Touch ID sheet is in the shot. Which recorder captures it: not
+  checked. Rehearse once.
+- [x] **Explorer** (measured 6 Nov). V2's source is verified there: `is_verified: true`, name SiteboundV2, solc v0.8.28.
+  The deprecated v1 is unverified. Don't show it.
+- **Fallback: local stack.** `python3 web/dev/serve.py`. On localhost `config.js` uses address 0x0, so the frame shows
+  "Sitebound is not deployed yet" and disables Pay. Locally only scene 1 works.
 
 ## 1. Hacked script: classic checkout vs Sitebound (0:00 to 0:50)
 
@@ -69,153 +61,95 @@ URLs: `https://sitebound-demo.pages.dev/attack/classic.html`, then `.../attack/s
 4. Click "Next: the same script against the Sitebound checkout".
 5. On sitebound.html, click **Inject the hacked script**. The log shows "addresses found and swapped on the page: 0" and
    "<sitebound-pay> elements: 1. Attributes: amount, order. None of them is a payee."
-6. Click **Pay 16.50 USDT**. The frame still says "Pay 16.50 USDT to sitebound-demo.pages.dev". Close it with ×.
-   Don't pay here: the buyer has no passkey until scene 3.
+6. Click **Pay 16.50 USDT**. The frame names the website in the address bar, `sitebound-demo.pages.dev`, under
+   "You are paying this website". Close it with ×. Don't pay here.
 
 Spoken:
 > "Here's the attack that keeps happening: a compromised checkout script swaps the address on the page and in the
 > clipboard. Same script on the Sitebound checkout: there's no address to swap, and the frame is on another origin,
-> so the page can't touch it. Hacked code can still change the amount, but the buyer sees it and confirms it, and
-> the caps bound it."
+> so the page can't touch it. Hacked code can still change the amount, but the buyer sees it and confirms it."
 
-## 2. Website onboarding (0:50 to 1:30)
+## 2. Onboarding 0xmujahid.xyz (0:50 to 2:00)
 
-URL: `https://sitebound-pay.pages.dev/`. The setup opens inline on the same page.
+URL: `https://sitebound-pay.pages.dev/`. The wizard opens inline on the same page.
 
-The demo site is already registered on V2, so its DNS and register steps cannot be filmed again. This scene shows the
-registered state and narrates those steps over the progress rail.
-
-Text sources:
-- Steps 1 and 2: the live landing, rendered headless with no wallet (6 Nov, 23:06 IST).
-- Steps 3 to 5: the code at f262837. Marked "from code" below, because no wallet was connected.
-- The pointer light in step 1: from the earlier script. Not re-checked.
-
-1. Landing. Hold on the hero for 2 seconds:
-   - "Addressless checkout for your website."
-   - The tagline: "No one has to trust the page: who gets paid comes from the contract and the site the buyer's browser signs."
-   - The website chips orbiting the search bar, and the "Live on Whitechain Sepolia" chip.
-
-   Move the pointer once: the dot field lights up under it.
-2. Click the search bar ("yourwebsite.com"). Type `sitebound-demo.pages.dev`, then click **Bring your website** (or
-   click the `sitebound-demo.pages.dev` chip). The setup opens below the hero:
-   - "Set up payments for" over `sitebound-demo.pages.dev`.
+1. Landing. Hold on the hero for 2 seconds: "Addressless checkout for your website."
+2. Click the search bar ("yourwebsite.com"), type `0xmujahid.xyz`, click **Bring your website**. The wizard opens:
+   - "Set up payments for" over `0xmujahid.xyz`.
    - A five-step rail: Website, Wallet, DNS record, Register, Add to site.
-   - "Step 2 of 5", "Connect your wallet", "Buyers send USDT straight to this wallet. Sitebound never holds the money."
-   - Under it, before any wallet is connected, the panel already reads "Registered on Sitebound", with the badge
-     "Active" and the payout wallet `0x2bb9Dfd0ee0674c5C1034B6AE4b57A61b9bdF275`.
-3. Click **Connect wallet** and approve with the payout wallet `0x2bb9…F275` on Whitechain Sepolia. From code: on
-   another chain, the button reads "Switch to <chain>" first.
-4. From code: the wizard jumps to:
-   - "Step 5 of 5, done", "Your site is live".
-   - "Payments for sitebound-demo.pages.dev go to <payout, shortened>. Add the button below to start taking them."
-   - On the rail: Wallet shows the address, DNS record "Already verified", Register "Registered".
-   - Below: **Test checkout**, **Receipt example**, **Pay-link generator**, **Dashboard**.
-5. From code: point at the snippet ("Paste this where your checkout button goes. There is no address in it, and there
-   never will be."), then click **Copy snippet**.
-
-Don't connect any wallet but the payout wallet here.
-- Another wallet gets "The record names a different wallet" at the DNS step, because the relayer pins this site's payout.
-- **Request payout change** would also fail. Whether a refused request still uses up one of the 3 registers per site per
-  day: not checked.
-
-Spoken:
-> "So Sitebound removes the address. A site owner types the domain, connects the wallet that gets paid, proves the
-> domain with one DNS record, and the relayer registers that wallet on Whitechain for this site only. On this pages.dev
-> demo we can't add DNS, so the relayer pins this one site's wallet; it's already registered. The snippet the owner
-> pastes has no address in it."
-
-## 3. Buyer first-time setup (1:30 to 2:05)
-
-URL: `https://sitebound-demo.pages.dev/` (the setup window opens at `https://sitebound-pay.pages.dev/frame/setup`).
-
-1. On "Brew gear", click **Add** on "Ceramic pour-over dripper" (12.00), then **Checkout**.
-2. Click **Pay 12.00 USDT**. The frame opens with "Checkout", "12.00 USDT", "Pay 12.00 USDT to **sitebound-demo.pages.dev**"
-   and "Order HCS-…".
-3. Click the **Set up** link ("First time? Set up"). A window opens: "Pay with a passkey, on any site".
-4. Click **Connect wallet** and approve. Whitechain Testnet is added if needed.
-5. Show the limits: "Per payment (USDT)" 50, "Total (USDT)" 200, "Expires in (days)" 30. Click **Create passkey and sign**.
-6. Touch ID creates the passkey. Then the wallet asks for 2 signatures, and no gas. The step list ticks through
-   "Create your passkey", "Sign the USDT allowance (permit)", "Sign the passkey binding and limits" and "Save it on Whitechain".
-7. "Done. Each payment is now one Touch ID." Click **Back to checkout**. The frame now reads "Setup complete. Pay with your passkey."
+3. "Step 2 of 5", **Your payout wallet**: "Sitebound creates it for you in this browser. Buyers send USDT straight to it,
+   and Sitebound never holds the money." The panel reads "No extension and no gas needed. The wallet is created here
+   and stays in this browser." Click **Create my wallet**.
+   - It shows "Your wallet address" and a "Recovery phrase" of 12 words, with "This is shown once. Anyone with these
+     words controls the money, and Sitebound cannot recover them."
+   - **Blur the 12 words in editing.** The wallet is a testnet payout wallet, but the phrase on screen is its key.
+   - Tick "I saved my recovery phrase. Sitebound cannot recover it.", then click **Continue**. (Continue stays disabled
+     until the box is ticked.) The rail shows the address on Wallet.
+   - Do not click **I already have a wallet** in the video. It keeps the old flow: **Connect wallet** with MetaMask or
+     Rabby, on Whitechain Sepolia.
+4. "Step 3 of 5", **Add one DNS record**: Type TXT, Name `_sitebound.0xmujahid.xyz`, Value `sitebound=<wallet>`. Click
+   the copy buttons, switch to the DNS provider's tab, add the record, come back and click **Verify domain**. After
+   that it checks every 5 seconds. Cut the wait. (If the provider adds the domain by itself, leave off the part after
+   `_sitebound`; the wizard says so.)
+5. "Step 4 of 5", **Register your site**: "Saves 0x… as the wallet that gets paid for this site only. Sitebound's
+   relayer sends the transaction and pays the gas, so there is nothing to sign." Click **Register site**. The button
+   reads "Waiting for the chain…" (cut it), then "Transaction sent:" with a link.
+6. "Step 5 of 5, done", **Your site is live**: "USDT from buyers arrives at 0x…. Add the button below to start taking
+   payments." Below it: the snippet ("Paste this where your checkout button goes. There is no address in it, and there
+   never will be."). Click **Copy snippet**. Then cut to https://0xmujahid.xyz, which already carries the button.
 
 Spoken:
-> "The buyer sets up once. They connect a wallet, pick limits (50 per payment, 200 in total, 30 days) and make a
-> passkey. The wallet signs twice, an allowance and a binding, and the relayer saves both on-chain, so the buyer pays no gas.
-> Sitebound can never move more than these limits."
+> "Now a real website, 0xmujahid.xyz. The owner types the domain and Sitebound creates the payout wallet right here in
+> the browser. No extension, no gas. The owner saves the twelve words, adds one DNS record to prove they own the
+> domain, and the relayer registers that wallet on Whitechain for this site only. The snippet has no address in it."
 
-## 4. Buyer pays with Touch ID (2:05 to 2:30)
+## 3. Coffee payment with Touch ID (2:00 to 2:35)
 
-URL: the same demo shop tab, with the frame open.
+URL: `https://0xmujahid.xyz/#coffee`. The section is "Buy me a coffee" with three tiers: 3, 5 and 10 USDT.
 
-1. Click **Pay with passkey**. Point at the note "Adds a 0.01 USDT relayer fee, so you need no gas."
-2. Touch ID. The status reads "Sending…" and then "Confirming on Whitechain…" (cut the wait).
-3. The demo shop hides its pay panel, frame included, as soon as the frame reports the payment. In e2e the frame's
-   receipt ("Paid", amount, site, order, transaction) did not stay visible on the demo shop, so don't plan a shot of it.
-4. The demo shop reads "Checking the payment…" and "Asking Whitechain, not the page.", then "Order confirmed" and
-   "Thanks. Order HCS-… is paid: 12.00 USDT, checked on Whitechain." It asks the chain itself (`verifyPayment`).
-5. Optional (+10 s, not in the runtime below): before step 1, click **Demo: fire a forged “paid” event** under the
-   button. The shop reads "Not shipped" and "The page said order HCS-… was paid. The chain says: paymentId is not
-   this site and order." Then click **Start a new order**, **Checkout**, and pay as above.
-
-Spoken:
-> "From now on a payment is one Touch ID. The frame comes from Sitebound's own origin, and it shows the site the browser reports and the amount.
-> The browser writes that site into the signature, and the contract pays only the wallet registered for it.
-> The website's page never names the payee. And the shop doesn't trust the page saying "paid": it asks the chain."
-
-## 5. Fake site embedding the real frame (2:30 to 3:00)
-
-URL: `https://<third-origin>/attack/phish.html` (not created yet; see the checklist).
-
-1. Point at "This page runs on https://<third-origin>".
-2. Click **Pay 16.50 USDT**. The frame shows "Pay 16.50 USDT to **<third-origin>**", the fake's origin, not the real site's.
-3. Click **Pay with passkey** and use Touch ID. Expect a relayer error carrying "site not registered" (not checked live). No money moves.
-4. Close the frame. Click **Draw the overlay**, then **Pay 16.50 USDT** again. The fake site covers the frame's site line.
+1. Point at the section text: "this page holds no wallet address, and the wallet that gets paid is registered
+   on-chain for 0xmujahid.xyz".
+2. Click **Pay 3 USDT**. The frame opens: "You are paying this website" over `0xmujahid.xyz`, "3 USDT", "Order COFFEE-…".
+3. Point at the note "+0.01 USDT network fee, taken from your wallet. You need no gas." The buyer pays USDT only. The
+   relayer pays the WBT gas.
+4. Click **Pay with Touch ID**. The status reads "Waiting for Touch ID…". Touch ID. Then "Paying. This takes a few
+   seconds." (cut the wait).
+5. The frame switches to "Paid" with Amount, Website, Order, Receipt and Transaction. It stays open on this page. Hold
+   on it for 2 seconds, then click **Close**.
+6. The page reads "Thank you. Payment confirmed on Whitechain." with **View the transaction**. Click it (scene 4).
 
 Spoken:
-> "A copy of the website on another domain can embed the real frame. The frame shows the domain the buyer is actually
-> on, and the browser signs that domain, so this page can only pay its own registry entry. It has none, so the
-> payment fails. The honest limit: a page can draw over the frame, and if the attacker registered their own domain, a
-> buyer fooled by the overlay pays the attacker. Sitebound shows the real site; it doesn't vouch for it."
+> "A buyer who set up once pays with one Touch ID. The frame shows the website the browser reports, 0xmujahid.xyz, and
+> the amount. The buyer pays only USDT and no gas: the relayer covers that for a small fee. The page never names who
+> gets paid. The contract pays the wallet registered for this domain."
 
-## 6. Dashboard: refund and CSV (3:00 to 3:35)
-
-URL: `https://sitebound-pay.pages.dev/dashboard/?site=https%3A%2F%2Fsitebound-demo.pages.dev`
-
-1. Click **Connect wallet** (top right) with the payout wallet. The chip reads "payout wallet".
-2. Under "Orders", find the scene 4 row (HCS-…, 12.00 USDT, "Paid"). Click **Refund**.
-3. The dialog reads "Refund HCS-…" and "Goes back to 0x…", which is the buyer, and "Refunds can only go to the wallet that paid."
-   The amount is prefilled with the full 12.00. Click **Refund**.
-4. The wallet asks twice: "Approving USDT…", then "Refunding…" (cut the wait). "Refund sent" appears with "The buyer's wallet has the USDT back."
-   Click **Done**. The row now reads "Refunded".
-5. Click **Export CSV**. `sitebound-sitebound-demo.pages.dev-orders.csv` downloads. Open it to show order_id, buyer,
-   amount_usdt, refunded_usdt, status and tx_hash.
-
-Spoken:
-> "The website's dashboard reads straight from the chain; nothing is stored on a Sitebound server. Refunds go back only
-> to the wallet that paid, because the contract picks the address, not the website. Export everything as CSV for the books."
-
-## 7. On the explorer (3:35 to 3:55)
+## 4. On the explorer (2:35 to 2:55)
 
 URLs:
-- `https://explorer.testnet.whitechain.io/tx/<scene 4 tx>`, reached from "View the payment on the explorer" in the
-  demo shop or "Tx" on the dashboard.
+- The "View the transaction" link: `https://explorer.testnet.whitechain.io/tx/<tx hash>`.
 - `https://explorer.testnet.whitechain.io/address/0x64117398C837a8708a816818b31C36Df5a968596?tab=contract`.
-  The landing's footer strip "Live on Whitechain Sepolia" → **View on the explorer**
-  (`https://sitebound-pay.pages.dev/#live`) opens the address page, without the tab, so click **Contract** there.
-  That link follows `web/config.js`.
 
-1. Show the payment transaction: USDT from the buyer to the demo shop's payout wallet (12.00) and to the relayer (0.01).
-   How the explorer labels these: not checked.
-2. On the landing, click the "Live on Whitechain Sepolia" chip, then **View on the explorer**. Show the contract's
-   transactions (register, bind, pay, refund). Then open the **Contract** tab: the source is verified (SiteboundV2,
-   solc v0.8.28).
+1. Show the payment transaction: USDT from the buyer to the owner's payout wallet (3) and to the relayer (0.01). How
+   the explorer labels these: not checked.
+2. Open the contract address (the landing's "Live on Whitechain Sepolia" chip, then **View on the explorer**, or the URL
+   above) and click the **Contract** tab. The source is verified (SiteboundV2, solc v0.8.28).
 
 Spoken:
-> "It's all on Whitechain Sepolia: the payment, the refund, and the contract that decides who gets paid. Sitebound is
-> testnet-only and not audited. Kill the checkout address."
+> "The payment is on Whitechain Sepolia, and so is the contract that decided who got paid. Sitebound is testnet-only
+> and not audited."
 
 Explorer: the page HTML does not contain the word "Blockscout" (0 hits), but its `/api/v2/addresses/<addr>` answers in
 Blockscout's v2 format and `forge verify-contract --verifier blockscout` talks to it (`WHITECHAIN_FEEDBACK.md`). Say
 "the Whitechain explorer" on camera to be safe.
 
-Runtime: 50 + 40 + 35 + 25 + 30 + 35 + 20 = 235 s = 3:55.
+Runtime: 50 + 70 + 35 + 20 = 175 s = 2:55.
+
+## Not in this cut
+
+These pages still work, but their wording was not re-checked after the frame text changed (0cbe632), so check it
+before filming one.
+- Fake site embedding the real frame: `/attack/phish.html` on the fake-site host (`sitebound-phish.pages.dev`; live: not
+  checked). The frame names the fake's own domain and the payment fails with "site not registered".
+- Dashboard: `https://sitebound-pay.pages.dev/dashboard/?site=https%3A%2F%2F0xmujahid.xyz`. Refund and CSV export. A
+  created payout wallet needs a little WBT for the refund's two transactions.
+- Demo site checkout at `https://sitebound-demo.pages.dev/`, with the forged "paid" event and the chain check.
