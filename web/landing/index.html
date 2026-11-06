@@ -15,35 +15,50 @@
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Sitebound: kill the checkout address. Every payment is bound to the site.">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#fafaf7" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#0d0f11" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#07080a">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <!-- The inline shop kit reuses the onboarding and dashboard components and their styles. -->
+  <link rel="stylesheet" href="../onboard/common.css">
+  <link rel="stylesheet" href="../onboard/style.css">
+  <link rel="stylesheet" href="../dashboard/style.css">
   <link rel="stylesheet" href="style.css">
-  <script src="landing.js" defer></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "preact": "../vendor/preact-10.24.3/preact.mjs",
+      "preact/hooks": "../vendor/preact-10.24.3/hooks.mjs",
+      "htm": "../vendor/htm-3.1.1/htm.mjs"
+    }
+  }
+  </script>
+  <script src="../config.js"></script>
+  <script type="module" src="main.js"></script>
 </head>
 <body>
   <a class="skip" href="#site">Skip to search</a>
 
   <header class="top">
+    <a class="top-brand" href="./" aria-label="Sitebound home">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <rect x="3" y="3" width="26" height="26" rx="8" fill="none" stroke="currentColor" stroke-width="3"/>
+        <circle class="mark-dot" cx="16" cy="16" r="5" />
+      </svg>
+      <span>Sitebound</span>
+    </a>
     <nav aria-label="Primary">
-      <a href="#shops">For shops</a>
-      <a href="#buyers">For buyers</a>
+      <a data-demo-shop href="https://sitebound-demo.pages.dev/">Demo shop</a>
+      <a href="#verify">Verify us</a>
       <a href="https://github.com/mujahid002/sitebound">GitHub</a>
     </nav>
   </header>
 
   <main>
     <section class="hero" aria-labelledby="brand">
+      <div id="saturn" class="saturn" role="group" aria-label="Sites on the ring. Pick one to see its Sitebound status."></div>
       <div class="hero-inner">
-        <h1 id="brand" class="brand">
-          <svg class="mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-            <rect class="mark-frame" x="3" y="3" width="26" height="26" rx="8" fill="none" stroke="currentColor" stroke-width="3"/>
-            <circle class="mark-dot" cx="16" cy="16" r="5" />
-          </svg>
-          <span>Sitebound</span>
-        </h1>
+        <h1 id="brand" class="brand">Sitebound</h1>
         <p class="tagline">Kill the checkout address.<br><span>Every payment is bound to the site.</span></p>
 
         <form id="site-form" class="search" novalidate>
@@ -55,16 +70,21 @@
               <path d="M3 12h18" fill="none" stroke="currentColor" stroke-width="1.8"/>
             </svg>
             <input id="site" name="site" type="text" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false"
-                   placeholder="Type your website, e.g. shop.com" aria-describedby="site-msg" required>
+                   placeholder="Bring your website, e.g. shop.com" aria-describedby="site-msg" required>
           </div>
           <p id="site-msg" class="msg" role="alert"></p>
           <div class="actions">
-            <button class="btn" type="submit">Connect my shop</button>
+            <button class="btn" type="submit">Bring your website</button>
             <a class="quiet" href="#how">How it works</a>
           </div>
         </form>
-        <p class="live-line"><a class="live-chip" href="#live"><span class="dot" aria-hidden="true"></span>Live on Whitechain Sepolia</a></p>
+        <p class="trust">Only the domain's owner, proven by a DNS record, can choose the wallet its payments go to.</p>
+        <p class="live-line"><a class="live-chip" href="#live"><span class="live-dot" aria-hidden="true"></span>Live on Whitechain Sepolia</a></p>
       </div>
+    </section>
+
+    <section id="kit" class="kit" aria-label="Your shop on Sitebound" hidden>
+      <div id="kit-root" class="kit-root"></div>
     </section>
 
     <section id="how" class="band" aria-labelledby="how-h">
@@ -118,19 +138,58 @@
       </div>
     </section>
 
+    <section id="verify" class="band verify" aria-labelledby="verify-h">
+      <h2 id="verify-h" class="section-title">Verify us. <span>Don't trust, verify.</span></h2>
+      <div class="verify-grid">
+        <div class="vcard">
+          <p class="tag">Contract</p>
+          <p class="vaddr"><code data-cfg-address>0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73</code></p>
+          <p><a data-cfg-explorer href="https://explorer.testnet.whitechain.io/address/0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73" target="_blank" rel="noopener">View on the Whitechain explorer</a></p>
+          <p class="hint">Whitechain Sepolia testnet, chain 1874. Pays in USDT.</p>
+        </div>
+        <div class="vcard vcheck" id="code-check" aria-live="polite">
+          <p class="tag">Live check, in your browser</p>
+          <dl class="vfacts">
+            <div><dt>Code on chain, keccak256</dt><dd id="vc-live">not read yet</dd></div>
+            <div><dt>Expected, from the repo</dt><dd id="vc-exp">not read yet</dd></div>
+          </dl>
+          <p id="vc-result" class="vresult">Waiting to run</p>
+          <p class="hint">Your browser reads the contract's code with eth_getCode from <span id="vc-rpc">the network</span>, hashes it here, and compares
+            it with the hash in <a href="../verify/expected.json">verify/expected.json</a>. To rebuild that hash from source yourself, see the repo.</p>
+        </div>
+        <div class="vcard">
+          <p class="tag">Built from</p>
+          <dl class="vfacts">
+            <div><dt>Source</dt><dd><a href="https://github.com/mujahid002/sitebound" target="_blank" rel="noopener">github.com/mujahid002/sitebound</a></dd></div>
+            <div><dt>Commit</dt><dd id="vc-commit">see verify/expected.json</dd></div>
+            <div><dt>Compiler</dt><dd id="vc-solc">solc 0.8.28, via_ir, optimizer 200 runs, EVM cancun</dd></div>
+            <div><dt>Tests</dt><dd><a href="https://github.com/mujahid002/sitebound/tree/main/test" target="_blank" rel="noopener">Foundry tests</a> and an
+              <a href="https://github.com/mujahid002/sitebound/tree/main/e2e" target="_blank" rel="noopener">end-to-end browser run</a></dd></div>
+          </dl>
+        </div>
+      </div>
+      <ul class="cando" aria-label="What the contract can and cannot do">
+        <li><b>Pays only the site the buyer is on.</b> The payee is the wallet registered for the origin the buyer's browser signed, never an address from the page.</li>
+        <li><b>The relayer cannot redirect a payment.</b> It only submits what the buyer's passkey signed. Its attestor key registers a site's payout after the DNS check: a new site is live at once, and a change to an existing payout waits <span data-delay>1 hour</span>, during which the current payout wallet can freeze it.</li>
+        <li><b>No admin key.</b> No owner, no upgrade and no pause. The contract never holds funds: USDT moves straight from the buyer to the shop.</li>
+        <li><b>Limits.</b> Testnet only, not audited. The frame shows the site the browser reports; Sitebound does not vouch for what a shop sells.</li>
+      </ul>
+    </section>
+
     <section class="closing" aria-label="Get started">
-      <a class="btn" href="#site" data-focus-search>Connect my shop</a>
+      <a class="btn" href="#site" data-focus-search>Bring your website</a>
     </section>
   </main>
 
   <footer id="live" class="foot" aria-labelledby="live-h">
-    <h2 id="live-h" class="live-title"><span class="dot" aria-hidden="true"></span>Live on Whitechain Sepolia</h2>
+    <h2 id="live-h" class="live-title"><span class="live-dot" aria-hidden="true"></span>Live on Whitechain Sepolia</h2>
     <p class="addr"><span>Contract</span> <code>0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73</code></p>
     <p class="links">
       <a href="https://explorer.testnet.whitechain.io/address/0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73" target="_blank" rel="noopener">View on the explorer</a>
       <a href="https://github.com/mujahid002/sitebound" target="_blank" rel="noopener">Source on GitHub</a>
       <span>MIT</span>
     </p>
+    <p class="limits">Only the owner of a domain can set where its payments go: its DNS TXT record names the payout wallet, and that is the only wallet the relayer will register for it. The relayer is a trusted step in this version.</p>
     <p class="limits">Limits: testnet only and not audited. The site shown is what the browser reports, and Sitebound does not vouch for what a shop sells.</p>
   </footer>
 </body>

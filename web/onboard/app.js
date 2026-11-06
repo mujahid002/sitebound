@@ -101,7 +101,7 @@ export function Shop({ cfg, site, onChangeSite, onInfo, snippetExtra }) {
   useEffect(() => { refresh(); }, [refresh]);
 
   const info = chain.status === 'ok' ? chain.info : null;
-  useEffect(() => { onInfo?.(info); }, [info]);
+  useEffect(() => { onInfo?.(info, chain.status); }, [info, chain.status]);
   const walletDone = !!account && wallet.onChain;
   const mine = info?.registered && (sameAddr(info.payout, account) || sameAddr(info.pending, account));
   const dnsOk = dns.state === 'ok' && sameAddr(dns.payout, account);

@@ -1,0 +1,212 @@
+// Landing: the ring of sites around the planet, and the search box that opens the shop kit inline.
+// The kit (Preact + ethers) loads only when someone brings a website, so the first paint stays light.
+import { mountSaturn } from './saturn.js';
+
+const C = window.SITEBOUND || {};
+const $ = (id) => document.getElementById(id);
+const form = $('site-form');
+const input = $('site');
+const msg = $('site-msg');
+const kitSection = $('kit');
+const kitRoot = $('kit-root');
+const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const HOST = /^([a-z0-9-]+\.)+[a-z][a-z0-9-]+$/; // needs a dot and an alphabetic TLD (punycode ok)
+
+// What the shop owner typed -> { origin } or { error }.
+function toOrigin(raw) {
+  let s = raw.replace(/\s+/g, '').toLowerCase();
+  if (!s) return { error: 'Type your website first, for example shop.com.' };
+  if (s.startsWith('http://')) return { error: 'Sitebound needs https. Use shop.com or https://shop.com.' };
+  s = s.replace(/^https:\/\//, '');
+  const host = s.split(/[/?#]/)[0];
+  if (host.includes('@') || host.includes('://')) return { error: 'Use just the site name, like shop.com.' };
+  let url;
+  try { url = new URL('https://' + host); } catch { url = null; }
+  if (!url || !HOST.test(url.hostname)) return { error: 'That does not look like a website. Try shop.com.' };
+  return { origin: url.origin };
+}
+
+function show(text) {
+  msg.textContent = text;
+  if (text) input.setAttribute('aria-invalid', 'true');
+  else input.removeAttribute('aria-invalid');
+}
+
+const hostOf = (o) => { try { return new URL(o).host; } catch { return o; } };
+
+// ---------------------------------------------------------------- the ring
+
+const KEY = 'sitebound.ring';
+const recall = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
+const remember = (list) => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch { /* private mode */ } };
+
+// The real demo shop, the fake copy of it, and reserved .example names (RFC 2606) as stand-ins for other shops.
+const BASE = [
+  C.demoShop && { origin: C.demoShop, label: hostOf(C.demoShop), kind: 'live' },
+  C.fakeShop && { origin: C.fakeShop, label: hostOf(C.fakeShop), kind: 'fake' },
+  ...['shop.example', 'coffee.example', 'books.example', 'tickets.example', 'studio.example']
+    .map((h) => ({ origin: 'https://' + h, label: h, kind: 'demo' })),
+].filter(Boolean);
+let typed = recall().filter((o) => typeof o === 'string' && /^https:\/\/[^/]+$/.test(o)).slice(-6);
+// Narrow screens show only the first few, so: the live shop, then what the visitor typed (newest first), then the rest.
+const ringSites = () => [
+  ...BASE.filter((b) => b.kind === 'live'),
+  ...typed.filter((o) => !BASE.some((b) => b.origin === o)).reverse().map((o) => ({ origin: o, label: hostOf(o), kind: 'user' })),
+  ...BASE.filter((b) => b.kind !== 'live'),
+];
+
+const saturn = mountSaturn($('saturn'), { sites: ringSites(), onPick: (origin) => open(origin) });
+
+function addToRing(origin) {
+  if (BASE.some((b) => b.origin === origin) || typed.includes(origin)) return;
+  typed = [...typed, origin].slice(-6);
+  remember(typed);
+  saturn.setSites(ringSites());
+}
+
+// ---------------------------------------------------------------- the kit
+
+let ethersLoad;
+function loadEthers() {
+  if (window.ethers) return Promise.resolve();
+  ethersLoad ||= new Promise((ok, fail) => {
+    const s = Object.assign(document.createElement('script'), { src: '../vendor/ethers-6.17.0.umd.min.js', onload: ok, onerror: fail });
+    document.head.append(s);
+  });
+  ethersLoad.catch(() => { ethersLoad = null; });
+  return ethersLoad;
+}
+
+let kitModule;
+function loadKit() {
+  kitModule ||= loadEthers().then(() => import('./kit.js'));
+  kitModule.catch(() => { kitModule = null; });
+  return kitModule;
+}
+
+async function open(origin, { scroll = true } = {}) {
+  show('');
+  input.value = hostOf(origin);
+  addToRing(origin);
+  saturn.highlight(origin);
+  history.replaceState(null, '', '?site=' + encodeURIComponent(origin) + '#kit');
+  kitSection.hidden = false;
+  kitSection.setAttribute('aria-busy', 'true');
+  if (!kitRoot.firstChild) kitRoot.innerHTML = '<p class="lede kit-loading" role="status">Loading your shop setup…</p>';
+  if (scroll) kitSection.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' });
+  try {
+    const { openKit } = await loadKit();
+    openKit(kitRoot, origin, { onChange: reset });
+  } catch {
+    kitRoot.innerHTML = '<p class="lede" role="alert">The setup could not load. Check your connection, then try again.</p>';
+  }
+  kitSection.removeAttribute('aria-busy');
+}
+
+function reset() {
+  history.replaceState(null, '', location.pathname);
+  saturn.highlight(null);
+  input.select();
+  input.focus({ preventScroll: true });
+  window.scrollTo({ top: 0, behavior: reduced() ? 'auto' : 'smooth' });
+}
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const { origin, error } = toOrigin(input.value);
+  if (error) { show(error); input.focus(); return; }
+  open(origin);
+});
+input.addEventListener('input', () => show(''));
+// Warm the kit while the owner is still typing.
+input.addEventListener('focus', () => { loadKit().catch(() => {}); }, { once: true });
+
+// "Bring your website" at the bottom scrolls up and lands the cursor in the search box.
+document.querySelector('[data-focus-search]').addEventListener('click', (e) => {
+  e.preventDefault();
+  input.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'center' });
+  input.focus({ preventScroll: true });
+});
+
+const demoLink = document.querySelector('[data-demo-shop]');
+if (demoLink && C.demoShop) demoLink.href = C.demoShop + '/';
+
+// A shared link (?site=https://shop.com) opens straight into that shop's kit.
+const shared = new URLSearchParams(location.search).get('site');
+if (shared) {
+  const { origin } = toOrigin(shared);
+  if (origin) open(origin, { scroll: false }).then(() => kitSection.scrollIntoView({ block: 'start' }));
+}
+
+// ---------------------------------------------------------------- verify us
+
+const isAddr = (a) => /^0x[0-9a-fA-F]{40}$/.test(a || '') && !/^0x0{40}$/.test(a);
+if (isAddr(C.address)) {
+  for (const el of document.querySelectorAll('[data-cfg-address]')) el.textContent = C.address;
+  if (C.explorer) for (const el of document.querySelectorAll('[data-cfg-explorer]')) el.href = `${C.explorer}/address/${C.address}`;
+}
+
+async function rpcCall(method, params) {
+  const r = await fetch(C.rpcUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
+  const j = await r.json();
+  if (j.error) throw new Error('rpc'); // the message is not shown: it could carry a provider URL
+  return j.result;
+}
+
+const words = (sec) => {
+  const unit = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+  if (sec >= 86400 && sec % 86400 === 0) return unit(sec / 86400, 'day');
+  if (sec >= 3600 && sec % 3600 === 0) return unit(sec / 3600, 'hour');
+  return sec >= 60 ? unit(Math.round(sec / 60), 'minute') : unit(sec, 'second');
+};
+
+// Reads the contract's runtime code from the RPC in config.js, hashes it here and compares it with verify/expected.json.
+async function runCheck() {
+  const res = $('vc-result');
+  const set = (id, text) => { $(id).textContent = text; };
+  const mark = (kind, text) => { res.className = 'vresult ' + kind; res.textContent = text; };
+  if (!C.rpcUrl || !isAddr(C.address)) return mark('warn', 'This build has no contract address in its config, so there is nothing to check.');
+  try { set('vc-rpc', new URL(C.rpcUrl).host); } catch { /* keep the default text */ }
+  mark('', 'Checking…');
+  try {
+    const [exp, code] = await Promise.all([
+      fetch('../verify/expected.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      rpcCall('eth_getCode', [C.address, 'latest']),
+      loadEthers(),
+    ]);
+    const { ethers } = window;
+    if (exp?.commit && /^[0-9a-f]{7,40}$/i.test(exp.commit)) {
+      const a = Object.assign(document.createElement('a'), {
+        href: `https://github.com/mujahid002/sitebound/commit/${exp.commit}`, target: '_blank', rel: 'noopener', textContent: exp.commit.slice(0, 12),
+      });
+      $('vc-commit').replaceChildren(a);
+    }
+    if (exp?.solc) {
+      set('vc-solc', [`solc ${exp.solc}`, exp.viaIR ?? exp.via_ir ? 'via_ir' : null, exp.optimizerRuns ? `optimizer ${exp.optimizerRuns} runs` : null,
+        exp.evmVersion || exp.evm_version ? `EVM ${exp.evmVersion || exp.evm_version}` : null].filter(Boolean).join(', '));
+    }
+    rpcCall('eth_call', [{ to: C.address, data: ethers.id('delay()').slice(0, 10) }, 'latest'])
+      .then((d) => { for (const el of document.querySelectorAll('[data-delay]')) el.textContent = words(Number(BigInt(d))); })
+      .catch(() => {});
+    if (!code || code === '0x') { set('vc-live', 'no code'); return mark('bad', 'Mismatch: there is no contract code at this address.'); }
+    const live = ethers.keccak256(code);
+    set('vc-live', live);
+    const want = exp && [exp.runtimeCodeHash, exp.codeHash, exp.runtimeKeccak, exp.keccak256].find((h) => /^0x[0-9a-fA-F]{64}$/.test(h || ''));
+    if (!want) { set('vc-exp', 'not published yet'); return mark('warn', 'The expected hash is not published yet, so there is nothing to compare with.'); }
+    set('vc-exp', want);
+    if (exp.address && exp.address.toLowerCase() !== C.address.toLowerCase()) return mark('bad', 'Mismatch: verify/expected.json describes a different contract address.');
+    if (live.toLowerCase() === want.toLowerCase()) mark('ok', 'Match: the code on chain is the code the repo says it is.');
+    else mark('bad', 'Mismatch: the code on chain differs from the repo\'s expected hash.');
+  } catch {
+    mark('warn', 'Could not reach the network to check. Reload to try again.');
+  }
+}
+
+const verifySection = $('verify');
+if (verifySection) {
+  const io = new IntersectionObserver((entries) => {
+    if (entries.some((e) => e.isIntersecting)) { io.disconnect(); runCheck(); }
+  }, { rootMargin: '300px' });
+  io.observe(verifySection);
+}
