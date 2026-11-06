@@ -96,13 +96,12 @@
           </div>
         </form>
         <p class="hero-links">
-          <a class="live-chip" href="#live"><span class="live-dot" aria-hidden="true"></span>Live on Whitechain Sepolia</a>
+          <a class="live-link" href="#live"><span class="live-dot" aria-hidden="true"></span><span class="long">Live on Whitechain Sepolia</span><span class="short">Live on testnet</span></a>
           <a class="quiet" href="#how">How it works</a>
-          <a class="quiet" href="https://0xmujahid.xyz/">Example: 0xmujahid.xyz</a>
+          <button id="try" class="quiet is-try" type="button" aria-haspopup="dialog" aria-expanded="false" data-copy="hero-try">Try it</button>
         </p>
-        <p class="orbit-key" data-copy="orbit-key"><span>Sites that show a deposit address today</span><span class="is-ours">Ours, and yours</span></p>
       </div>
-      <div id="orbit" class="orbit" role="group" aria-label="Websites on the orbit. Pick one to see its Sitebound status."></div>
+      <div id="orbit" class="orbit" role="group" aria-label="Sites that take crypto today, and Sitebound examples. Pick one to see more."></div>
     </section>
 
     <section id="kit" class="kit" aria-label="Your website on Sitebound" hidden>
@@ -247,5 +246,7 @@
       <span>MIT</span>
     </p>
   </footer>
+
+  <aside id="panel" class="panel" role="dialog" aria-modal="false" aria-labelledby="panel-title" aria-hidden="true" tabindex="-1"></aside>
 </body>
 </html>

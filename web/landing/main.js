@@ -2,6 +2,8 @@
 // opens inline. The kit (Preact + ethers) loads only when someone brings a website, so the first paint stays light.
 import { mountOrbit } from './orbit.js';
 import { mountField } from './field.js';
+import { mountPanel } from './panel.js';
+import { SITES, TRY } from './sites.js';
 
 const C = window.SITEBOUND || {};
 const $ = (id) => document.getElementById(id);
@@ -42,25 +44,14 @@ const hostOf = (o) => { try { return new URL(o).host; } catch { return o; } };
 
 // ---------------------------------------------------------------- the orbit
 
-// The orbit's data: { domain, label, kind } and nothing else to edit. kind 'real' is a business that shows a deposit
-// address to copy today (checked 7 Nov 2026, listed in the notes for the page, not an endorsement and not a Sitebound
-// customer); 'ours' is a Sitebound example. `origin` is only needed when it is not https://<domain> (the local demo).
-// Each chip loads https://<domain>/favicon.ico; `logo` names a different icon URL where that one does not work.
-const SITES = [
-  C.demoShop && { domain: hostOf(C.demoShop), origin: C.demoShop, label: 'the Sitebound demo', kind: 'ours' },
-  { domain: '0xmujahid.xyz', label: '0xmujahid.xyz', kind: 'ours' },
-  { domain: 'surfercloud.com', label: 'SurferCloud', kind: 'real', logo: 'https://cdn.udelivrs.com/2024/06/45a0684f8481db470c2dfcf60b7a7356_1718953536546.ico' },
-  { domain: 'protonvpn.com', label: 'Proton VPN', kind: 'real' },
-  { domain: 'cloudzy.com', label: 'Cloudzy', kind: 'real', logo: 'https://cloudzy.com/apple-touch-icon.png' },
-  { domain: 'bitrefill.com', label: 'Bitrefill', kind: 'real' },
-  { domain: 'bitlaunch.io', label: 'BitLaunch', kind: 'real' },
-].filter(Boolean);
-// Sites the visitor typed join the orbit for this visit only; nothing is stored, so no old entry can come back.
+// The orbit is drawn from SITES (sites.js). A 'real' chip opens the detail panel; 'ours' chips and the sites a visitor
+// types open the setup for that site. Sites the visitor typed join the orbit for this visit only; nothing is stored,
+// so no old entry can come back.
 try { localStorage.removeItem('sitebound.ring'); } catch { /* private mode */ }
 let typed = [];
 const ringSites = () => [
   ...SITES.filter((b) => b.kind === 'ours'),
-  ...typed.filter((o) => !SITES.some((b) => (b.origin || `https://${b.domain}`) === o)).reverse().map((o) => ({ origin: o, domain: hostOf(o), label: hostOf(o), kind: 'user' })),
+  ...typed.filter((o) => !SITES.some((b) => (b.origin || `https://${b.domain}`) === o)).reverse().map((o) => ({ origin: o, domain: hostOf(o), kind: 'user' })),
   ...SITES.filter((b) => b.kind !== 'ours'),
 ];
 
@@ -82,10 +73,16 @@ paintTheme();
 mountField($('field'));
 const orbit = mountOrbit($('orbit'), {
   sites: ringSites(),
-  onPick: (origin) => open(origin),
+  onPick: (site, chip) => (site.kind === 'real' ? panel.openSite(site, chip) : open(site.origin || `https://${site.domain}`)),
   around: $('search-row'),
-  keepClear: [...document.querySelectorAll('.hero-h, .tagline, #search-row, .trust, .hero-links > *, .orbit-key')],
+  keepClear: [...document.querySelectorAll('.hero-h, .tagline, #search-row, .trust, .hero-links > *')],
 });
+const panel = mountPanel($('panel'), {
+  hero: document.querySelector('.hero'),
+  onToggle: (isOpen, site) => { orbit.setSlow(isOpen); orbit.highlight(site ? `https://${site.domain}` : null); },
+});
+const tryBtn = $('try');
+tryBtn.addEventListener('click', () => panel.openTry(TRY, tryBtn));
 
 function addToRing(origin) {
   if (SITES.some((b) => (b.origin || `https://${b.domain}`) === origin) || typed.includes(origin)) return;
@@ -114,6 +111,7 @@ function loadKit() {
 }
 
 async function open(origin, { scroll = true } = {}) {
+  panel.close({ restore: false });
   show('');
   state('loading');
   input.value = hostOf(origin);

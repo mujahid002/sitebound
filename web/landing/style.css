@@ -33,7 +33,6 @@
   --placeholder: #737a82;
   --hover-line: #aeb1a8;
   --wash: 0.05;
-  --spin-glow: 0.9;
 
   --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s5: 40px; --s6: 48px; --s8: 64px; --s12: 96px;
   --r-sm: 6px; --r-md: 10px; --r-lg: 16px;
@@ -85,7 +84,7 @@ body {
 }
 /* Keyboard focus: one ring everywhere, shaped like the thing it surrounds. */
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-.top a:focus-visible, .live-chip:focus-visible, .quiet:focus-visible, .skip:focus-visible { border-radius: 999px; }
+.top a:focus-visible, .live-link:focus-visible, .quiet:focus-visible, .skip:focus-visible { border-radius: 999px; }
 
 /* Top bar */
 .top {
@@ -152,13 +151,6 @@ main, .foot { position: relative; z-index: 1; }
 }
 .orbit-rings ellipse { fill: none; stroke: rgba(var(--rl), calc(var(--ring-a) * 1.7)); stroke-width: 1; stroke-dasharray: 2 6; }
 .orbit-rings ellipse:nth-child(2) { stroke: rgba(var(--rl), calc(var(--ring-a) * 0.7)); }
-/* The legend under the hero links; in lane mode it labels the lanes right below it. */
-.orbit-key { margin-top: var(--s1); display: flex; flex-wrap: wrap; justify-content: center; gap: 2px var(--s3); color: var(--muted); font-size: var(--fs-xs); }
-.orbit-key span::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border: 1px solid var(--line-2); border-radius: 50%; }
-.orbit-key .is-ours::before { border-color: var(--accent); }
-/* Lane mode (narrow hero): room for the lanes under the links. */
-.hero:has(.orbit[data-mode="lane"]) { padding-bottom: 148px; }
-
 .orb-chip {
   position: absolute; left: 0; top: 0; z-index: 3; display: block; padding: 0; border: 0; background: none;
   color: var(--ink); font: 500 0.75rem/1 var(--mono);
@@ -170,29 +162,75 @@ main, .foot { position: relative; z-index: 1; }
   border: 1px solid var(--line-2); border-radius: 999px;
   background: var(--field);
   box-shadow: 0 1px 2px var(--sh1);
-  transition: border-color 0.25s, box-shadow 0.25s, background-color 0.25s;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
 }
-.orb-chip.is-lit .orb-face, .orb-chip:focus-visible .orb-face {
+.orb-chip.is-lit .orb-face, .orb-chip[aria-expanded="true"] .orb-face, .orb-chip:focus-visible .orb-face {
   border-color: color-mix(in srgb, var(--accent) 65%, transparent);
   background: var(--chip-lit);
   box-shadow: 0 0 0 3px var(--ring);
 }
-/* The logo: the site's own favicon on a white tile. Until it loads, or if it never does, a letter mark. */
+/* The logo: the site's own file from logos/ on a white tile. Until it loads, or if there is none, a letter mark. */
 .orb-logo {
   position: relative; display: grid; place-items: center; width: 24px; height: 24px; flex: none; overflow: hidden; border-radius: 50%;
   font-size: 0.6875rem; font-weight: 700; color: #fff; background: hsl(var(--h) 36% 34%);
 }
-.orb-logo img { position: absolute; inset: 4px; width: 16px; height: 16px; object-fit: contain; opacity: 0; transition: opacity 0.25s; }
+.orb-logo img { position: absolute; inset: 4px; width: 16px; height: 16px; object-fit: contain; opacity: 0; transition: opacity 0.2s; }
 .orb-logo.has-img { background: #fff; box-shadow: inset 0 0 0 1px rgba(20, 23, 26, 0.1); color: transparent; }
 .orb-logo.has-img img { opacity: 1; }
 .orb-chip[data-kind="ours"] .orb-face, .orb-chip[data-kind="user"] .orb-face { border-color: color-mix(in srgb, var(--accent) 40%, var(--line-2)); }
-@keyframes orb-pop { 0% { transform: scale(0.2); opacity: 0; } 60% { transform: scale(1.14); opacity: 1; } 100% { transform: scale(1); } }
-.orb-face.is-new { animation: orb-pop 0.6s var(--ease) both; }
+@keyframes orb-in { from { transform: scale(0.9); opacity: 0; } }
+.orb-face.is-new { animation: orb-in 0.3s var(--ease) both; }
+
+/* The detail panel: docked at the bottom, never modal. */
+.panel {
+  position: fixed; z-index: 20; left: 50%; bottom: max(var(--s2), env(safe-area-inset-bottom));
+  width: min(720px, calc(100% - 2 * var(--s2))); max-height: min(72svh, 520px); overflow: auto; overscroll-behavior: contain;
+  display: grid; gap: var(--s2); padding: var(--s2) var(--s2) var(--s2) var(--s3);
+  border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow);
+  transform: translate(-50%, 0);
+  transition: opacity 0.24s var(--ease), transform 0.24s var(--ease), visibility 0s;
+}
+.panel:not(.is-open) {
+  opacity: 0; visibility: hidden; pointer-events: none; transform: translate(-50%, 8px);
+  transition: opacity 0.2s var(--ease), transform 0.2s var(--ease), visibility 0s 0.2s;
+}
+.panel:focus { outline: 0; }
+.panel-bar { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s2); }
+.panel-who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.panel .orb-logo { width: 36px; height: 36px; font-size: var(--fs-md); }
+.panel .orb-logo img { inset: 8px; width: 20px; height: 20px; }
+.panel-name { min-width: 0; }
+.panel-title { font-size: var(--fs-lg); font-weight: 650; letter-spacing: -0.02em; line-height: 1.25; overflow-wrap: anywhere; }
+.panel-what { color: var(--muted); font-size: var(--fs-sm); line-height: 1.4; }
+.panel-x {
+  display: grid; place-items: center; width: 32px; height: 32px; flex: none; margin: -4px -8px 0 0; padding: 0;
+  border: 0; border-radius: 999px; background: transparent; color: var(--muted); cursor: pointer; transition: color 0.2s, background-color 0.2s;
+}
+.panel-x:hover { color: var(--ink); background: rgba(var(--rl), 0.06); }
+.panel-x svg { width: 16px; height: 16px; }
+.panel-cols { display: grid; gap: var(--s2); }
+.panel-col { display: grid; align-content: start; gap: var(--s1); padding: var(--s2); border-radius: var(--r-md); background: var(--sunk); }
+.panel-col h3 { font-size: var(--fs-sm); font-weight: 600; letter-spacing: -0.005em; line-height: 1.4; }
+.panel-col p, .panel-col li { color: var(--muted); font-size: var(--fs-sm); line-height: 1.5; }
+.panel-col ul { display: grid; gap: 6px; }
+.panel-col li { position: relative; padding-left: 14px; }
+.panel-col li::before { content: ""; position: absolute; left: 0; top: 0.6em; width: 5px; height: 5px; border-radius: 50%; background: var(--line-2); }
+.panel-link {
+  justify-self: start; padding: 4px 0; border: 0; background: none; cursor: pointer; color: var(--ink);
+  font: inherit; font-size: var(--fs-sm); font-weight: 500; text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 4px;
+  transition: text-decoration-color 0.2s;
+}
+.panel-link:hover { text-decoration-color: currentColor; }
+a.panel-link::after { content: "\2197"; margin-left: 4px; font-size: 0.85em; }
+.panel-lede { max-width: 52ch; color: var(--muted); line-height: 1.5; }
+.panel-cta { justify-self: start; }
+@media (min-width: 620px) {
+  .panel-cols { grid-template-columns: 1fr 1fr; }
+}
 
 /* Search bar */
 .search { margin-top: var(--s5); }
 .search-row { position: relative; }
-@property --spin { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
 .pill {
   position: relative; display: flex; align-items: center; gap: 12px;
   height: 56px; padding: 0 var(--s3);
@@ -201,25 +239,14 @@ main, .foot { position: relative; z-index: 1; }
   transition: box-shadow 0.25s var(--ease), border-color 0.25s;
 }
 .pill:hover { border-color: var(--hover-line); }
-/* A light that travels once around the border while the field has focus. Needs @property; without it the ring below
-   still shows. */
-.pill::before {
-  content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; pointer-events: none;
-  background: conic-gradient(from var(--spin), transparent 0 58%, rgba(var(--spot), var(--spin-glow)) 76%, transparent 92%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor; mask-composite: exclude;
-  opacity: 0; transition: opacity 0.3s;
-}
 .pill:focus-within {
   border-color: color-mix(in srgb, var(--accent) 55%, var(--line-2));
   box-shadow: inset 0 1px 0 var(--hl), inset 0 0 28px rgba(var(--spot), 0.07), 0 0 0 4px var(--ring), 0 12px 32px var(--sh2);
 }
-.pill:focus-within::before { opacity: 1; }
 .pill:has([aria-invalid]) {
   border-color: var(--err);
   box-shadow: inset 0 1px 0 var(--hl), 0 0 0 4px color-mix(in srgb, var(--err) 20%, transparent), 0 12px 32px var(--sh2);
 }
-.pill:has([aria-invalid])::before { opacity: 0; }
 .pill-icon { width: 20px; height: 20px; flex: none; color: var(--muted); transition: color 0.25s; }
 .search-row[data-state="valid"] .pill-icon, .pill:focus-within .pill-icon { color: var(--accent); }
 .pill:has([aria-invalid]) .pill-icon { color: var(--err); }
@@ -255,34 +282,34 @@ main, .foot { position: relative; z-index: 1; }
   content: "!"; display: grid; place-items: center; width: 16px; height: 16px; margin-top: 2px; flex: none;
   border: 1.5px solid currentColor; border-radius: 50%; font-size: 0.6875rem; font-weight: 700; line-height: 1;
 }
-.trust { max-width: 46ch; margin-inline: auto; color: var(--muted); font-size: var(--fs-sm); line-height: 1.5; text-wrap: balance; transition: opacity 0.2s; }
+.trust { max-width: 64ch; margin-inline: auto; color: var(--muted); font-size: var(--fs-sm); line-height: 1.5; text-wrap: balance; transition: opacity 0.2s; }
 .search:has([aria-invalid]) .trust { opacity: 0; }
 
 @media (min-width: 560px) {
   .pill { padding-right: 216px; }
   .search-go { position: absolute; right: 6px; top: 6px; bottom: 6px; width: auto; height: auto; margin: 0; padding: 0 var(--s3); }
 }
-.hero-links { margin-top: var(--s3); display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--s1) var(--s3); }
+.hero-links { margin-top: var(--s2); display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0 var(--s2); }
 
 .quiet {
-  display: inline-flex; align-items: center; gap: 6px; padding: 12px 8px;
-  color: var(--muted); text-decoration: none; font-size: var(--fs-sm); border-radius: 999px; transition: color 0.2s;
-}
-.quiet::after {
-  content: ""; width: 7px; height: 7px; margin-top: -3px;
-  border: solid currentColor; border-width: 0 1.6px 1.6px 0; transform: rotate(45deg); transition: transform 0.25s var(--ease);
+  display: inline-flex; align-items: center; padding: 12px 8px; border: 0; background: none; cursor: pointer;
+  color: var(--muted); font: inherit; font-size: var(--fs-sm); text-decoration: none; border-radius: 999px; transition: color 0.2s;
 }
 .quiet:hover { color: var(--ink); }
-.quiet:hover::after { transform: translateY(3px) rotate(45deg); }
+.quiet.is-try { color: var(--ink); font-weight: 600; }
+.quiet.is-try[aria-expanded="true"] { text-decoration: underline; text-underline-offset: 4px; }
 
 .live-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--accent); }
-.live-chip {
-  display: inline-flex; align-items: center; gap: 10px; padding: 8px 16px 8px 14px;
-  border: 1px solid var(--line-2); border-radius: 999px;
-  background: var(--field); box-shadow: var(--edge);
-  color: var(--muted); font-size: var(--fs-sm); text-decoration: none; transition: color 0.2s, border-color 0.2s;
+.live-link {
+  display: inline-flex; align-items: center; gap: 8px; padding: 12px 8px; border-radius: 999px;
+  color: var(--muted); font-size: var(--fs-sm); text-decoration: none; transition: color 0.2s;
 }
-.live-chip:hover { color: var(--ink); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.live-link:hover { color: var(--ink); }
+.live-link .short { display: none; }
+@media (max-width: 420px) {
+  .live-link .long { display: none; }
+  .live-link .short { display: inline; }
+}
 
 /* The inline setup kit */
 .kit { scroll-margin-top: 12px; padding: clamp(24px, 6vw, 56px) var(--pad) clamp(40px, 8vw, 88px); }
@@ -474,12 +501,10 @@ code { font: 0.9em var(--mono); }
   .closing-card { grid-template-columns: 1fr auto; gap: var(--s6); padding: var(--s4); }
 }
 
-/* Motion: one calm entrance, staggered, 600 ms a step. orbit.js and field.js handle reduced motion themselves. */
+/* Motion: one calm entrance, staggered, 300 ms a step. orbit.js and field.js handle reduced motion themselves. */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   @keyframes fade { from { opacity: 0; } }
-  @keyframes beat { 0%, 70%, 100% { box-shadow: 0 0 0 0 var(--ring); } 35% { box-shadow: 0 0 0 5px transparent; } }
-  @keyframes shine { to { --spin: 360deg; } }
   @keyframes dim { 50% { opacity: 0.35; } }
   @keyframes run-y { to { background-position: 0 200%, 0 0; } }
   @keyframes run-x { to { background-position: 200% 0, 0 0; } }
@@ -496,18 +521,16 @@ code { font: 0.9em var(--mono); }
   /* Scroll reveal: main.js sets .reveal-ready on <html> and adds .is-in as each [data-reveal] enters the view. */
   .reveal-ready [data-reveal] { opacity: 0; transform: translateY(12px); transition: opacity 0.28s var(--ease), transform 0.28s var(--ease); transition-delay: calc(var(--i, 0) * 60ms); }
   .reveal-ready [data-reveal].is-in { opacity: 1; transform: none; }
-  .top, .hero-h, .tagline, .search, .under, .hero-links { animation: rise 0.6s var(--ease) both; }
-  .top { animation-name: fade; animation-duration: 0.6s; }
-  .hero-h { animation-delay: 0.06s; }
-  .tagline { animation-delay: 0.14s; }
-  .search { animation-delay: 0.22s; }
-  .under { animation-delay: 0.3s; }
-  .hero-links { animation-delay: 0.38s; }
+  .top, .hero-h, .tagline, .search, .under, .hero-links { animation: rise 0.3s var(--ease) both; }
+  .top { animation-name: fade; }
+  .hero-h { animation-delay: 0.04s; }
+  .tagline { animation-delay: 0.08s; }
+  .search { animation-delay: 0.12s; }
+  .under { animation-delay: 0.16s; }
+  .hero-links { animation-delay: 0.2s; }
   /* Not on .orbit itself: an animation there would make it a stacking context and pin every chip behind the text. */
-  .orbit-rings { animation: fade 0.6s var(--ease) 0.3s both; }
-  .orb-face.is-in { animation: fade 0.6s var(--ease) calc(0.5s + var(--k, 0) * 0.06s) both; }
-  .live-chip .live-dot { animation: beat 2.8s ease-out 1.2s infinite; }
-  .pill:focus-within::before { animation: shine 3.6s linear infinite; }
+  .orbit-rings { animation: fade 0.3s var(--ease) 0.2s both; }
+  .orb-face.is-in { animation: fade 0.3s var(--ease) calc(0.3s + var(--k, 0) * 0.04s) both; }
   .search-row[data-state="loading"] .pill { animation: dim 1.2s ease-in-out infinite; }
   .chip:not(.ok):not(.warn):not(.bad)::before { animation: dim 1.2s ease-in-out infinite; }
 
@@ -520,7 +543,6 @@ code { font: 0.9em var(--mono); }
 /* Reduced motion, or no scroll reveal: the connectors are drawn at once and the route pulse rests on its links. */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .pill::before { display: none; }
   /* No swap animation: show the result, the attacker's address, flagged. */
   .swap-a { display: none; }
   .swap-b, .swap-flag { opacity: 1; }
