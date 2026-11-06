@@ -46,12 +46,11 @@ const KEY = 'sitebound.ring';
 const recall = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
 const remember = (list) => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch { /* private mode */ } };
 
-// The live demo site, the fake copy of it, and reserved .example names (RFC 2606) as stand-ins for other websites.
+// Real sites only: the live demo, the owner's own site (a portfolio with a coffee checkout), and the fake copy of the demo.
 const BASE = [
   C.demoShop && { origin: C.demoShop, label: hostOf(C.demoShop), kind: 'live' },
+  { origin: 'https://0xmujahid.xyz', label: '0xmujahid.xyz', kind: 'live' },
   C.fakeShop && { origin: C.fakeShop, label: hostOf(C.fakeShop), kind: 'fake' },
-  ...['bakery.example', 'books.example', 'tickets.example', 'studio.example', 'journal.example']
-    .map((h) => ({ origin: 'https://' + h, label: h, kind: 'demo' })),
 ].filter(Boolean);
 let typed = recall().filter((o) => typeof o === 'string' && /^https:\/\/[^/]+$/.test(o)).slice(-6);
 // Narrow screens show only the first few, so: the live demo, then what the visitor typed (newest first), then the rest.
