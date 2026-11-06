@@ -34,6 +34,7 @@
   <link rel="stylesheet" href="why.css">
   <link rel="stylesheet" href="proof.css">
   <link rel="stylesheet" href="roadmap.css">
+  <link rel="stylesheet" href="faq.css">
   <script type="importmap">
   {
     "imports": {
@@ -534,6 +535,54 @@
         </div>
       </div>
     </section>
+
+    <section id="faq" class="band faq" aria-labelledby="faq-h">
+      <div class="faq-grid">
+        <div class="faq-intro">
+          <h2 id="faq-h" class="section-title" data-reveal>Questions, answered plainly</h2>
+          <p class="faq-lede" data-reveal>Where something is not built or not proven, we say so.</p>
+          <p class="faq-more" data-reveal><a href="#roadmap">What is not built yet</a><a href="#verify">Check the contract</a></p>
+        </div>
+        <div class="faq-list">
+          <details class="faq-item" data-reveal open>
+            <summary><span>What is Sitebound?</span><i class="faq-i" aria-hidden="true"></i></summary>
+            <p>Checkout for USDT with no payout address on the page. The buyer confirms the site and the amount with Touch ID, like 3-D Secure for cards, and a contract pays the wallet registered for that site.</p>
+          </details>
+          <details class="faq-item" data-reveal>
+            <summary><span>Do I need a crypto wallet, or to know crypto?</span><i class="faq-i" aria-hidden="true"></i></summary>
+            <p>Site owners: no. Setup creates the payout wallet in your browser, so back it up, because it lives only there. Buyers link a wallet that holds USDT once, then pay with Touch ID.</p>
+          </details>
+          <details class="faq-item" data-reveal>
+            <summary><span>Do my buyers need gas?</span><i class="faq-i" aria-hidden="true"></i></summary>
+            <p>No. Buyers pay in USDT only, never WBT for gas. A relayer pays the gas and takes a 0.01 USDT fee.</p>
+          </details>
+          <details class="faq-item" data-reveal>
+            <summary><span>Who gets the money?</span><i class="faq-i" aria-hidden="true"></i></summary>
+            <p>Only the wallet, or the split of wallets, registered on-chain for that site's domain. The <code>pay()</code> call has no payee field, so a page cannot name another wallet.</p>
+          </details>
+          <details class="faq-item" data-reveal>
+            <summary><span>Can a hacked page steal the payment?</span><i class="faq-i" aria-hidden="true"></i></summary>
+            <p>It cannot redirect the money. It can still show a wrong amount, and a fake lookalike site can fool a buyer, so check the site and the amount in the confirmation. A site that signs quotes closes the amount gap.</p>
+          </details>
+          <details class="faq-item" data-reveal>
+            <summary><span>What stops someone registering my domain?</span><i class="faq-i" aria-hidden="true"></i></summary>
+            <p>A DNS TXT record that only the domain's owner can add. One trusted checker, our relayer, reads it today, and that is a real trust assumption. A change to an existing site's payout waits 1 hour, and its owner can freeze it.</p>
+          </details>
+          <details class="faq-item" data-reveal>
+            <summary><span>Is it real money?</span><i class="faq-i" aria-hidden="true"></i></summary>
+            <p>No. It runs on Whitechain Sepolia testnet with test USDT that has no value. It is not audited, so do not use it for real funds.</p>
+          </details>
+          <details class="faq-item" data-reveal>
+            <summary><span>Why Whitechain?</span><i class="faq-i" aria-hidden="true"></i></summary>
+            <p>Stablecoin payments settle in one transaction, and its USDT supports permit, which lets a relayer pay the gas. The chain's P-256 precompile also lets the contract verify Touch ID signatures itself.</p>
+          </details>
+          <details class="faq-item" data-reveal>
+            <summary><span>Is it open source?</span><i class="faq-i" aria-hidden="true"></i></summary>
+            <p>The contract's source is verified on Sourcify and the Whitechain explorer, so you can read exactly what runs. <a href="#verify">Verify us</a> checks the live code in your browser.</p>
+          </details>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="foot">
@@ -553,6 +602,7 @@
         <a href="#verify">Rules you can check</a>
         <a href="#try">Try it</a>
         <a href="#roadmap">Roadmap</a>
+        <a href="#faq">FAQ</a>
       </nav>
     </div>
     <p class="foot-limit">Testnet only, not audited. Known limits are in the docs.</p>

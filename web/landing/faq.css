@@ -1,0 +1,55 @@
+/* FAQ: native <details>/<summary> accordions, no script. Page tokens only, so both themes work.
+   Desktop: the heading stays beside the list. Mobile: heading, then the list. */
+.band.faq { padding-top: clamp(24px, 4vw, 48px); }
+.faq-grid { display: grid; gap: clamp(24px, 4vw, 40px); }
+@media (min-width: 900px) {
+  .faq-grid { grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: var(--s8); align-items: start; }
+  .faq-intro { position: sticky; top: var(--s4); }
+}
+.faq-lede { max-width: 34ch; margin-top: var(--s2); color: var(--muted); font-size: clamp(1rem, 0.95rem + 0.3vw, 1.125rem); line-height: 1.55; text-wrap: pretty; }
+
+.faq-list { min-width: 0; border-top: 1px solid var(--line-2); }
+.faq-item { border-bottom: 1px solid var(--line-2); }
+.faq-item summary {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s2); min-height: 60px; padding: 14px 0;
+  cursor: pointer; list-style: none; border-radius: var(--r-sm);
+  font-size: var(--fs-lg); font-weight: 600; letter-spacing: -0.015em; line-height: 1.35;
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary:hover { color: var(--accent); }
+.faq-item summary:focus-visible { outline-offset: 2px; }
+.faq-item summary span { min-width: 0; text-wrap: balance; }
+.faq-item p { max-width: 62ch; padding: 0 var(--s6) var(--s3) 0; color: var(--muted); line-height: 1.6; text-wrap: pretty; }
+.faq-item p a { color: var(--ink); text-underline-offset: 3px; text-decoration-color: var(--line-2); transition: text-decoration-color 0.2s; }
+.faq-item p a:hover { text-decoration-color: currentColor; }
+
+/* The plus turns into a minus when open: two bars, the upright one shrinks away. */
+.faq-i { position: relative; flex: none; width: 28px; height: 28px; border: 1px solid var(--line-2); border-radius: 50%; color: var(--muted); }
+.faq-i::before, .faq-i::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 12px; height: 1.5px; margin: -0.75px 0 0 -6px; border-radius: 1px; background: currentColor;
+}
+.faq-i::after { transform: rotate(90deg); }
+.faq-item[open] .faq-i { border-color: color-mix(in srgb, var(--accent) 50%, var(--line-2)); color: var(--accent); }
+.faq-item[open] .faq-i::after { transform: rotate(90deg) scaleX(0); }
+.faq-item summary:hover .faq-i { border-color: var(--accent); color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .faq-i, .faq-item summary { transition: color 0.2s, border-color 0.2s; }
+  .faq-i::after { transition: transform 0.2s var(--ease); }
+}
+
+@media (max-width: 560px) {
+  .faq-item summary { font-size: var(--fs-md); }
+  .faq-item p { padding-right: 0; }
+}
+
+.faq-more { display: flex; flex-wrap: wrap; gap: 4px var(--s3); margin-top: var(--s3); }
+.faq-more a { color: var(--ink); font-size: var(--fs-sm); font-weight: 550; text-underline-offset: 4px; text-decoration-color: var(--line-2); transition: text-decoration-color 0.2s; }
+.faq-more a:hover { text-decoration-color: currentColor; }
+.faq-more a::after { content: "\2192"; margin-left: 6px; }
+
+/* Footer links: now four, so they wrap if they must, and sit closer together on a narrow screen so they fit in one row. */
+.foot nav { flex-wrap: wrap; }
+@media (max-width: 560px) {
+  .foot nav { gap: 0; margin-left: -8px; }
+  .foot nav a { padding-inline: 8px; }
+}
