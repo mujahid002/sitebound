@@ -185,13 +185,26 @@ Known limits:
 - **Privacy: No.** Wallet, credential hash, site and amount of every payment are public.
 - **License:** MIT.
 
-## Prior art
+## Prior art and what is new
 
+- [Secure Payment Confirmation](https://www.w3.org/TR/secure-payment-confirmation/) (W3C, Chrome): a WebAuthn
+  assertion for payments whose signed data includes `topOrigin`, the payee's origin and the amount. The bank, as the
+  relying party, verifies it off-chain. Sitebound uses the same idea, a browser-signed top-level origin, but checks it
+  in the contract that moves the money.
+- [RIP-7212](https://github.com/ethereum/RIPs/blob/master/RIPS/rip-7212.md): the P-256 precompile at `0x100`. It is
+  what lets the contract verify every passkey signature on-chain. Whitechain Sepolia has it (see
+  WHITECHAIN_FEEDBACK.md).
 - [anandh8x/payeelock](https://github.com/anandh8x/payeelock): Confirmation of Payee for invoices, with a DNS-TXT
   verifier, a domain attestor and an on-chain payee registry. It has no passkeys and no binding to the browser's
-  origin. Domain to payout registries are not new; checking the browser-attested site on-chain at payment time, for
-  website checkout, is what Sitebound adds.
+  origin.
 - On-chain WebAuthn verifiers (Solady, base/webauthn-sol) verify the signature but not `topOrigin`.
+
+What Sitebound adds is the combination: an on-chain registry from the browser-signed origin to the payout wallet,
+checked at payment time by the same contract that moves the funds, and an addressless payee (`pay()` has no payee
+field). It is the first we found to do this. On Whitechain Sepolia, none of the 40 most recently verified contracts
+on the explorer (verified 6 Nov, 12:09 to 15:03 IST; checked 17:10 IST) parses WebAuthn data (`clientDataJSON`,
+`authenticatorData`) or keys payouts by a web origin or domain; a few verify P-256 signatures. Older contracts: not
+checked.
 
 ## AI use
 
