@@ -221,7 +221,7 @@ contract Sitebound {
         require(block.timestamp <= p.deadline, "deadline passed");
         bytes32 challenge = keccak256(
             abi.encode(
-                block.chainid, address(this), siteHash, p.orderId, p.credentialHash, p.amount, p.relayerFee, p.deadline
+                block.chainid, address(this), siteHash, p.orderId, p.amount, p.relayerFee, p.deadline
             )
         );
         require(_at(cd, p.challengeIdx, bytes.concat('"challenge":"', _b64url(challenge), '"')), "bad challenge");

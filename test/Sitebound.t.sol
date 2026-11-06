@@ -147,7 +147,7 @@ contract SiteboundTest is Test {
     /// Builds clientDataJSON and signs it with the passkey, like Chrome does for the frame.
     function _input(Opts memory o) internal view returns (Sitebound.PayInput memory p) {
         bytes32 challenge = keccak256(
-            abi.encode(block.chainid, address(sb), keccak256(bytes(o.top)), o.orderId, cred, o.amount, o.fee, o.deadline)
+            abi.encode(block.chainid, address(sb), keccak256(bytes(o.top)), o.orderId, o.amount, o.fee, o.deadline)
         );
         string memory json = string.concat(
             '{"type":"', o.typ, '","challenge":"', _b64(challenge), '","origin":"', o.origin, '","crossOrigin":',
