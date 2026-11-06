@@ -1,6 +1,7 @@
-// Landing: the ring of sites around the planet, and the search box that opens the shop kit inline.
-// The kit (Preact + ethers) loads only when someone brings a website, so the first paint stays light.
-import { mountSaturn } from './saturn.js';
+// Landing: the search bar with websites orbiting it, the lit dot field behind the page, and the setup kit that
+// opens inline. The kit (Preact + ethers) loads only when someone brings a website, so the first paint stays light.
+import { mountOrbit } from './orbit.js';
+import { mountField } from './field.js';
 
 const C = window.SITEBOUND || {};
 const $ = (id) => document.getElementById(id);
@@ -13,17 +14,17 @@ const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const HOST = /^([a-z0-9-]+\.)+[a-z][a-z0-9-]+$/; // needs a dot and an alphabetic TLD (punycode ok)
 
-// What the shop owner typed -> { origin } or { error }.
+// What the site owner typed -> { origin } or { error }.
 function toOrigin(raw) {
   let s = raw.replace(/\s+/g, '').toLowerCase();
-  if (!s) return { error: 'Type your website first, for example shop.com.' };
-  if (s.startsWith('http://')) return { error: 'Sitebound needs https. Use shop.com or https://shop.com.' };
+  if (!s) return { error: 'Type your website first, for example example.com.' };
+  if (s.startsWith('http://')) return { error: 'Sitebound needs https. Use example.com or https://example.com.' };
   s = s.replace(/^https:\/\//, '');
   const host = s.split(/[/?#]/)[0];
-  if (host.includes('@') || host.includes('://')) return { error: 'Use just the site name, like shop.com.' };
+  if (host.includes('@') || host.includes('://')) return { error: 'Use just the site name, like example.com.' };
   let url;
   try { url = new URL('https://' + host); } catch { url = null; }
-  if (!url || !HOST.test(url.hostname)) return { error: 'That does not look like a website. Try shop.com.' };
+  if (!url || !HOST.test(url.hostname)) return { error: 'That does not look like a website. Try example.com.' };
   return { origin: url.origin };
 }
 
@@ -35,34 +36,40 @@ function show(text) {
 
 const hostOf = (o) => { try { return new URL(o).host; } catch { return o; } };
 
-// ---------------------------------------------------------------- the ring
+// ---------------------------------------------------------------- the orbit
 
 const KEY = 'sitebound.ring';
 const recall = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
 const remember = (list) => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch { /* private mode */ } };
 
-// The real demo shop, the fake copy of it, and reserved .example names (RFC 2606) as stand-ins for other shops.
+// The live demo site, the fake copy of it, and reserved .example names (RFC 2606) as stand-ins for other websites.
 const BASE = [
   C.demoShop && { origin: C.demoShop, label: hostOf(C.demoShop), kind: 'live' },
   C.fakeShop && { origin: C.fakeShop, label: hostOf(C.fakeShop), kind: 'fake' },
-  ...['shop.example', 'coffee.example', 'books.example', 'tickets.example', 'studio.example']
+  ...['bakery.example', 'books.example', 'tickets.example', 'studio.example', 'journal.example']
     .map((h) => ({ origin: 'https://' + h, label: h, kind: 'demo' })),
 ].filter(Boolean);
 let typed = recall().filter((o) => typeof o === 'string' && /^https:\/\/[^/]+$/.test(o)).slice(-6);
-// Narrow screens show only the first few, so: the live shop, then what the visitor typed (newest first), then the rest.
+// Narrow screens show only the first few, so: the live demo, then what the visitor typed (newest first), then the rest.
 const ringSites = () => [
   ...BASE.filter((b) => b.kind === 'live'),
   ...typed.filter((o) => !BASE.some((b) => b.origin === o)).reverse().map((o) => ({ origin: o, label: hostOf(o), kind: 'user' })),
   ...BASE.filter((b) => b.kind !== 'live'),
 ];
 
-const saturn = mountSaturn($('saturn'), { sites: ringSites(), onPick: (origin) => open(origin) });
+mountField($('field'));
+const orbit = mountOrbit($('orbit'), {
+  sites: ringSites(),
+  onPick: (origin) => open(origin),
+  around: $('search-row'),
+  keepClear: [...document.querySelectorAll('.hero-h, .tagline, #search-row, .trust, .hero-links > *')],
+});
 
 function addToRing(origin) {
   if (BASE.some((b) => b.origin === origin) || typed.includes(origin)) return;
   typed = [...typed, origin].slice(-6);
   remember(typed);
-  saturn.setSites(ringSites());
+  orbit.setSites(ringSites());
 }
 
 // ---------------------------------------------------------------- the kit
@@ -89,11 +96,11 @@ async function open(origin, { scroll = true } = {}) {
   show('');
   input.value = hostOf(origin);
   addToRing(origin);
-  saturn.highlight(origin);
+  orbit.highlight(origin);
   history.replaceState(null, '', '?site=' + encodeURIComponent(origin) + '#kit');
   kitSection.hidden = false;
   kitSection.setAttribute('aria-busy', 'true');
-  if (!kitRoot.firstChild) kitRoot.innerHTML = '<p class="lede kit-loading" role="status">Loading your shop setup…</p>';
+  if (!kitRoot.firstChild) kitRoot.innerHTML = '<p class="lede kit-loading" role="status">Loading your site setup…</p>';
   if (scroll) kitSection.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' });
   try {
     const { openKit } = await loadKit();
@@ -106,7 +113,7 @@ async function open(origin, { scroll = true } = {}) {
 
 function reset() {
   history.replaceState(null, '', location.pathname);
-  saturn.highlight(null);
+  orbit.highlight(null);
   input.select();
   input.focus({ preventScroll: true });
   window.scrollTo({ top: 0, behavior: reduced() ? 'auto' : 'smooth' });
@@ -132,7 +139,7 @@ document.querySelector('[data-focus-search]').addEventListener('click', (e) => {
 const demoLink = document.querySelector('[data-demo-shop]');
 if (demoLink && C.demoShop) demoLink.href = C.demoShop + '/';
 
-// A shared link (?site=https://shop.com) opens straight into that shop's kit.
+// A shared link (?site=https://example.com) opens straight into that site's kit.
 const shared = new URLSearchParams(location.search).get('site');
 if (shared) {
   const { origin } = toOrigin(shared);

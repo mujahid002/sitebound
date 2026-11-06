@@ -19,7 +19,7 @@
   <meta name="theme-color" content="#07080a">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
-  <!-- The inline shop kit reuses the onboarding and dashboard components and their styles. -->
+  <!-- The inline setup kit reuses the onboarding and dashboard components and their styles. -->
   <link rel="stylesheet" href="../onboard/common.css">
   <link rel="stylesheet" href="../onboard/style.css">
   <link rel="stylesheet" href="../dashboard/style.css">
@@ -37,6 +37,7 @@
   <script type="module" src="main.js"></script>
 </head>
 <body>
+  <canvas id="field" class="field" aria-hidden="true"></canvas>
   <a class="skip" href="#site">Skip to search</a>
 
   <header class="top">
@@ -48,42 +49,44 @@
       <span>Sitebound</span>
     </a>
     <nav aria-label="Primary">
-      <a data-demo-shop href="https://sitebound-demo.pages.dev/">Demo shop</a>
+      <a data-demo-shop href="https://sitebound-demo.pages.dev/">Live demo</a>
       <a href="#verify">Verify us</a>
       <a href="https://github.com/mujahid002/sitebound">GitHub</a>
     </nav>
   </header>
 
   <main>
-    <section class="hero" aria-labelledby="brand">
-      <div id="saturn" class="saturn" role="group" aria-label="Sites on the ring. Pick one to see its Sitebound status."></div>
+    <section class="hero" aria-labelledby="hero-h">
       <div class="hero-inner">
-        <h1 id="brand" class="brand">Sitebound</h1>
-        <p class="tagline">Kill the checkout address.<br><span>Every payment is bound to the site.</span></p>
+        <h1 id="hero-h" class="hero-h">Addressless checkout<br> for your website.</h1>
+        <p class="tagline">No one has to trust the page. Only the contract, and the site the buyer's browser signs.</p>
 
         <form id="site-form" class="search" novalidate>
           <label class="sr-only" for="site">Your website</label>
-          <div class="pill">
-            <svg class="pill-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
-              <ellipse cx="12" cy="12" rx="3.8" ry="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
-              <path d="M3 12h18" fill="none" stroke="currentColor" stroke-width="1.8"/>
-            </svg>
-            <input id="site" name="site" type="text" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false"
-                   placeholder="Bring your website, e.g. shop.com" aria-describedby="site-msg" required>
+          <div id="search-row" class="search-row">
+            <div class="pill">
+              <svg class="pill-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
+                <ellipse cx="12" cy="12" rx="3.8" ry="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M3 12h18" fill="none" stroke="currentColor" stroke-width="1.8"/>
+              </svg>
+              <input id="site" name="site" type="text" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false"
+                     placeholder="yourwebsite.com" aria-describedby="site-msg" required>
+            </div>
+            <button class="btn search-go" type="submit">Bring your website</button>
           </div>
           <p id="site-msg" class="msg" role="alert"></p>
-          <div class="actions">
-            <button class="btn" type="submit">Bring your website</button>
-            <a class="quiet" href="#how">How it works</a>
-          </div>
         </form>
         <p class="trust">Only the domain's owner, proven by a DNS record, can choose the wallet its payments go to.</p>
-        <p class="live-line"><a class="live-chip" href="#live"><span class="live-dot" aria-hidden="true"></span>Live on Whitechain Sepolia</a></p>
+        <p class="hero-links">
+          <a class="live-chip" href="#live"><span class="live-dot" aria-hidden="true"></span>Live on Whitechain Sepolia</a>
+          <a class="quiet" href="#how">How it works</a>
+        </p>
       </div>
+      <div id="orbit" class="orbit" role="group" aria-label="Websites on the orbit. Pick one to see its Sitebound status."></div>
     </section>
 
-    <section id="kit" class="kit" aria-label="Your shop on Sitebound" hidden>
+    <section id="kit" class="kit" aria-label="Your website on Sitebound" hidden>
       <div id="kit-root" class="kit-root"></div>
     </section>
 
@@ -105,7 +108,7 @@
           <div class="fix">
             <b class="tag">Fix</b>
             <h3>Addressless.</h3>
-            <p>The shop never puts an address in its code, and the buyer never sees one. Nothing to copy, paste or compare.</p>
+            <p>Your site never puts an address in its code, and the buyer never sees one. Nothing to copy, paste or compare.</p>
           </div>
         </li>
         <li>
@@ -121,10 +124,10 @@
     </section>
 
     <section class="band strips" aria-label="Getting started">
-      <div id="shops" class="strip" aria-labelledby="shops-h">
-        <h2 id="shops-h" class="strip-title">For shops</h2>
+      <div id="owners" class="strip" aria-labelledby="owners-h">
+        <h2 id="owners-h" class="strip-title">For website owners</h2>
         <ol class="steps">
-          <li><h3>Type your domain</h3><p>The site you own, like shop.com.</p></li>
+          <li><h3>Type your domain</h3><p>The site you own, like example.com.</p></li>
           <li><h3>Add one DNS TXT record</h3><p>Proves you control the domain, once.</p></li>
           <li><h3>Paste a ~20-line snippet</h3><p>Your checkout opens the Sitebound frame. No address in your code.</p></li>
         </ol>
@@ -174,8 +177,8 @@
       <ul class="cando" aria-label="What the contract can and cannot do">
         <li><b>Pays only the site the buyer is on.</b> The payee is the wallet registered for the origin the buyer's browser signed, never an address from the page.</li>
         <li><b>The relayer cannot redirect a payment.</b> It only submits what the buyer's passkey signed. Its attestor key registers a site's payout after the DNS check: a new site is live at once, and a change to an existing payout waits <span data-delay>1 hour</span>, during which the current payout wallet can freeze it.</li>
-        <li><b>No admin key.</b> No owner, no upgrade and no pause. The contract never holds funds: USDT moves straight from the buyer to the shop.</li>
-        <li><b>Limits.</b> Testnet only, not audited. The frame shows the site the browser reports; Sitebound does not vouch for what a shop sells.</li>
+        <li><b>No admin key.</b> No owner, no upgrade and no pause. The contract never holds funds: USDT moves straight from the buyer to the site's payout wallet.</li>
+        <li><b>Limits.</b> Testnet only, not audited. The frame shows the site the browser reports; Sitebound does not vouch for what a site sells.</li>
       </ul>
     </section>
 
@@ -193,7 +196,7 @@
       <span>MIT</span>
     </p>
     <p class="limits">Only the owner of a domain can set where its payments go: its DNS TXT record names the payout wallet, and that is the only wallet the relayer will register for it. The relayer is a trusted step in this version.</p>
-    <p class="limits">Limits: testnet only and not audited. The site shown is what the browser reports, and Sitebound does not vouch for what a shop sells.</p>
+    <p class="limits">Limits: testnet only and not audited. The site shown is what the browser reports, and Sitebound does not vouch for what a site sells.</p>
   </footer>
 </body>
 </html>
