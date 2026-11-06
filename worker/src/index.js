@@ -1,4 +1,4 @@
-import { Contract, JsonRpcProvider, Signature, Wallet, getAddress, keccak256, toUtf8Bytes, AbiCoder, ZeroAddress } from "ethers";
+import { Contract, JsonRpcProvider, formatEther, Signature, Wallet, getAddress, keccak256, toUtf8Bytes, AbiCoder, ZeroAddress } from "ethers";
 
 export const SITEBOUND_ABI = [
   "function sites(bytes32) view returns (address payout, address pendingPayout, uint64 activeAt, bool frozen, uint256 nonce)",
@@ -247,7 +247,11 @@ export async function handle(req, env) {
 
   try {
     if (req.method === "GET" && path === "/health") {
-      return json({ ok: true, relayer: new Wallet(env.RELAYER_KEY).address, chainId: Number(env.CHAIN_ID) });
+      const out = { ok: true, relayer: new Wallet(env.RELAYER_KEY).address, chainId: Number(env.CHAIN_ID),
+        limits: { minFeeBaseUnits: String(env.MIN_FEE ?? 10000), payPerPasskeyPerDay: Number(env.PAY_DAILY_CAP || 20),
+          registerPerSitePerDay: Number(env.REGISTER_DAILY_CAP || 3), setupPerWalletPerDay: Number(env.SETUP_DAILY_CAP || 3) } };
+      try { out.gasBalanceWbt = formatEther(await chain(env).wallet.provider.getBalance(out.relayer)); } catch { out.gasBalanceWbt = null; }
+      return json(out);
     }
     const route = ROUTES[path];
     if (!route) return json({ error: "not found" }, 404);
