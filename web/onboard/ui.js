@@ -78,7 +78,6 @@ export function useTick(ms = 1000, on = true) {
 // The shared "not deployed / no config / bad site" full-page state.
 export function Empty({ title, children, action }) {
   return html`<section class="empty" aria-live="polite">
-    <div class="empty-mark" aria-hidden="true"><${Icon} name="globe" /></div>
     <h2>${title}</h2>
     <p>${children}</p>
     ${action}

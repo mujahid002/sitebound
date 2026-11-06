@@ -152,8 +152,6 @@ button { font: inherit; color: inherit; }
 
 /* Full-page empty / error states */
 .empty { display: grid; justify-items: center; text-align: center; gap: 10px; padding: clamp(40px, 12vw, 96px) 8px; }
-.empty-mark { width: 56px; height: 56px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--muted); }
-.empty-mark .icon { width: 26px; height: 26px; }
 .empty h2 { font-size: clamp(1.35rem, 4.6vw, 1.75rem); letter-spacing: -0.025em; line-height: 1.2; text-wrap: balance; margin-top: 6px; }
 .empty p { color: var(--muted); max-width: 46ch; text-wrap: pretty; overflow-wrap: anywhere; }
 .empty .btn, .empty .row { margin-top: 12px; }
