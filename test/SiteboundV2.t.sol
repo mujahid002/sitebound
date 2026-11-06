@@ -1133,6 +1133,194 @@ contract SiteboundV2Test is Test {
         assertEq(payout, address(0x7001));
     }
 
+    // ---------------------------------------------------------- quote signer
+
+    uint256 constant QUOTE_KEY = 0x0C0DE;
+
+    function _quoteSigner(address signer) internal {
+        vm.prank(shopWallet);
+        sb.setQuoteSigner(keccak256(bytes(SHOP)), signer);
+        vm.warp(block.timestamp + DELAY);
+    }
+
+    function _quoteDigest(bytes32 orderId, uint256 amount, uint64 expiry) internal view returns (bytes32) {
+        bytes32 sh = keccak256(
+            abi.encode(
+                keccak256("Quote(bytes32 siteHash,bytes32 orderId,address token,uint256 amount,uint64 expiry)"),
+                keccak256(bytes(SHOP)), orderId, address(usdt), amount, expiry
+            )
+        );
+        return keccak256(abi.encodePacked("\x19\x01", _domain(), sh));
+    }
+
+    function _quote(uint256 key, bytes32 orderId, uint256 amount, uint64 expiry) internal view returns (bytes memory) {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(key, _quoteDigest(orderId, amount, expiry));
+        return abi.encodePacked(r, s, v);
+    }
+
+    function test_quote_signer_change_waits_for_delay_and_bumps_version() public {
+        bytes32 siteHash = keccak256(bytes(SHOP));
+        vm.expectRevert("not payout");
+        sb.setQuoteSigner(siteHash, vm.addr(QUOTE_KEY));
+        uint256 v = sb.configVersion(siteHash);
+        vm.prank(shopWallet);
+        sb.setQuoteSigner(siteHash, vm.addr(QUOTE_KEY));
+        assertEq(sb.configVersion(siteHash), v + 1);
+        _pay(_opts("Q0")); // not active yet: plain pay() still works
+        vm.warp(block.timestamp + DELAY);
+        assertEq(sb.configVersion(siteHash), v + 2);
+        SiteboundV2.PayInput memory p = _input(_opts("Q1"));
+        vm.expectRevert("quote required");
+        sb.pay(p);
+    }
+
+    function test_quoted_payment_pays_and_plain_sites_refuse_quotes() public {
+        SiteboundV2.PayInput memory plain = _input(_opts("Q2"));
+        vm.expectRevert("no quote signer");
+        sb.payWithQuote(plain, uint64(block.timestamp + 1 hours), "");
+        _quoteSigner(vm.addr(QUOTE_KEY));
+        Opts memory o = _opts("Q3");
+        uint64 exp = uint64(block.timestamp + 10 minutes);
+        sb.payWithQuote(_input(o), exp, _quote(QUOTE_KEY, o.orderId, o.amount, exp));
+        assertEq(usdt.balanceOf(shopWallet), 10e6);
+    }
+
+    function test_hacked_page_amount_fails_the_quote() public {
+        _quoteSigner(vm.addr(QUOTE_KEY));
+        Opts memory o = _opts("Q4");
+        uint64 exp = uint64(block.timestamp + 10 minutes);
+        bytes memory q = _quote(QUOTE_KEY, o.orderId, 10e6, exp); // the merchant quoted 10
+        o.amount = 11e6; // the page asked the buyer for 11, and the buyer signed 11
+        SiteboundV2.PayInput memory p = _input(o);
+        vm.expectRevert("bad quote");
+        sb.payWithQuote(p, exp, q);
+    }
+
+    function test_quote_from_wrong_signer_expired_or_other_order_reverts() public {
+        _quoteSigner(vm.addr(QUOTE_KEY));
+        Opts memory o = _opts("Q5");
+        uint64 exp = uint64(block.timestamp + 5 minutes); // before the passkey deadline (10 minutes)
+        SiteboundV2.PayInput memory p = _input(o);
+        bytes memory wrong = _quote(0xBAD2, o.orderId, o.amount, exp);
+        vm.expectRevert("bad quote");
+        sb.payWithQuote(p, exp, wrong);
+        bytes memory other = _quote(QUOTE_KEY, "Q-other", o.amount, exp); // replayed from another order
+        vm.expectRevert("bad quote");
+        sb.payWithQuote(p, exp, other);
+        bytes memory short = new bytes(64);
+        vm.expectRevert("bad quote");
+        sb.payWithQuote(p, exp, short);
+        bytes memory good = _quote(QUOTE_KEY, o.orderId, o.amount, exp);
+        vm.expectRevert("bad quote"); // expiry changed after signing
+        sb.payWithQuote(p, exp + 1, good);
+        vm.warp(exp + 1);
+        vm.expectRevert("quote expired");
+        sb.payWithQuote(p, exp, good);
+    }
+
+    function test_quote_from_an_erc1271_signer() public {
+        Approver approver = new Approver();
+        _quoteSigner(address(approver));
+        Opts memory o = _opts("Q6");
+        uint64 exp = uint64(block.timestamp + 10 minutes);
+        SiteboundV2.PayInput memory p = _input(o);
+        vm.expectRevert("bad quote");
+        sb.payWithQuote(p, exp, "x");
+        approver.approve(_quoteDigest(o.orderId, o.amount, exp));
+        sb.payWithQuote(p, exp, "x");
+        assertEq(usdt.balanceOf(shopWallet), 10e6);
+    }
+
+    /// The quote below was signed by ethers v6 `signTypedData` (key 0x0C0DE) for chain 31337, the contract at
+    /// 0x…5B7e02 and the token at 0x…70CE: what the merchant-backend helper produces.
+    function test_quote_signature_from_ethers_is_accepted() public {
+        vm.etch(address(0x70CE), address(usdt).code);
+        usdt = MockToken(address(0x70CE));
+        address at = 0x00000000000000000000000000000000005B7e02;
+        deployCodeTo(
+            "SiteboundV2.sol:SiteboundV2",
+            abi.encode(address(usdt), FRAME, sha256("localhost"), _one(vm.addr(attestorKey)), uint256(1), DELAY, GUARDIAN),
+            at
+        );
+        sb = SiteboundV2(at);
+        usdt.mint(wallet, 100e6);
+        vm.prank(wallet);
+        usdt.approve(at, type(uint256).max);
+        _register(SHOP, shopWallet);
+        _bind(walletKey, 50e6, 100e6, uint64(block.timestamp + 30 days));
+        assertEq(vm.addr(QUOTE_KEY), 0xa1aDe93CEF63621B7D4379dD8fc0DF402Cd78469);
+        _quoteSigner(vm.addr(QUOTE_KEY));
+        SiteboundV2.PayInput memory p = _input(_opts("Q7"));
+        sb.payWithQuote(
+            p,
+            1_900_000_000,
+            hex"ae2b65dedccd9e35bc022e60221189e287305e4bcb5c3d71ee3abdfc259861202aeb64335ceca0f93524c325797c9189e957bd706bfd86422908c6d77758e9f71b"
+        );
+        assertEq(usdt.balanceOf(shopWallet), 10e6);
+    }
+
+    // ---------------------------------------------------------------- admins
+
+    function test_admin_can_refund_and_freeze_after_delay_and_nothing_else() public {
+        bytes32 siteHash = keccak256(bytes(SHOP));
+        address admin = address(0xAD1);
+        vm.expectRevert("not payout");
+        sb.addAdmin(siteHash, admin);
+        vm.prank(shopWallet);
+        sb.addAdmin(siteHash, admin);
+        bytes32 id = _pay(_opts("M1"));
+        _approve(admin);
+        vm.prank(admin);
+        vm.expectRevert("not refunder"); // not yet
+        sb.refund(id, 1e6);
+        vm.warp(block.timestamp + DELAY);
+        assertTrue(sb.isAdmin(siteHash, admin));
+        vm.prank(admin);
+        sb.refund(id, 1e6);
+        assertEq(usdt.balanceOf(admin), 99e6);
+
+        vm.startPrank(admin);
+        vm.expectRevert("not payout");
+        sb.setRefundOperator(siteHash, admin);
+        vm.expectRevert("not payout");
+        sb.setQuoteSigner(siteHash, admin);
+        vm.expectRevert("not payout");
+        sb.addAdmin(siteHash, address(0xAD2));
+        sb.freeze(siteHash);
+        vm.expectRevert("not payout");
+        sb.unfreeze(siteHash);
+        vm.stopPrank();
+        (,,, bool frozen,) = sb.sites(siteHash);
+        assertTrue(frozen);
+    }
+
+    function test_admin_removal_is_immediate_and_at_most_three() public {
+        bytes32 siteHash = keccak256(bytes(SHOP));
+        vm.startPrank(shopWallet);
+        sb.addAdmin(siteHash, address(0xAD1));
+        sb.addAdmin(siteHash, address(0xAD2));
+        sb.addAdmin(siteHash, address(0xAD3));
+        vm.expectRevert("too many admins");
+        sb.addAdmin(siteHash, address(0xAD4));
+        vm.expectRevert("bad admin");
+        sb.addAdmin(siteHash, address(0xAD1));
+        vm.stopPrank();
+        vm.warp(block.timestamp + DELAY);
+        bytes32 id = _pay(_opts("M2"));
+        _approve(address(0xAD1));
+        vm.prank(shopWallet);
+        sb.removeAdmin(siteHash, address(0xAD1));
+        assertFalse(sb.isAdmin(siteHash, address(0xAD1)));
+        vm.prank(address(0xAD1));
+        vm.expectRevert("not refunder");
+        sb.refund(id, 1e6);
+        vm.prank(shopWallet);
+        sb.addAdmin(siteHash, address(0xAD4)); // a slot is free again
+        vm.prank(address(0xAD2));
+        vm.expectRevert("not payout");
+        sb.removeAdmin(siteHash, address(0xAD3));
+    }
+
     // ------------------------------------------------------------- refund
 
     function test_refund_goes_to_payer_and_is_capped() public {
@@ -1296,5 +1484,18 @@ contract ReentrantToken is MockToken {
         balanceOf[from] -= amount;
         balanceOf[to] += amount;
         return true;
+    }
+}
+
+/// An ERC-1271 signer that approves digests one by one.
+contract Approver {
+    mapping(bytes32 => bool) ok;
+
+    function approve(bytes32 digest) external {
+        ok[digest] = true;
+    }
+
+    function isValidSignature(bytes32 digest, bytes calldata) external view returns (bytes4) {
+        return ok[digest] ? bytes4(0x1626ba7e) : bytes4(0xffffffff);
     }
 }

@@ -5,6 +5,10 @@ interface IERC20 {
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
 }
 
+interface IERC1271 {
+    function isValidSignature(bytes32 hash, bytes calldata signature) external view returns (bytes4);
+}
+
 /// Pays a website's registered wallet, and only that wallet. The site comes from the browser:
 /// the passkey signs clientDataJSON, which carries "topOrigin" (the site the buyer is on).
 /// v2: a site registration needs `threshold` distinct attestors, and the attestor set changes only
@@ -32,8 +36,13 @@ contract SiteboundV2 {
         address refundOperator;
         address pendingOperator;
         uint64 operatorAt; // 0: no operator change pending
-        /// Bumped by every change to the site's split, refund operator or frozen state, including a pending
-        /// change taking effect. The buyer signs it, so a payment signed before a change cannot execute after it.
+        /// When set, every payment needs a Quote this key signed (EOA or ERC-1271 contract).
+        address quoteSigner;
+        address pendingQuoteSigner;
+        uint64 quoteSignerAt; // 0: no quote signer change pending
+        /// Bumped by every change to the site's split, refund operator, quote signer or frozen state, including
+        /// a pending change taking effect. The buyer signs it, so a payment signed before a change cannot
+        /// execute after it.
         uint256 version;
     }
 
@@ -86,6 +95,8 @@ contract SiteboundV2 {
         keccak256("Attest(bytes32 siteHash,address[] to,uint16[] bps,uint256 nonce,uint256 setId,uint64 deadline)");
     bytes32 constant ROTATE_TYPEHASH =
         keccak256("Rotate(address[] attestors,uint256 threshold,uint256 setId,uint64 deadline)");
+    bytes32 constant QUOTE_TYPEHASH =
+        keccak256("Quote(bytes32 siteHash,bytes32 orderId,address token,uint256 amount,uint64 expiry)");
     bytes32 constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
@@ -94,8 +105,8 @@ contract SiteboundV2 {
     uint64 public immutable delay;
     /// Can pause and unpause new payments, and nothing else. address(0): no one can.
     address public immutable guardian;
+    string frameOrigin; // slot 0, as in v1
     bool public paused;
-    string frameOrigin;
 
     /// Attestor sets by id. Set 1 comes from the constructor; each proposal gets the next id.
     mapping(uint256 => mapping(address => bool)) public inSet;
@@ -114,6 +125,10 @@ contract SiteboundV2 {
     mapping(bytes32 => bytes32) public pubKeyOwner;
     mapping(bytes32 => mapping(bytes32 => bool)) public orderUsed;
     mapping(bytes32 => Payment) public payments;
+    uint256 public constant MAX_ADMINS = 3;
+    /// Site admins: when each one's rights start (0: not an admin). They may refund and freeze, nothing else.
+    mapping(bytes32 => mapping(address => uint64)) public adminFrom;
+    mapping(bytes32 => uint256) public adminCount;
 
     event Registered(bytes32 indexed siteHash, string site, address payout);
     event PayoutProposed(bytes32 indexed siteHash, address pendingPayout, uint64 activeAt);
@@ -138,6 +153,9 @@ contract SiteboundV2 {
     event RefundedBy(bytes32 indexed paymentId, address indexed by);
     event RefundOperatorProposed(bytes32 indexed siteHash, address operator, uint64 activeAt);
     event Paused(bool paused);
+    event QuoteSignerProposed(bytes32 indexed siteHash, address signer, uint64 activeAt);
+    event AdminAdded(bytes32 indexed siteHash, address indexed admin, uint64 activeAt);
+    event AdminRemoved(bytes32 indexed siteHash, address indexed admin);
     event AttestorsProposed(uint256 indexed setId, address[] attestors, uint256 threshold, uint64 activeAt);
 
     modifier nonReentrant() {
@@ -293,10 +311,12 @@ contract SiteboundV2 {
         return (st.payout.to, st.payout.bps, st.pending.to, st.pending.bps, st.activeAt);
     }
 
+    /// The owner or an admin can freeze: payments stop and the pending split change is dropped. Only the
+    /// owner can unfreeze.
     function freeze(bytes32 siteHash) external {
         Site storage st = _sites[siteHash];
         _promote(st);
-        require(msg.sender == _first(st.payout), "not payout");
+        require(msg.sender == _first(st.payout) || isAdmin(siteHash, msg.sender), "not payout");
         st.frozen = true;
         st.version++;
         delete st.pending;
@@ -331,6 +351,51 @@ contract SiteboundV2 {
         return (st.refundOperator, st.pendingOperator, st.operatorAt);
     }
 
+    /// The owner names the key that must sign each payment's Quote (its merchant backend); it takes effect
+    /// after `delay`. address(0) stops requiring quotes, also after `delay`.
+    function setQuoteSigner(bytes32 siteHash, address signer) external {
+        Site storage st = _sites[siteHash];
+        _promote(st);
+        require(msg.sender == _first(st.payout), "not payout");
+        st.pendingQuoteSigner = signer;
+        st.quoteSignerAt = uint64(block.timestamp) + delay;
+        st.version++;
+        emit QuoteSignerProposed(siteHash, signer, st.quoteSignerAt);
+    }
+
+    function quoteSignerOf(bytes32 siteHash) external view returns (address signer, address pending, uint64 activeAt) {
+        Site storage st = _sites[siteHash];
+        return (st.quoteSigner, st.pendingQuoteSigner, st.quoteSignerAt);
+    }
+
+    /// Up to MAX_ADMINS per site. Adding waits `delay`; removing is immediate. Owner only.
+    function addAdmin(bytes32 siteHash, address admin) external {
+        Site storage st = _sites[siteHash];
+        _promote(st);
+        require(msg.sender == _first(st.payout), "not payout");
+        require(admin != address(0) && adminFrom[siteHash][admin] == 0, "bad admin");
+        require(adminCount[siteHash] < MAX_ADMINS, "too many admins");
+        adminCount[siteHash]++;
+        uint64 at = uint64(block.timestamp) + delay;
+        adminFrom[siteHash][admin] = at;
+        emit AdminAdded(siteHash, admin, at);
+    }
+
+    function removeAdmin(bytes32 siteHash, address admin) external {
+        Site storage st = _sites[siteHash];
+        _promote(st);
+        require(msg.sender == _first(st.payout), "not payout");
+        require(adminFrom[siteHash][admin] != 0, "not admin");
+        adminCount[siteHash]--;
+        delete adminFrom[siteHash][admin];
+        emit AdminRemoved(siteHash, admin);
+    }
+
+    function isAdmin(bytes32 siteHash, address a) public view returns (bool) {
+        uint64 from = adminFrom[siteHash][a];
+        return from != 0 && block.timestamp >= from;
+    }
+
     /// The version a payment must sign now: the stored one plus each pending change whose delay has passed,
     /// which the next transaction touching the site applies.
     function configVersion(bytes32 siteHash) external view returns (uint256 v) {
@@ -338,6 +403,7 @@ contract SiteboundV2 {
         v = st.version;
         if (st.pending.to.length != 0 && block.timestamp >= st.activeAt) v++;
         if (st.operatorAt != 0 && block.timestamp >= st.operatorAt) v++;
+        if (st.quoteSignerAt != 0 && block.timestamp >= st.quoteSignerAt) v++;
     }
 
     function _promote(Site storage st) internal {
@@ -350,6 +416,12 @@ contract SiteboundV2 {
             st.refundOperator = st.pendingOperator;
             st.pendingOperator = address(0);
             st.operatorAt = 0;
+            st.version++;
+        }
+        if (st.quoteSignerAt != 0 && block.timestamp >= st.quoteSignerAt) {
+            st.quoteSigner = st.pendingQuoteSigner;
+            st.pendingQuoteSigner = address(0);
+            st.quoteSignerAt = 0;
             st.version++;
         }
     }
@@ -409,14 +481,42 @@ contract SiteboundV2 {
     /// Permissionless: anyone can submit, the signature fixes site, the site's config version, order, amount
     /// and fee.
     /// The payout is never an input; it comes from the registry entry of the signed topOrigin.
+    /// For a site without a quote signer.
     function pay(PayInput calldata p) external nonReentrant returns (bytes32 paymentId) {
+        bytes32 siteHash;
+        address wallet;
+        (siteHash, wallet) = _check(p);
+        require(_sites[siteHash].quoteSigner == address(0), "quote required");
+        return _settle(p, wallet, siteHash);
+    }
+
+    /// For a site with a quote signer: its signature over Quote(siteHash, orderId, token, amount, expiry) fixes
+    /// the amount for that order, so page code that changes the amount cannot get the payment through.
+    function payWithQuote(PayInput calldata p, uint64 quoteExpiry, bytes calldata quoteSig)
+        external
+        nonReentrant
+        returns (bytes32 paymentId)
+    {
+        bytes32 siteHash;
+        address wallet;
+        (siteHash, wallet) = _check(p);
+        address signer = _sites[siteHash].quoteSigner;
+        require(signer != address(0), "no quote signer");
+        require(block.timestamp <= quoteExpiry, "quote expired");
+        bytes32 digest =
+            _digest(keccak256(abi.encode(QUOTE_TYPEHASH, siteHash, p.orderId, address(token), p.amount, quoteExpiry)));
+        require(_validSig(signer, digest, quoteSig), "bad quote");
+        return _settle(p, wallet, siteHash);
+    }
+
+    function _check(PayInput calldata p) internal returns (bytes32 siteHash, address wallet) {
         require(!paused, "paused");
         require(p.amount > 0, "zero amount");
         require(p.relayerFee <= MAX_RELAYER_FEE, "fee over cap");
         Buyer storage b = buyers[p.credentialHash];
         _spend(b, p.amount + p.relayerFee);
-        bytes32 siteHash = _verify(p, b);
-        return _settle(p, b.wallet, siteHash);
+        siteHash = _verify(p, b);
+        wallet = b.wallet;
     }
 
     function _spend(Buyer storage b, uint256 total) internal {
@@ -488,7 +588,7 @@ contract SiteboundV2 {
 
     // ------------------------------------------------------------------ refund
 
-    /// Refunds are paid by the refunder: the site's owner (its first payout wallet) or its refund operator
+    /// Refunds are paid by the refunder: the site's owner (its first payout wallet), its refund operator or an admin
     /// sends its own tokens, through its allowance to this contract, to the ORIGINAL payer only. Split
     /// recipients are never charged. The total refunded per payment is capped at the payment's amount; the
     /// relayer fee is not part of it and is not refundable.
@@ -497,7 +597,10 @@ contract SiteboundV2 {
         require(pm.wallet != address(0), "no such payment");
         Site storage st = _sites[pm.siteHash];
         _promote(st);
-        require(msg.sender == _first(st.payout) || msg.sender == st.refundOperator, "not refunder");
+        require(
+            msg.sender == _first(st.payout) || msg.sender == st.refundOperator || isAdmin(pm.siteHash, msg.sender),
+            "not refunder"
+        );
         require(pm.refunded + amount <= pm.amount, "over refund");
         pm.refunded += amount;
         _transferFrom(msg.sender, pm.wallet, amount);
@@ -519,6 +622,20 @@ contract SiteboundV2 {
         address a = ecrecover(digest, v, r, s);
         require(a != address(0), "bad signature");
         return a;
+    }
+
+    /// An EOA's 65-byte (r, s, v) signature, or an ERC-1271 contract's answer.
+    function _validSig(address signer, bytes32 digest, bytes calldata sig) internal view returns (bool) {
+        if (signer.code.length > 0) {
+            (bool ok, bytes memory ret) = signer.staticcall(abi.encodeCall(IERC1271.isValidSignature, (digest, sig)));
+            return ok && ret.length == 32 && abi.decode(ret, (bytes4)) == IERC1271.isValidSignature.selector;
+        }
+        if (sig.length != 65) return false;
+        bytes32 r = bytes32(sig[0:32]);
+        bytes32 s = bytes32(sig[32:64]);
+        if (uint256(s) > 0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0) return false;
+        address a = ecrecover(digest, uint8(sig[64]), r, s);
+        return a != address(0) && a == signer;
     }
 
     /// True when the JSON key pattern `want` sits exactly at `idx`, right after a `{` or `,`.
