@@ -41,6 +41,9 @@
 .step-body .btn { max-width: 100%; }
 .step-body .live { display: grid; gap: 10px; }
 .step-body .live:empty { display: none; }
+.more { margin-top: 6px; font-size: 0.875rem; color: var(--muted); }
+.more summary { cursor: pointer; width: fit-content; }
+.more p { margin-top: 4px; }
 
 .records { display: grid; gap: 8px; }
 .records dd { margin: 0; }
