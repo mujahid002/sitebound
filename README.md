@@ -26,11 +26,13 @@ Built for ETHGlobal Mumbai (Nov 2026) on Whitechain Sepolia testnet. Not audited
 
 - **Website, once.** It proves it controls its domain with a DNS TXT record (`_sitebound.<host>` =
   `sitebound=<payout>`). Attestors check the record and sign, and anyone can submit `register()`.
-  - The registry maps `keccak256("https://shop.com")` to the website's payout split.
+  - The registry maps `keccak256("https://example.com")` to the website's payout split.
   - The contract needs `threshold` signatures from the active attestor set. The deployment is 1-of-1, with the
     relayer as the only attestor.
   - The website pastes one script tag and a `<sitebound-pay amount="12.00" order="A123">` element. There is no
     address in its code.
+  - The onboarding wizard creates the payout wallet in the browser: no extension, no gas. It shows a 12-word recovery
+    phrase once and keeps the wallet in that browser. "I already have a wallet" connects MetaMask or Rabby instead.
 - **Buyer, first time.** In a popup on the Sitebound origin, the buyer:
   - connects a wallet;
   - signs a capped EIP-2612 permit;
@@ -40,7 +42,8 @@ Built for ETHGlobal Mumbai (Nov 2026) on Whitechain Sepolia testnet. Not audited
   One passkey is bound to one wallet.
 - **Buyer, every payment.** The button opens the Sitebound frame in a cross-origin iframe. The frame shows the site
   (from `location.ancestorOrigins`) and the amount, then calls WebAuthn `get()`. One Touch ID signs one exact
-  payment: site, the site's config version, order id, amount, relayer fee and deadline.
+  payment: site, the site's config version, order id, amount, relayer fee and deadline. The buyer pays USDT
+  (the amount plus a 0.01 USDT relayer fee), never gas: the relayer pays the WBT.
 - **Contract.** Chrome writes the embedding page's origin into the signed `clientDataJSON` as `topOrigin`, and page
   code can't change it. `pay()`:
   - checks the passkey signature with the P-256 precompile at `0x100`;
@@ -80,7 +83,7 @@ import { verifyPayment } from './sitebound-merchant.mjs';
 const r = await verifyPayment({
   rpcUrl: 'https://rpc.testnet.whitechain.io',
   contract: SITEBOUND_ADDRESS,
-  expectedSite: 'https://shop.example', // your origin, exactly as the browser reports it
+  expectedSite: 'https://site.example', // your origin, exactly as the browser reports it
   expectedAmount: '12.00',              // your price for this order, not the page's
   orderId: 'A123',
   paymentId: fromTheBrowser,            // optional: only compared, never trusted
@@ -91,7 +94,7 @@ if (!r.ok) throw new Error(`not paid: ${r.reason}`);
 It recomputes the payment id from your site and order, then reads `payments(id)` on chain. It requires a payer, your
 site, the exact amount, and nothing refunded. Use random order ids: anyone can pay an unused one at their own cost.
 In e2e it accepts a real payment and refuses five wrong claims: a different amount, another order's id, an unpaid
-order, a refunded order, and another site. The demo shop runs the same check in the page (a real website runs it on
+order, a refunded order, and another site. The demo site runs the same check in the page (a real website runs it on
 its server): a forged `sitebound:paid` gets "Not shipped", a real payment "Order confirmed".
 
 ### Merchant quotes (optional)
@@ -106,7 +109,7 @@ import { signQuote } from './sitebound-merchant.mjs';
 
 const quote = await signQuote(new Wallet(process.env.SITEBOUND_QUOTE_KEY), {
   chainId: 1874, contract: SITEBOUND_ADDRESS, token: USDT_ADDRESS,
-  site: 'https://shop.example', order: 'A123', amount: '12.00', // expires in 15 minutes by default
+  site: 'https://site.example', order: 'A123', amount: '12.00', // expires in 15 minutes by default
 });
 // <sitebound-pay amount="12.00" order="A123" quote="${quote}"></sitebound-pay>
 ```
@@ -123,12 +126,12 @@ quote signer can be a contract wallet (ERC-1271).
 | Button | `web/button/sitebound.js` | The `<sitebound-pay>` element. It opens the frame from its own host and fires `sitebound:paid`. |
 | Merchant helper | `web/merchant/sitebound-merchant.mjs` | `verifyPayment` and `signQuote`, for the website's server. |
 | Relayer (optional) | `worker/` | Cloudflare Worker. It pays gas for `register`, `permit`, `bind` and `pay`, and is also the DNS attestor. See `worker/README.md`. |
-| Onboarding | `web/onboard/` | Website setup: wallet, DNS TXT check, register, snippet. |
+| Onboarding | `web/onboard/` | Website setup: payout wallet (created in the browser or your own), DNS TXT check, register, snippet. |
 | Dashboard | `web/dashboard/` | Payments to one site from chain events, refunds, CSV. |
 | Receipt | `web/receipt/` | One payment's receipt, read from the chain: `/receipt/?id=<paymentId>` or `?tx=<hash>`. |
 | Pay link | `web/pay/` | Builds a standalone pay page for the owner's own origin. |
 | Landing | `web/landing/` | The public page, served at the site root. |
-| Demo shop | `web/demo-shop/` | A store whose checkout is only the `<sitebound-pay>` element. |
+| Demo site | `web/demo-shop/` | A site whose checkout is only the `<sitebound-pay>` element. |
 | Attack demos | `web/attack/` | An address swap on a classic checkout, the same script against Sitebound, and a fake site embedding the frame. |
 
 The relayer only pays gas. `pay()` is permissionless and the payee comes from the registry, so a relayer can refuse
@@ -144,7 +147,7 @@ forge install foundry-rs/forge-std   # lib/ is not committed
 forge test                           # v1, SiteboundV2 and the V2 invariant suites
 node web/dev/check-lib.mjs           # the frame's encoders and the merchant helper, on the real Chrome fixture
 (cd worker && npm install && node test/local.mjs)  # relayer against anvil, then under wrangler dev
-(cd e2e && npm install && npm test)                # headless Chromium: setup, pay, refund, demo shop, quotes
+(cd e2e && npm install && npm test)                # headless Chromium: setup, pay, refund, demo site, quotes
 ```
 
 `forge test` has no P-256 precompile, so the tests etch a Solidity verifier (`test/utils/P256Verifier.sol`) at
@@ -152,21 +155,21 @@ node web/dev/check-lib.mjs           # the frame's encoders and the merchant hel
 (`test/fixtures/frame_assertion_v2.json`, captured by `e2e/capture-fixture.mjs`). e2e expects Chrome for Testing
 from Playwright's cache, or `CHROME=<binary>`.
 
-To run the web pages locally (the shop and the frame must be different origins):
+To run the web pages locally (the site and the frame must be different origins):
 
 ```sh
 python3 web/dev/serve.py
-# shop  http://127.0.0.1:8001   (web/ served with no-store)
+# site  http://127.0.0.1:8001   (web/ served with no-store)
 # frame http://localhost:8002   (the same web/ folder, a different origin)
 ```
 
-- Demo shop: http://127.0.0.1:8001/demo-shop/
+- Demo site: http://127.0.0.1:8001/demo-shop/
 - Attack demos: http://127.0.0.1:8001/attack/. For the fake-site page, serve `web/` on a third origin too:
   `python3 -m http.server 8003 --bind 127.0.0.1 --directory web`, then open http://127.0.0.1:8003/attack/phish.html.
 - Local passkeys use rpId `localhost`, so the frame must be on `localhost`.
 - `web/config.js` holds the chain id, RPC, explorer, contract address and relayer URL for the frame.
 
-Hosting: `deploy/pages.sh` deploys the frame host, the demo shop and the fake-site copy to Cloudflare Pages (needs
+Hosting: `deploy/pages.sh` deploys the frame host, the demo site and the fake-site copy to Cloudflare Pages (needs
 `wrangler login`). A real website loads the button from the frame host, because the button opens the frame next to
 its own script URL.
 
@@ -192,7 +195,7 @@ For the demo, the relayer can add any website without a DNS record. This is off 
 `ADMIN_TOKEN` secret.
 
 ```sh
-sh scripts/add-site.sh https://shop.example 0xPayoutAddress   # prints the register tx hash and an explorer link
+sh scripts/add-site.sh https://site.example 0xPayoutAddress   # prints the register tx hash and an explorer link
 ```
 
 - The script stores the payout in the relayer's KV (`POST /admin/sites` with `Authorization: Bearer $ADMIN_TOKEN`),
@@ -216,7 +219,9 @@ sh scripts/add-site.sh https://shop.example 0xPayoutAddress   # prints the regis
 - Deprecated v1 Sitebound, superseded by V2: [`0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73`](https://explorer.testnet.whitechain.io/address/0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73). Its sites, bindings and
   allowances do not carry over.
 - Frame, landing, onboarding, dashboard: https://sitebound-pay.pages.dev
-- Demo shop: https://sitebound-demo.pages.dev
+- Demo site: https://sitebound-demo.pages.dev
+- Real-domain demo: https://0xmujahid.xyz, the owner's portfolio with a "Buy me a coffee" section (3, 5 or 10 USDT)
+  that uses the `<sitebound-pay>` button (`web/portfolio/index.html`). Registered on chain: not checked.
 - Relayer Worker: https://sitebound-relayer.sitebound-relayer.workers.dev (`/health`)
 - First USDT payment: TBD
 - Explorer: https://explorer.testnet.whitechain.io
