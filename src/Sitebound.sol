@@ -56,12 +56,10 @@ contract Sitebound {
     bytes32 constant ATTEST_TYPEHASH = keccak256("Attest(bytes32 siteHash,address payout,uint256 nonce,uint64 deadline)");
     bytes32 constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-    uint256 constant P256N_HALF = 0x7fffffff800000007fffffffffffffffde737d56d38bcf4279dce5617e3192a8;
 
     IERC20 public immutable token;
     bytes32 public immutable rpIdHash;
     uint64 public immutable delay;
-    bytes32 immutable frameOriginHash;
     string frameOrigin;
     mapping(address => bool) public isAttestor;
 
@@ -91,9 +89,9 @@ contract Sitebound {
     event Refunded(bytes32 indexed paymentId, address indexed wallet, uint256 amount);
 
     constructor(IERC20 token_, string memory frameOrigin_, bytes32 rpIdHash_, address[] memory attestors, uint64 delay_) {
+        require(address(token_).code.length > 0, "token has no code");
         token = token_;
         frameOrigin = frameOrigin_;
-        frameOriginHash = keccak256(bytes(frameOrigin_));
         rpIdHash = rpIdHash_;
         delay = delay_;
         for (uint256 i; i < attestors.length; i++) isAttestor[attestors[i]] = true;
@@ -198,6 +196,7 @@ contract Sitebound {
     /// Permissionless: anyone can submit, the signature fixes site, order, amount and fee.
     /// The payout is never an input; it comes from the registry entry of the signed topOrigin.
     function pay(PayInput calldata p) external returns (bytes32 paymentId) {
+        require(p.amount > 0, "zero amount");
         Buyer storage b = buyers[p.credentialHash];
         _spend(b, p.amount + p.relayerFee);
         bytes32 siteHash = _verify(p, b);

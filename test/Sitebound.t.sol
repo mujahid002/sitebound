@@ -292,6 +292,21 @@ contract SiteboundTest is Test {
         sb.pay(p);
     }
 
+    function test_zero_amount_reverts() public {
+        Opts memory o = _opts("B0");
+        o.amount = 0;
+        Sitebound.PayInput memory p = _input(o);
+        vm.expectRevert("zero amount");
+        sb.pay(p);
+    }
+
+    function test_token_without_code_reverts_at_deploy() public {
+        address[] memory att = new address[](0);
+        bytes32 rp = sha256("localhost");
+        vm.expectRevert("token has no code");
+        new Sitebound(IERC20(address(0xdead)), FRAME, rp, att, DELAY);
+    }
+
     function test_wrong_origin_reverts() public {
         Opts memory o = _opts("B1");
         o.origin = "https://evil-frame.example";
