@@ -181,6 +181,34 @@ async function run(stop) {
   r = await call(capped, "/register", { site: "https://capped.example", payout: shop.address });
   check("register per-site daily cap", r.status === 429, r.json);
 
+  console.log("DEMO_SITES");
+  const DEMO = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
+  const demoEnv = env({ DEMO_SITES: `https://demo.example=${DEMO}` });
+  let dohCalls = 0;
+  const stubFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    if (new URL(typeof url === "string" ? url : url.url).hostname === "cloudflare-dns.com") dohCalls++;
+    return stubFetch(url, init);
+  };
+  r = await call(demoEnv, "/dns/check", { site: "https://demo.example" });
+  check("demo site: dns/check ok with the pinned payout", r.status === 200 && r.json.ok === true && r.json.payout === DEMO, r.json);
+  check("demo site: no DNS lookup", dohCalls === 0, dohCalls);
+  r = await call(demoEnv, "/register", { site: "https://demo.example", payout: shop.address });
+  check("demo site: register with a different payout rejected", r.status === 400 && /does not match/.test(r.json.error), r.json);
+  check("demo site: register rejection did no DNS lookup", dohCalls === 0, dohCalls);
+  r = await call(demoEnv, "/dns/check", { site: "https://notdemo.example" });
+  check("site not in DEMO_SITES goes through DNS and is rejected without TXT", r.status === 400 && /TXT/.test(r.json.error) && dohCalls === 1, { json: r.json, dohCalls });
+  r = await call(demoEnv, "/dns/check", { site: "https://shop.example" });
+  check("site not in DEMO_SITES uses its TXT payout", r.status === 200 && r.json.payout === newShop.address && dohCalls === 2, { json: r.json, dohCalls });
+  const malformed = env({ DEMO_SITES: `https://bad.example, https://demo.example=${DEMO}` });
+  TXT["bad.example"] = [`"sitebound=${shop.address}"`];
+  dohCalls = 0;
+  r = await call(malformed, "/dns/check", { site: "https://bad.example" });
+  check("malformed DEMO_SITES entry (no '=') ignored, DNS used", r.status === 200 && r.json.payout === shop.address && dohCalls === 1, { json: r.json, dohCalls });
+  r = await call(malformed, "/dns/check", { site: "https://demo.example" });
+  check("valid entry after a malformed one still works", r.status === 200 && r.json.payout === DEMO && dohCalls === 1, { json: r.json, dohCalls });
+  globalThis.fetch = stubFetch;
+
   // The fixture shop is http://127.0.0.1:8001, which the relayer refuses to attest; the test signs it as the attestor directly.
   const fxHash = keccak256(toUtf8Bytes(FIX.topOrigin));
   const deadline = Math.floor(Date.now() / 1000) + 3600;
