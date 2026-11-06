@@ -132,7 +132,7 @@ export function mountOrbit(host, { sites = [], onPick = () => {}, around, keepCl
     el.addEventListener('pointerleave', () => { if (hovered === c) { hovered = null; poke(); } });
     el.addEventListener('focus', () => { hovered = c; poke(); });
     el.addEventListener('blur', () => { if (hovered === c) { hovered = null; poke(); } });
-    face.addEventListener('animationend', () => face.classList.remove('is-new'));
+    face.addEventListener('animationend', () => face.classList.remove('is-new', 'is-in'));
     return c;
   }
 
@@ -145,7 +145,10 @@ export function mountOrbit(host, { sites = [], onPick = () => {}, around, keepCl
       let c = chips.find((x) => x.origin === s.origin);
       if (!c) {
         c = make(s);
-        if (pop && !reduce) c.face.classList.add('is-new');
+        if (!reduce) {
+          c.face.classList.add(pop ? 'is-new' : 'is-in');
+          c.face.style.setProperty('--k', next.length); // first paint: chips fade in one after another
+        }
       }
       next.push(c);
     }

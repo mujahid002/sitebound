@@ -73,11 +73,17 @@
               <input id="site" name="site" type="text" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false"
                      placeholder="yourwebsite.com" aria-describedby="site-msg" required>
             </div>
-            <button class="btn search-go" type="submit">Bring your website</button>
+            <button class="btn search-go" type="submit">
+              <span>Bring your website</span>
+              <svg class="go-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span class="spin go-spin" aria-hidden="true"></span>
+            </button>
           </div>
-          <p id="site-msg" class="msg" role="alert"></p>
+          <div class="under">
+            <p id="site-msg" class="msg" role="alert"></p>
+            <p class="trust">Only the domain's owner, proven by a DNS record, can choose the wallet its payments go to.</p>
+          </div>
         </form>
-        <p class="trust">Only the domain's owner, proven by a DNS record, can choose the wallet its payments go to.</p>
         <p class="hero-links">
           <a class="live-chip" href="#live"><span class="live-dot" aria-hidden="true"></span>Live on Whitechain Sepolia</a>
           <a class="quiet" href="#how">How it works</a>
@@ -91,10 +97,10 @@
     </section>
 
     <section id="how" class="band" aria-labelledby="how-h">
-      <h2 id="how-h" class="section-title">Three ways crypto checkout goes wrong. <span>One fix each.</span></h2>
+      <h2 id="how-h" class="section-title">Three ways crypto checkout fails</h2>
       <ol class="fixes">
-        <li>
-          <span class="n" aria-hidden="true">1</span>
+        <li class="panel">
+          <span class="n" aria-hidden="true">01</span>
           <p class="problem"><b class="tag">Problem</b>Hacked checkout code swaps the address.</p>
           <div class="fix">
             <b class="tag">Fix</b>
@@ -102,8 +108,8 @@
             <p>The buyer's browser signs which site they are on, and the contract pays only the wallet registered for that site. Hacked checkout code can change what the page says, but not who gets paid.</p>
           </div>
         </li>
-        <li>
-          <span class="n" aria-hidden="true">2</span>
+        <li class="panel">
+          <span class="n" aria-hidden="true">02</span>
           <p class="problem"><b class="tag">Problem</b>Addresses make checkout painful.</p>
           <div class="fix">
             <b class="tag">Fix</b>
@@ -111,8 +117,8 @@
             <p>Your site never puts an address in its code, and the buyer never sees one. Nothing to copy, paste or compare.</p>
           </div>
         </li>
-        <li>
-          <span class="n" aria-hidden="true">3</span>
+        <li class="panel">
+          <span class="n" aria-hidden="true">03</span>
           <p class="problem"><b class="tag">Problem</b>Crypto has no 3-D Secure.</p>
           <div class="fix">
             <b class="tag">Fix</b>
@@ -124,7 +130,15 @@
     </section>
 
     <section class="band strips" aria-label="Getting started">
-      <div id="owners" class="strip" aria-labelledby="owners-h">
+      <div class="panel route" data-flow>
+        <h2 class="strip-title">How a payment is routed</h2>
+        <ol class="route-flow">
+          <li><span class="rt">Browser</span><h3>Signs the site it is on</h3><p>The origin the buyer is on, never an address from the page.</p></li>
+          <li><span class="rt">Contract</span><h3>Looks up that site</h3><p>Only the wallet registered for the site counts.</p></li>
+          <li><span class="rt">Wallet</span><h3>Gets paid</h3><p>USDT goes straight from the buyer. The contract holds nothing.</p></li>
+        </ol>
+      </div>
+      <div id="owners" class="panel strip" aria-labelledby="owners-h" data-flow>
         <h2 id="owners-h" class="strip-title">For website owners</h2>
         <ol class="steps">
           <li><h3>Type your domain</h3><p>The site you own, like example.com.</p></li>
@@ -132,7 +146,7 @@
           <li><h3>Paste a ~20-line snippet</h3><p>Your checkout opens the Sitebound frame. No address in your code.</p></li>
         </ol>
       </div>
-      <div id="buyers" class="strip" aria-labelledby="buyers-h">
+      <div id="buyers" class="panel strip" aria-labelledby="buyers-h" data-flow>
         <h2 id="buyers-h" class="strip-title">For buyers</h2>
         <ol class="steps">
           <li><h3>First time</h3><p>Connect your wallet and create a passkey.</p></li>
@@ -142,19 +156,21 @@
     </section>
 
     <section id="verify" class="band verify" aria-labelledby="verify-h">
-      <h2 id="verify-h" class="section-title">Verify us. <span>Don't trust, verify.</span></h2>
+      <h2 id="verify-h" class="section-title">Check the contract yourself</h2>
       <div class="verify-grid">
-        <div class="vcard">
+        <div class="panel vcard">
           <p class="tag">Contract</p>
           <p class="vaddr"><code data-cfg-address>0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73</code></p>
-          <p><a data-cfg-explorer href="https://explorer.testnet.whitechain.io/address/0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73" target="_blank" rel="noopener">View on the Whitechain explorer</a></p>
-          <p class="hint">Whitechain Sepolia testnet, chain 1874. Pays in USDT.</p>
+          <p class="vlinks"><button class="copy" type="button" data-copy>Copy address</button>
+          <a data-cfg-explorer href="https://explorer.testnet.whitechain.io/address/0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73" target="_blank" rel="noopener">View on the Whitechain explorer</a></p>
+          <p class="hint">Whitechain Sepolia testnet, chain 1874. Pays in USDT. A gasless payment adds a <span data-cfg-fee>0.01</span> USDT relayer fee.</p>
         </div>
-        <div class="vcard vcheck" id="code-check" aria-live="polite">
-          <p class="tag">Live check, in your browser</p>
+        <div class="panel vcard vcheck" id="code-check" aria-live="polite">
+          <div class="vhead"><p class="tag">Live check, in your browser</p><span id="vc-chip" class="chip">Waiting</span></div>
           <dl class="vfacts">
             <div><dt>Code on chain, keccak256</dt><dd id="vc-live">not read yet</dd></div>
             <div><dt>Expected, from the repo</dt><dd id="vc-exp">not read yet</dd></div>
+            <div><dt>Runtime code length</dt><dd id="vc-len">not read yet</dd></div>
             <div><dt>Constructor values in the code</dt><dd id="vc-imm">not read yet</dd></div>
           </dl>
           <p id="vc-result" class="vresult">Waiting to run</p>
@@ -162,7 +178,7 @@
             baked into it, hashes it here, and compares it with <a href="../verify/expected.json">verify/expected.json</a>.
             <span class="mono">scripts/verify.sh</span> in the repo rebuilds the same hash from source.</p>
         </div>
-        <div class="vcard">
+        <div class="panel vcard">
           <p class="tag">Built from</p>
           <dl class="vfacts">
             <div><dt>Source</dt><dd><a href="https://github.com/mujahid002/sitebound" target="_blank" rel="noopener">github.com/mujahid002/sitebound</a></dd></div>
@@ -175,15 +191,21 @@
         </div>
       </div>
       <ul class="cando" aria-label="What the contract can and cannot do">
-        <li><b>Pays only the site the buyer is on.</b> The payee is the wallet registered for the origin the buyer's browser signed, never an address from the page.</li>
-        <li><b>The relayer cannot redirect a payment.</b> It only submits what the buyer's passkey signed. Its attestor key registers a site's payout after the DNS check: a new site is live at once, and a change to an existing payout waits <span data-delay>1 hour</span>, during which the current payout wallet can freeze it.</li>
-        <li><b>No admin key.</b> No owner, no upgrade and no pause. The contract never holds funds: USDT moves straight from the buyer to the site's payout wallet.</li>
-        <li><b>Limits.</b> Testnet only, not audited. The frame shows the site the browser reports; Sitebound does not vouch for what a site sells.</li>
+        <li><b>Pays only the site the buyer is on.</b><p>The payee is the wallet registered for the origin the buyer's browser signed, never an address from the page.</p></li>
+        <li><b>The relayer cannot redirect a payment.</b><p>It only submits what the buyer's passkey signed. Its attestor key registers a site's payout after the DNS check: a new site is live at once, and a change to an existing payout waits <span data-delay>1 hour</span>, during which the current payout wallet can freeze it.</p></li>
+        <li><b>No admin key.</b><p>No owner, no upgrade and no pause. The contract never holds funds: USDT moves straight from the buyer to the site's payout wallet.</p></li>
+        <li><b>Limits.</b><p>Testnet only, not audited. The frame shows the site the browser reports; Sitebound does not vouch for what a site sells.</p></li>
       </ul>
     </section>
 
-    <section class="closing" aria-label="Get started">
-      <a class="btn" href="#site" data-focus-search>Bring your website</a>
+    <section class="closing" aria-labelledby="close-h">
+      <div class="closing-card">
+        <div>
+          <h2 id="close-h" class="section-title">Bring your domain</h2>
+          <p>Add one DNS TXT record that names your payout wallet, paste about 20 lines into your checkout, and run a test payment.</p>
+        </div>
+        <a class="btn" href="#site" data-focus-search>Bring your website</a>
+      </div>
     </section>
   </main>
 

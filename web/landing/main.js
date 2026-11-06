@@ -8,6 +8,7 @@ const $ = (id) => document.getElementById(id);
 const form = $('site-form');
 const input = $('site');
 const msg = $('site-msg');
+const row = $('search-row');
 const kitSection = $('kit');
 const kitRoot = $('kit-root');
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -27,6 +28,9 @@ function toOrigin(raw) {
   if (!url || !HOST.test(url.hostname)) return { error: 'That does not look like a website. Try example.com.' };
   return { origin: url.origin };
 }
+
+// The bar's state, for CSS: '' (idle), 'valid' (the text reads as a website), 'loading' (the setup is opening).
+const state = (s) => { row.dataset.state = s; };
 
 function show(text) {
   msg.textContent = text;
@@ -94,6 +98,7 @@ function loadKit() {
 
 async function open(origin, { scroll = true } = {}) {
   show('');
+  state('loading');
   input.value = hostOf(origin);
   addToRing(origin);
   orbit.highlight(origin);
@@ -109,11 +114,13 @@ async function open(origin, { scroll = true } = {}) {
     kitRoot.innerHTML = '<p class="lede" role="alert">The setup could not load. Check your connection, then try again.</p>';
   }
   kitSection.removeAttribute('aria-busy');
+  state('valid');
 }
 
 function reset() {
   history.replaceState(null, '', location.pathname);
   orbit.highlight(null);
+  state('');
   input.select();
   input.focus({ preventScroll: true });
   window.scrollTo({ top: 0, behavior: reduced() ? 'auto' : 'smooth' });
@@ -125,7 +132,7 @@ form.addEventListener('submit', (e) => {
   if (error) { show(error); input.focus(); return; }
   open(origin);
 });
-input.addEventListener('input', () => show(''));
+input.addEventListener('input', () => { show(''); state(toOrigin(input.value).origin ? 'valid' : ''); });
 // Warm the kit while the owner is still typing.
 input.addEventListener('focus', () => { loadKit().catch(() => {}); }, { once: true });
 
@@ -153,6 +160,14 @@ if (isAddr(C.address)) {
   for (const el of document.querySelectorAll('[data-cfg-address]')) el.textContent = C.address;
   if (C.explorer) for (const el of document.querySelectorAll('[data-cfg-explorer]')) el.href = `${C.explorer}/address/${C.address}`;
 }
+if (C.relayerFee) for (const el of document.querySelectorAll('[data-cfg-fee]')) el.textContent = C.relayerFee;
+
+const copyBtn = document.querySelector('[data-copy]');
+copyBtn?.addEventListener('click', async () => {
+  const text = document.querySelector('.vaddr code').textContent;
+  try { await navigator.clipboard.writeText(text); copyBtn.textContent = 'Copied'; } catch { copyBtn.textContent = 'Select the address to copy'; }
+  setTimeout(() => { copyBtn.textContent = 'Copy address'; }, 1800);
+});
 
 async function rpcCall(method, params) {
   const r = await fetch(C.rpcUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
@@ -172,7 +187,12 @@ const words = (sec) => {
 async function runCheck() {
   const res = $('vc-result');
   const set = (id, text) => { $(id).textContent = text; };
-  const mark = (kind, text) => { res.className = 'vresult ' + kind; res.textContent = text; };
+  const chip = $('vc-chip');
+  const CHIP = { '': 'Checking', ok: 'Match', warn: 'Not verified', bad: 'Mismatch' };
+  const mark = (kind, text) => {
+    res.className = 'vresult ' + kind; res.textContent = text;
+    chip.className = 'chip ' + kind; chip.textContent = CHIP[kind];
+  };
   if (!C.rpcUrl || !isAddr(C.address)) return mark('warn', 'This build has no contract address in its config, so there is nothing to check.');
   try { set('vc-rpc', new URL(C.rpcUrl).host); } catch { /* keep the default text */ }
   mark('', 'Checking…');
@@ -219,6 +239,7 @@ async function runCheck() {
     }
     const live = ethers.keccak256(bytes);
     set('vc-live', live);
+    set('vc-len', `${bytes.length} bytes${exp.runtimeCodeLength ? ` (listed: ${exp.runtimeCodeLength})` : ''}`);
     set('vc-exp', want);
     const names = Object.keys(exp.immutables || {});
     set('vc-imm', names.length ? (wrong.length ? `differ: ${[...new Set(wrong)].join(', ')}` : `${names.join(', ')}: as listed`) : 'none listed');
@@ -230,6 +251,12 @@ async function runCheck() {
     mark('warn', 'Could not reach the network to check. Reload to try again.');
   }
 }
+
+// The route diagram and the step lists draw their connectors once, when they scroll into view.
+const flows = new IntersectionObserver((entries) => {
+  for (const e of entries) if (e.isIntersecting) { e.target.classList.add('is-in'); flows.unobserve(e.target); }
+}, { rootMargin: '0px 0px -10% 0px' });
+for (const el of document.querySelectorAll('[data-flow]')) flows.observe(el);
 
 const verifySection = $('verify');
 if (verifySection) {
