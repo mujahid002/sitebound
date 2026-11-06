@@ -14,7 +14,8 @@ contract SiteboundV2Test is Test {
     string constant SHOP = "http://127.0.0.1:8001";
     string constant EVIL = "https://evil.example";
     uint64 constant DELAY = 1 hours;
-    bytes32 constant ATTEST = keccak256("Attest(bytes32 siteHash,address payout,uint256 nonce,uint64 deadline)");
+    bytes32 constant ATTEST =
+        keccak256("Attest(bytes32 siteHash,address[] to,uint16[] bps,uint256 nonce,uint256 setId,uint64 deadline)");
     bytes32 constant ROTATE = keccak256("Rotate(address[] attestors,uint256 threshold,uint256 setId,uint64 deadline)");
 
     uint256 attestorKey = 0xA77E57;
@@ -110,14 +111,39 @@ contract SiteboundV2Test is Test {
         (k[0], k[1]) = (a, b);
     }
 
-    function _attestHead(string memory site, address payout) internal view returns (bytes memory) {
+    function _full() internal pure returns (uint16[] memory b) {
+        b = new uint16[](1);
+        b[0] = 10_000;
+    }
+
+    function _attestHeadSplit(string memory site, address[] memory to, uint16[] memory bps)
+        internal
+        view
+        returns (bytes memory)
+    {
         bytes32 siteHash = keccak256(bytes(site));
         (,,,, uint256 nonce) = sb.sites(siteHash);
-        return abi.encode(ATTEST, siteHash, payout, nonce);
+        (uint256 setId,) = sb.quorum();
+        return abi.encode(
+            ATTEST, siteHash, keccak256(abi.encodePacked(to)), keccak256(abi.encodePacked(bps)), nonce, setId
+        );
+    }
+
+    function _attestHead(string memory site, address payout) internal view returns (bytes memory) {
+        return _attestHeadSplit(site, _one(payout), _full());
+    }
+
+    /// register() for a single payout wallet.
+    function _reg(string memory site, address payout, SiteboundV2.Sig[] memory sigs) internal {
+        sb.register(site, _one(payout), _full(), sigs);
     }
 
     function _registerWith(uint256[] memory keys, string memory site, address payout) internal {
-        sb.register(site, payout, _sigs(keys, _attestHead(site, payout), uint64(block.timestamp + 1 days)));
+        _reg(site, payout, _sigs(keys, _attestHead(site, payout), uint64(block.timestamp + 1 days)));
+    }
+
+    function _registerSplit(string memory site, address[] memory to, uint16[] memory bps) internal {
+        sb.register(site, to, bps, _sigs(_keys(attestorKey), _attestHeadSplit(site, to, bps), uint64(block.timestamp + 1 days)));
     }
 
     function _register(string memory site, address payout) internal {
@@ -548,30 +574,30 @@ contract SiteboundV2Test is Test {
         bytes memory head = _attestHead(EVIL, evilWallet);
         SiteboundV2.Sig[] memory sigs = _sigs(_keys(0x1337), head, uint64(block.timestamp + 1 days));
         vm.expectRevert("not attestor");
-        sb.register(EVIL, evilWallet, sigs);
+        _reg(EVIL, evilWallet, sigs);
         vm.expectRevert("too few attestations");
-        sb.register(EVIL, evilWallet, new SiteboundV2.Sig[](0));
+        _reg(EVIL, evilWallet, new SiteboundV2.Sig[](0));
     }
 
     function test_attestation_for_other_payout_reverts() public {
         // signed for evilWallet, submitted for another payout: recovers some other address
         SiteboundV2.Sig[] memory sigs = _sigs(_keys(attestorKey), _attestHead(EVIL, evilWallet), uint64(block.timestamp + 1 days));
         vm.expectRevert("not attestor");
-        sb.register(EVIL, address(0x2222), sigs);
+        _reg(EVIL, address(0x2222), sigs);
     }
 
     function test_expired_attestation_reverts() public {
         SiteboundV2.Sig[] memory sigs = _sigs(_keys(attestorKey), _attestHead(EVIL, evilWallet), uint64(block.timestamp + 1));
         vm.warp(block.timestamp + 2);
         vm.expectRevert("attestation expired");
-        sb.register(EVIL, evilWallet, sigs);
+        _reg(EVIL, evilWallet, sigs);
     }
 
     function test_used_attestation_cannot_be_replayed() public {
         SiteboundV2.Sig[] memory sigs = _sigs(_keys(attestorKey), _attestHead(EVIL, evilWallet), uint64(block.timestamp + 1 days));
-        sb.register(EVIL, evilWallet, sigs);
+        _reg(EVIL, evilWallet, sigs);
         vm.expectRevert("not attestor"); // the site nonce moved, so the old signature recovers another address
-        sb.register(EVIL, evilWallet, sigs);
+        _reg(EVIL, evilWallet, sigs);
     }
 
     function test_unused_attestation_dies_when_site_nonce_moves() public {
@@ -579,7 +605,7 @@ contract SiteboundV2Test is Test {
         SiteboundV2.Sig[] memory stale = _sigs(_keys(attestorKey), head, uint64(block.timestamp + 1 days));
         _register(SHOP, address(0x2222)); // any later registration of the site bumps its nonce
         vm.expectRevert("not attestor");
-        sb.register(SHOP, address(0x3333), stale);
+        _reg(SHOP, address(0x3333), stale);
     }
 
     function test_payout_change_waits_for_delay() public {
@@ -616,7 +642,7 @@ contract SiteboundV2Test is Test {
         sb.freeze(keccak256(bytes(SHOP)));
         SiteboundV2.Sig[] memory sigs = _sigs(_keys(attestorKey), _attestHead(SHOP, evilWallet), uint64(block.timestamp + 1 days));
         vm.expectRevert("frozen");
-        sb.register(SHOP, evilWallet, sigs);
+        _reg(SHOP, evilWallet, sigs);
     }
 
     function test_only_payout_can_freeze() public {
@@ -647,21 +673,21 @@ contract SiteboundV2Test is Test {
         uint256[] memory k = _twoOfThree();
         SiteboundV2.Sig[] memory sigs = _sigs(_keys(k[1]), _attestHead(EVIL, evilWallet), uint64(block.timestamp + 1 days));
         vm.expectRevert("too few attestations");
-        sb.register(EVIL, evilWallet, sigs);
+        _reg(EVIL, evilWallet, sigs);
     }
 
     function test_two_of_three_rejects_the_same_attestor_twice() public {
         uint256[] memory k = _twoOfThree();
         SiteboundV2.Sig[] memory sigs = _sigs(_keys(k[1], k[1]), _attestHead(EVIL, evilWallet), uint64(block.timestamp + 1 days));
         vm.expectRevert("attestors not sorted");
-        sb.register(EVIL, evilWallet, sigs);
+        _reg(EVIL, evilWallet, sigs);
     }
 
     function test_two_of_three_rejects_unsorted_signers() public {
         uint256[] memory k = _twoOfThree();
         SiteboundV2.Sig[] memory sigs = _sigs(_keys(k[2], k[0]), _attestHead(EVIL, evilWallet), uint64(block.timestamp + 1 days));
         vm.expectRevert("attestors not sorted");
-        sb.register(EVIL, evilWallet, sigs);
+        _reg(EVIL, evilWallet, sigs);
     }
 
     function test_two_of_three_rejects_an_outsider_as_second_signer() public {
@@ -669,7 +695,7 @@ contract SiteboundV2Test is Test {
         uint256[] memory keys = _byAddr(_keys(k[0], 0x1337));
         SiteboundV2.Sig[] memory sigs = _sigs(keys, _attestHead(EVIL, evilWallet), uint64(block.timestamp + 1 days));
         vm.expectRevert("not attestor");
-        sb.register(EVIL, evilWallet, sigs);
+        _reg(EVIL, evilWallet, sigs);
     }
 
     function test_two_of_three_each_signature_has_its_own_deadline() public {
@@ -680,9 +706,9 @@ contract SiteboundV2Test is Test {
         sigs[1] = _sig(k[1], head, uint64(block.timestamp + 10));
         vm.warp(block.timestamp + 11);
         vm.expectRevert("attestation expired");
-        sb.register(EVIL, evilWallet, sigs);
+        _reg(EVIL, evilWallet, sigs);
         sigs[1] = _sig(k[1], head, uint64(block.timestamp + 10));
-        sb.register(EVIL, evilWallet, sigs);
+        _reg(EVIL, evilWallet, sigs);
     }
 
     function test_constructor_rejects_bad_threshold_and_unsorted_set() public {
@@ -721,17 +747,19 @@ contract SiteboundV2Test is Test {
         assertFalse(sb.isAttestor(vm.addr(0xD4)));
         SiteboundV2.Sig[] memory early = _sigs(_keys(0xD4), _attestHead(EVIL, evilWallet), uint64(block.timestamp + 2 days));
         vm.expectRevert("not attestor");
-        sb.register(EVIL, evilWallet, early);
+        _reg(EVIL, evilWallet, early);
 
         vm.warp(block.timestamp + DELAY);
         assertTrue(sb.isAttestor(vm.addr(0xD4)));
         assertFalse(sb.isAttestor(vm.addr(attestorKey)));
         (uint256 setId,) = sb.quorum();
         assertEq(setId, 2);
-        sb.register(EVIL, evilWallet, early);
+        vm.expectRevert("not attestor"); // `early` named set 1
+        _reg(EVIL, evilWallet, early);
+        _registerWith(_keys(0xD4), EVIL, evilWallet);
         SiteboundV2.Sig[] memory old = _sigs(_keys(attestorKey), _attestHead(SHOP, evilWallet), uint64(block.timestamp + 1 days));
         vm.expectRevert("not attestor");
-        sb.register(SHOP, evilWallet, old);
+        _reg(SHOP, evilWallet, old);
     }
 
     function test_rotation_needs_the_current_quorum() public {
@@ -795,6 +823,201 @@ contract SiteboundV2Test is Test {
         sb.proposeAttestors(set, 1, sigs);
         (uint256 setId,,) = sb.pendingAttestors();
         assertEq(setId, 2);
+    }
+
+    function test_old_set_signature_does_not_count_after_rotation() public {
+        // the same attestor stays in the new set, but a signature naming the old set id is refused
+        address[] memory next = _byAddr2(vm.addr(attestorKey), vm.addr(0xD4));
+        SiteboundV2.Sig[] memory oldSet = _sigs(_keys(attestorKey), _attestHead(EVIL, evilWallet), uint64(block.timestamp + 2 days));
+        _propose(_keys(attestorKey), next, 1);
+        vm.warp(block.timestamp + DELAY);
+        vm.expectRevert("not attestor");
+        _reg(EVIL, evilWallet, oldSet);
+        _register(EVIL, evilWallet); // re-signed for set 2
+    }
+
+    function _byAddr2(address a, address b) internal pure returns (address[] memory l) {
+        l = new address[](2);
+        (l[0], l[1]) = a < b ? (a, b) : (b, a);
+    }
+
+    // ---------------------------------------------------------------- splits
+
+    address constant R0 = address(0x7001);
+    address constant R1 = address(0x2001);
+    address constant R2 = address(0x1001);
+
+    function _split3() internal pure returns (address[] memory to, uint16[] memory bps) {
+        to = new address[](3);
+        bps = new uint16[](3);
+        (to[0], to[1], to[2]) = (R0, R1, R2);
+        (bps[0], bps[1], bps[2]) = (7000, 2000, 1000);
+    }
+
+    function test_split_pays_each_wallet_and_dust_to_the_first() public {
+        (address[] memory to, uint16[] memory bps) = _split3();
+        _registerSplit(EVIL, to, bps);
+        Opts memory o = _opts("S1");
+        o.top = EVIL;
+        o.amount = 10e6 + 7; // 7 base units of dust: 70/20/10 of 7 floor to 4/1/0, the first gets the rest
+        o.fee = 3;
+        SiteboundV2.PayInput memory p = _input(o);
+        vm.prank(relayer);
+        bytes32 id = sb.pay(p);
+        assertEq(usdt.balanceOf(R1), 2e6 + 1);
+        assertEq(usdt.balanceOf(R2), 1e6);
+        assertEq(usdt.balanceOf(R0), 7e6 + 6);
+        assertEq(usdt.balanceOf(relayer), 3);
+        assertEq(usdt.balanceOf(wallet), 1000e6 - o.amount - 3);
+        (,, uint256 amt,) = sb.payments(id);
+        assertEq(amt, o.amount);
+    }
+
+    function test_split_emits_one_event_per_wallet_and_paid_names_the_first() public {
+        (address[] memory to, uint16[] memory bps) = _split3();
+        _registerSplit(EVIL, to, bps);
+        Opts memory o = _opts("S2");
+        o.top = EVIL;
+        bytes32 id = keccak256(abi.encode(keccak256(bytes(EVIL)), o.orderId));
+        vm.expectEmit(address(sb));
+        emit SiteboundV2.PayoutSplit(id, R1, 2e6);
+        vm.expectEmit(address(sb));
+        emit SiteboundV2.PayoutSplit(id, R2, 1e6);
+        vm.expectEmit(address(sb));
+        emit SiteboundV2.PayoutSplit(id, R0, 7e6);
+        vm.expectEmit(address(sb));
+        emit SiteboundV2.Paid(id, keccak256(bytes(EVIL)), EVIL, o.orderId, wallet, R0, 10e6);
+        _pay(o);
+    }
+
+    function test_bad_splits_revert() public {
+        address[] memory to = new address[](2);
+        uint16[] memory bps = new uint16[](2);
+        SiteboundV2.Sig[] memory none = new SiteboundV2.Sig[](0);
+        (to[0], to[1]) = (R0, R1);
+        (bps[0], bps[1]) = (6000, 3000); // sums to 9000
+        vm.expectRevert("bad split");
+        sb.register(EVIL, to, bps, none);
+        (bps[0], bps[1]) = (10_000, 0); // a zero share
+        vm.expectRevert("bad split");
+        sb.register(EVIL, to, bps, none);
+        (to[1], bps[0], bps[1]) = (R0, 5000, 5000); // the same wallet twice
+        vm.expectRevert("bad split");
+        sb.register(EVIL, to, bps, none);
+        (to[1]) = (address(0)); // zero address
+        vm.expectRevert("bad split");
+        sb.register(EVIL, to, bps, none);
+        vm.expectRevert("bad split"); // lengths differ
+        sb.register(EVIL, to, _full(), none);
+        vm.expectRevert("bad split"); // empty
+        sb.register(EVIL, new address[](0), new uint16[](0), none);
+        address[] memory six = new address[](6);
+        uint16[] memory sixBps = new uint16[](6);
+        for (uint256 i; i < 6; i++) (six[i], sixBps[i]) = (address(uint160(0x9000 + i)), i == 0 ? 5000 : 1000);
+        vm.expectRevert("bad split"); // more than 5
+        sb.register(EVIL, six, sixBps, none);
+    }
+
+    function test_five_way_split_is_allowed() public {
+        address[] memory to = new address[](5);
+        uint16[] memory bps = new uint16[](5);
+        for (uint256 i; i < 5; i++) (to[i], bps[i]) = (address(uint160(0x9000 + i)), 2000);
+        _registerSplit(EVIL, to, bps);
+        Opts memory o = _opts("S3");
+        o.top = EVIL;
+        _pay(o);
+        for (uint256 i; i < 5; i++) assertEq(usdt.balanceOf(to[i]), 2e6);
+    }
+
+    function test_split_change_waits_for_delay_and_frozen_blocks_it() public {
+        (address[] memory to, uint16[] memory bps) = _split3();
+        _registerSplit(SHOP, to, bps); // SHOP is already registered to shopWallet: this is a pending change
+        (,,,, uint16[] memory pendingBps, uint64 activeAt) = _splitOf(SHOP);
+        assertEq(pendingBps.length, 3);
+        assertEq(activeAt, block.timestamp + DELAY);
+        _pay(_opts("S4"));
+        assertEq(usdt.balanceOf(shopWallet), 10e6);
+        vm.warp(block.timestamp + DELAY);
+        _pay(_opts("S5"));
+        assertEq(usdt.balanceOf(R0), 7e6);
+        // R0 owns the site now: it can freeze, and no attestation changes a frozen split
+        vm.prank(R0);
+        sb.freeze(keccak256(bytes(SHOP)));
+        SiteboundV2.Sig[] memory sigs = _sigs(_keys(attestorKey), _attestHead(SHOP, evilWallet), uint64(block.timestamp + 1 days));
+        vm.expectRevert("frozen");
+        _reg(SHOP, evilWallet, sigs);
+    }
+
+    function _splitOf(string memory site)
+        internal
+        view
+        returns (address[] memory, uint16[] memory, address[] memory, address[] memory, uint16[] memory, uint64)
+    {
+        (address[] memory to, uint16[] memory bps, address[] memory pTo, uint16[] memory pBps, uint64 at) =
+            sb.splitOf(keccak256(bytes(site)));
+        return (to, bps, pTo, pTo, pBps, at);
+    }
+
+    /// For any amount, fee and 1 to 5 way split: the parts sum to the amount, each later wallet gets its floor
+    /// share, the first gets the rest, the fee goes only to the submitter, and the contract keeps nothing.
+    function testFuzz_split_parts_sum_to_amount(uint256 amount, uint256 fee, uint8 n, uint256 seed) public {
+        n = uint8(bound(n, 1, 5));
+        amount = bound(amount, 1, 30e6);
+        fee = bound(fee, 0, 50e6 - amount);
+        address[] memory to = new address[](n);
+        uint16[] memory bps = new uint16[](n);
+        uint256 left = 10_000;
+        for (uint256 i = n; i > 0; i--) {
+            uint256 k = i - 1;
+            to[k] = address(uint160(0x9000 + k));
+            // leave at least 1 bp for each wallet still to fill
+            bps[k] = k == 0 ? uint16(left) : uint16(bound(uint256(keccak256(abi.encode(seed, k))), 1, left - k));
+            left -= bps[k];
+        }
+        _registerSplit(EVIL, to, bps);
+        Opts memory o = _opts("FZ");
+        o.top = EVIL;
+        o.amount = amount;
+        o.fee = fee;
+        uint256 before = usdt.balanceOf(wallet);
+        SiteboundV2.PayInput memory p = _input(o);
+        vm.prank(relayer);
+        sb.pay(p);
+        uint256 sum;
+        for (uint256 i; i < n; i++) {
+            uint256 got = usdt.balanceOf(to[i]);
+            if (i > 0) assertEq(got, amount * bps[i] / 10_000);
+            sum += got;
+        }
+        assertEq(sum, amount);
+        assertEq(usdt.balanceOf(relayer), fee);
+        assertEq(before - usdt.balanceOf(wallet), amount + fee);
+        assertEq(usdt.balanceOf(address(sb)), 0);
+    }
+
+    /// The Attest signature below was made by ethers v6 `signTypedData` for chain 31337 and the contract at
+    /// 0x…5B7e02, over to = [0x…7001, 0x…3001], bps = [7000, 3000], nonce 0, set 1.
+    function test_attest_signature_from_ethers_is_accepted() public {
+        address at = 0x00000000000000000000000000000000005B7e02;
+        deployCodeTo(
+            "SiteboundV2.sol:SiteboundV2",
+            abi.encode(address(usdt), FRAME, sha256("localhost"), _one(0x501D9b198010BC786D8b0DAc53ac700c8ACdc02d), uint256(1), DELAY),
+            at
+        );
+        sb = SiteboundV2(at);
+        address[] memory to = new address[](2);
+        uint16[] memory bps = new uint16[](2);
+        (to[0], to[1], bps[0], bps[1]) = (address(0x7001), address(0x3001), 7000, 3000);
+        SiteboundV2.Sig[] memory sigs = new SiteboundV2.Sig[](1);
+        sigs[0] = SiteboundV2.Sig(
+            1_900_000_000,
+            28,
+            0x8e25e63b82b12c9d3723f67ead73c8afd79fcb3a8733ad65102c441f6b9e5a84,
+            0x0b4b34a696424de8461d803dae30b355bfcdecd89a64e2363e8e16c47772298d
+        );
+        sb.register("https://split.example", to, bps, sigs);
+        (address payout,,,,) = sb.sites(keccak256("https://split.example"));
+        assertEq(payout, address(0x7001));
     }
 
     // ------------------------------------------------------------- refund

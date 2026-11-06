@@ -9,10 +9,21 @@ interface IERC20 {
 /// the passkey signs clientDataJSON, which carries "topOrigin" (the site the buyer is on).
 /// v2: a site registration needs `threshold` distinct attestors, and the attestor set changes only
 /// when the current set's quorum signs a new one, which takes effect after `delay`. There is no owner.
+/// A site's payout can be split between up to 5 wallets; the first one is the site's owner.
 contract SiteboundV2 {
+    uint256 public constant MAX_RECIPIENTS = 5;
+    uint256 constant BPS = 10_000;
+
+    /// Who gets paid, in basis points summing to 10000. to[0] owns the site (freeze, unfreeze, refund)
+    /// and gets the rounding dust.
+    struct Split {
+        address[] to;
+        uint16[] bps;
+    }
+
     struct Site {
-        address payout;
-        address pendingPayout;
+        Split payout;
+        Split pending;
         uint64 activeAt;
         bool frozen;
         uint256 nonce;
@@ -63,7 +74,8 @@ contract SiteboundV2 {
     bytes32 constant BIND_TYPEHASH = keccak256(
         "Bind(bytes32 credentialHash,uint256 pubX,uint256 pubY,uint256 perPayCap,uint256 totalCap,uint64 expiry,uint256 nonce)"
     );
-    bytes32 constant ATTEST_TYPEHASH = keccak256("Attest(bytes32 siteHash,address payout,uint256 nonce,uint64 deadline)");
+    bytes32 constant ATTEST_TYPEHASH =
+        keccak256("Attest(bytes32 siteHash,address[] to,uint16[] bps,uint256 nonce,uint256 setId,uint64 deadline)");
     bytes32 constant ROTATE_TYPEHASH =
         keccak256("Rotate(address[] attestors,uint256 threshold,uint256 setId,uint64 deadline)");
     bytes32 constant DOMAIN_TYPEHASH =
@@ -83,7 +95,7 @@ contract SiteboundV2 {
     uint256 pendingThreshold;
     uint64 pendingSetAt;
 
-    mapping(bytes32 => Site) public sites;
+    mapping(bytes32 => Site) internal _sites;
     mapping(bytes32 => Buyer) public buyers;
     mapping(address => uint256) public bindNonce;
     /// One wallet per passkey: the challenge does not name the payer, so a key bound twice could be charged on the wrong wallet.
@@ -107,6 +119,10 @@ contract SiteboundV2 {
         uint256 amount
     );
     event Refunded(bytes32 indexed paymentId, address indexed wallet, uint256 amount);
+    /// Every registration: the split, and when it takes effect (now for a new site).
+    event SplitSet(bytes32 indexed siteHash, address[] to, uint16[] bps, uint64 activeAt);
+    /// One per recipient, only for a payment split between more than one wallet. Paid.payout is then to[0].
+    event PayoutSplit(bytes32 indexed paymentId, address indexed to, uint256 amount);
     event AttestorsProposed(uint256 indexed setId, address[] attestors, uint256 threshold, uint64 activeAt);
 
     constructor(
@@ -192,48 +208,90 @@ contract SiteboundV2 {
 
     // ---------------------------------------------------------------- registry
 
-    /// DNS-TXT attestations from `threshold` attestors set the payout. A new site is live at once;
-    /// an existing site's payout only changes after `delay`, and never while frozen.
-    function register(string calldata site, address payout, Sig[] calldata sigs) external {
-        require(payout != address(0), "payout 0");
+    /// DNS-TXT attestations from `threshold` attestors set the payout split. Each signature names the active
+    /// attestor set's id, so a signature made for an earlier set does not count after a rotation. A new site is live at once;
+    /// an existing site's split only changes after `delay`, and never while frozen.
+    function register(string calldata site, address[] calldata to, uint16[] calldata bps, Sig[] calldata sigs) external {
+        _checkSplit(to, bps);
         _promoteSet();
         bytes32 siteHash = keccak256(bytes(site));
-        Site storage st = sites[siteHash];
-        _quorum(abi.encode(ATTEST_TYPEHASH, siteHash, payout, st.nonce), sigs);
+        Site storage st = _sites[siteHash];
+        _quorum(
+            abi.encode(
+                ATTEST_TYPEHASH, siteHash, keccak256(abi.encodePacked(to)), keccak256(abi.encodePacked(bps)), st.nonce, activeSet
+            ),
+            sigs
+        );
         st.nonce++;
 
-        if (st.payout == address(0)) {
-            st.payout = payout;
-            emit Registered(siteHash, site, payout);
+        if (st.payout.to.length == 0) {
+            st.payout = Split(to, bps);
+            emit Registered(siteHash, site, to[0]);
+            emit SplitSet(siteHash, to, bps, uint64(block.timestamp));
             return;
         }
         require(!st.frozen, "frozen");
         _promote(st);
-        st.pendingPayout = payout;
+        st.pending = Split(to, bps);
         st.activeAt = uint64(block.timestamp) + delay;
-        emit PayoutProposed(siteHash, payout, st.activeAt);
+        emit PayoutProposed(siteHash, to[0], st.activeAt);
+        emit SplitSet(siteHash, to, bps, st.activeAt);
+    }
+
+    function _checkSplit(address[] calldata to, uint16[] calldata bps) internal pure {
+        require(to.length > 0 && to.length <= MAX_RECIPIENTS && bps.length == to.length, "bad split");
+        uint256 sum;
+        for (uint256 i; i < to.length; i++) {
+            require(to[i] != address(0) && bps[i] > 0, "bad split");
+            for (uint256 j; j < i; j++) require(to[j] != to[i], "bad split");
+            sum += bps[i];
+        }
+        require(sum == BPS, "bad split");
+    }
+
+    /// v1's getter shape: the first wallet of the current and of the pending split.
+    function sites(bytes32 siteHash)
+        external
+        view
+        returns (address payout, address pendingPayout, uint64 activeAt, bool frozen, uint256 nonce)
+    {
+        Site storage st = _sites[siteHash];
+        return (_first(st.payout), _first(st.pending), st.activeAt, st.frozen, st.nonce);
+    }
+
+    function splitOf(bytes32 siteHash)
+        external
+        view
+        returns (address[] memory to, uint16[] memory bps, address[] memory pendingTo, uint16[] memory pendingBps, uint64 activeAt)
+    {
+        Site storage st = _sites[siteHash];
+        return (st.payout.to, st.payout.bps, st.pending.to, st.pending.bps, st.activeAt);
     }
 
     function freeze(bytes32 siteHash) external {
-        Site storage st = sites[siteHash];
+        Site storage st = _sites[siteHash];
         _promote(st);
-        require(msg.sender == st.payout, "not payout");
+        require(msg.sender == _first(st.payout), "not payout");
         st.frozen = true;
-        st.pendingPayout = address(0);
+        delete st.pending;
         emit Frozen(siteHash);
     }
 
     function unfreeze(bytes32 siteHash) external {
-        Site storage st = sites[siteHash];
-        require(msg.sender == st.payout, "not payout");
+        Site storage st = _sites[siteHash];
+        require(msg.sender == _first(st.payout), "not payout");
         st.frozen = false;
         emit Unfrozen(siteHash);
     }
 
+    function _first(Split storage sp) internal view returns (address) {
+        return sp.to.length == 0 ? address(0) : sp.to[0];
+    }
+
     function _promote(Site storage st) internal {
-        if (st.pendingPayout != address(0) && block.timestamp >= st.activeAt) {
-            st.payout = st.pendingPayout;
-            st.pendingPayout = address(0);
+        if (st.pending.to.length != 0 && block.timestamp >= st.activeAt) {
+            st.payout = st.pending;
+            delete st.pending;
         }
     }
 
@@ -329,31 +387,45 @@ contract SiteboundV2 {
     }
 
     function _settle(PayInput calldata p, address wallet, bytes32 siteHash) internal returns (bytes32 paymentId) {
-        Site storage st = sites[siteHash];
-        require(st.payout != address(0), "site not registered");
+        Site storage st = _sites[siteHash];
+        require(st.payout.to.length != 0, "site not registered");
         require(!st.frozen, "frozen");
         _promote(st);
 
-        _transferFrom(wallet, st.payout, p.amount);
-        if (p.relayerFee > 0) _transferFrom(wallet, msg.sender, p.relayerFee);
-
         paymentId = keccak256(abi.encode(siteHash, p.orderId));
         payments[paymentId] = Payment(wallet, siteHash, p.amount, 0);
+        address[] storage to = st.payout.to;
+        if (to.length == 1) {
+            _transferFrom(wallet, to[0], p.amount);
+        } else {
+            // Each later wallet gets its floor share; the first gets the rest, so the parts sum to the amount.
+            uint256 rest = p.amount;
+            for (uint256 i = 1; i < to.length; i++) {
+                uint256 part = p.amount * st.payout.bps[i] / BPS;
+                rest -= part;
+                if (part > 0) _transferFrom(wallet, to[i], part);
+                emit PayoutSplit(paymentId, to[i], part);
+            }
+            _transferFrom(wallet, to[0], rest);
+            emit PayoutSplit(paymentId, to[0], rest);
+        }
+        if (p.relayerFee > 0) _transferFrom(wallet, msg.sender, p.relayerFee);
+
         bytes calldata cd = bytes(p.clientDataJSON);
         uint256 from = p.topOriginIdx + 13;
-        emit Paid(paymentId, siteHash, string(cd[from:_quote(cd, from)]), p.orderId, wallet, st.payout, p.amount);
+        emit Paid(paymentId, siteHash, string(cd[from:_quote(cd, from)]), p.orderId, wallet, to[0], p.amount);
     }
 
     // ------------------------------------------------------------------ refund
 
-    /// The site's current payout wallet returns money to the ORIGINAL payer only, up to what was paid.
+    /// The site's owner (its first payout wallet) returns money to the ORIGINAL payer only, up to what was paid.
     /// The site approves this contract for the token once.
     function refund(bytes32 paymentId, uint256 amount) external {
         Payment storage pm = payments[paymentId];
         require(pm.wallet != address(0), "no such payment");
-        Site storage st = sites[pm.siteHash];
+        Site storage st = _sites[pm.siteHash];
         _promote(st);
-        require(msg.sender == st.payout, "not payout");
+        require(msg.sender == _first(st.payout), "not payout");
         require(pm.refunded + amount <= pm.amount, "over refund");
         pm.refunded += amount;
         _transferFrom(msg.sender, pm.wallet, amount);
