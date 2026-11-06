@@ -7,8 +7,12 @@ tmp=$(mktemp -d)
 wr() { env -u CLOUDFLARE_API_TOKEN -u CLOUDFLARE_ACCOUNT_ID -u CF_API_TOKEN npx wrangler "$@"; }
 
 mkdir "$tmp/pay" "$tmp/demo" "$tmp/phish"
-rsync -a --exclude dev --exclude demo-shop --exclude attack "$root/web/" "$tmp/pay/"
-printf '/ /landing/ 302\n' > "$tmp/pay/_redirects"
+rsync -a --exclude dev --exclude demo-shop --exclude attack --exclude landing "$root/web/" "$tmp/pay/"
+# The landing page is the site root: copy it up one level and turn its ../ paths into root paths.
+rsync -a "$root/web/landing/" "$tmp/pay/"
+sed -i.bak -e 's#\.\./#/#g' -e 's#href="\./"#href="/"#' "$tmp/pay/index.html" "$tmp/pay/main.js" "$tmp/pay/kit.js"
+rm -f "$tmp"/pay/*.bak
+printf '/landing / 301\n/landing/ / 301\n' > "$tmp/pay/_redirects"
 rsync -a "$root/web/demo-shop/" "$tmp/demo/"
 cp "$root/web/config.js" "$tmp/demo/"
 mkdir -p "$tmp/demo/demo-shop" && cp "$root/web/demo-shop/shop.css" "$tmp/demo/demo-shop/"
