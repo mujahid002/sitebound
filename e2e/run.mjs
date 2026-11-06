@@ -15,6 +15,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AbiCoder, Contract, HDNodeWallet, JsonRpcProvider, Signature, ZeroAddress, concat, encodeBytes32String, getBytes, id, keccak256, sha256, toUtf8Bytes } from 'ethers';
 import { chromium } from 'playwright-core';
+import * as ethersNs from 'ethers';
+
+globalThis.ethers ??= ethersNs; // the merchant helper uses a global ethers when one is loaded
+const M = await import('../web/merchant/sitebound-merchant.mjs');
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -375,15 +379,11 @@ async function main() {
   });
 
   // ------------------------------------------------------- merchant quotes
-  // The shop's backend key (merchantKey) signs Quote(siteHash, orderId, token, amount, expiry); the page only
+  // The shop's backend key (merchantKey) signs the quote with web/merchant/sitebound-merchant.mjs; the page only
   // carries the result in <sitebound-pay quote="...">.
-  const quoteFor = async (order, amount) => {
-    const expiry = Math.floor(Date.now() / 1000) + 3600;
-    const domain = { name: 'Sitebound', version: '1', chainId: 1874, verifyingContract: sb.target };
-    const types = { Quote: [{ name: 'siteHash', type: 'bytes32' }, { name: 'orderId', type: 'bytes32' }, { name: 'token', type: 'address' }, { name: 'amount', type: 'uint256' }, { name: 'expiry', type: 'uint64' }] };
-    const sig = await merchantKey.signTypedData(domain, types, { siteHash, orderId: encodeBytes32String(order), token: token.target, amount: USDT(amount), expiry });
-    return `${expiry}.${sig}`;
-  };
+  const quoteFor = (order, amount) => M.signQuote(merchantKey, {
+    chainId: 1874, contract: sb.target, token: token.target, site: SHOP, order, amount: String(amount), expiry: Math.floor(Date.now() / 1000) + 3600,
+  });
   const openCheckout = async (attrs) => {
     if (await frame.locator('#done').isVisible().catch(() => false)) await frame.locator('#done').click();
     else if (await frame.locator('#close').isVisible().catch(() => false)) await frame.locator('#close').click();
@@ -404,6 +404,21 @@ async function main() {
     const pm = await sb.payments(paymentId('A126'));
     expect(pm.wallet === buyer.address && pm.amount === USDT(12), `payments(A126) = ${pm}`);
     return 'setQuoteSigner live after 61 s; the frame passed the quote to the relayer, payWithQuote paid 12 USDT';
+  });
+
+  await step('merchant helper: verifyPayment accepts A126 and refuses wrong claims', async () => {
+    const base = { provider, contract: sb.target, expectedSite: SHOP };
+    const good = await M.verifyPayment({ ...base, expectedAmount: '12.00', orderId: 'A126', paymentId: paymentId('A126') });
+    expect(good.ok && good.wallet === buyer.address && good.amount === USDT(12), `A126: ${good.reason}`);
+    const bad = {
+      'wrong amount': await M.verifyPayment({ ...base, expectedAmount: '13.00', orderId: 'A126' }),
+      'paymentId of another order': await M.verifyPayment({ ...base, expectedAmount: '12.00', orderId: 'A126', paymentId: paymentId('A125') }),
+      'unpaid order': await M.verifyPayment({ ...base, expectedAmount: '12.00', orderId: 'A999' }),
+      'refunded order': await M.verifyPayment({ ...base, expectedAmount: '12.00', orderId: 'A123' }),
+      'another site': await M.verifyPayment({ ...base, expectedSite: 'https://evil.example', expectedAmount: '12.00', orderId: 'A126' }),
+    };
+    for (const [k, r] of Object.entries(bad)) expect(!r.ok, `${k} was accepted`);
+    return Object.entries(bad).map(([k, r]) => `${k}: "${r.reason}"`).join('; ');
   });
 
   await step('a page that changes the amount to 13 with the 12 USDT quote does not get paid (A127)', async () => {
