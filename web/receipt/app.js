@@ -5,8 +5,16 @@ import { useState, useEffect, useRef } from 'preact/hooks';
 import { html } from '../onboard/ui.js';
 import { iface, ZERO, loadConfig, rpc, reader, readText, fmtUsdt, orderText, copyText, txUrl, addrUrl } from '../onboard/lib.js';
 
+const { ethers } = window;
 const PAID = iface.getEvent('Paid').topicHash;
 const REFUNDED = iface.getEvent('Refunded').topicHash;
+// V2 events. A v1 contract never emits them, so a receipt without them simply shows the v1 fields.
+const V2 = new ethers.Interface([
+  'event PayoutSplit(bytes32 indexed paymentId, address indexed to, uint256 amount)',
+  'event RefundedBy(bytes32 indexed paymentId, address indexed by)',
+]);
+const SPLIT = V2.getEvent('PayoutSplit').topicHash;
+const REFUNDED_BY = V2.getEvent('RefundedBy').topicHash;
 const CHUNK = 10000;        // the node rejects eth_getLogs ranges above 10,000 blocks
 const MAX_CHUNKS = 300;     // how far back to look for the Paid event (3M blocks)
 const HASH = /^0x[0-9a-fA-F]{64}$/;
@@ -44,8 +52,10 @@ async function findRefunds(cfg, id, fromBlock, head) {
   try {
     const ranges = [];
     for (let a = fromBlock; a <= head && ranges.length < 60; a += CHUNK) ranges.push([a, Math.min(head, a + CHUNK - 1)]);
-    const res = await pool(ranges, 6, ([a, b]) => rpc(cfg).getLogs({ address: cfg.address, topics: [REFUNDED, id], fromBlock: a, toBlock: b }));
-    return res.flat().map((l) => ({ hash: l.transactionHash, amount: iface.parseLog(l).args.amount }));
+    const res = (await pool(ranges, 6, ([a, b]) => rpc(cfg).getLogs({ address: cfg.address, topics: [[REFUNDED, REFUNDED_BY], id], fromBlock: a, toBlock: b }))).flat();
+    const by = Object.fromEntries(res.filter((l) => l.topics[0] === REFUNDED_BY).map((l) => [l.transactionHash, ethers.getAddress('0x' + l.topics[2].slice(26))]));
+    return res.filter((l) => l.topics[0] === REFUNDED)
+      .map((l) => ({ hash: l.transactionHash, amount: iface.parseLog(l).args.amount, by: by[l.transactionHash] || null }));
   } catch {
     return [];
   }
@@ -70,13 +80,23 @@ async function load(cfg, q) {
   if (!log) log = await findLog(cfg, [PAID, id], head);
   if (!log) throw BAD('The payment exists, but its Paid event was not found in recent blocks.');
   const ev = iface.parseLog(log).args;
-  const [block, refunds] = await Promise.all([
+  // One PayoutSplit per recipient, in the same transaction, only when the site splits its payouts (V2).
+  const splitsOf = async () => {
+    try {
+      const rc = await p.getTransactionReceipt(log.transactionHash);
+      return (rc?.logs || [])
+        .filter((l) => l.address.toLowerCase() === cfg.address.toLowerCase() && l.topics[0] === SPLIT && l.topics[1] === id)
+        .map((l) => { const a = V2.parseLog(l).args; return { to: a.to, amount: a.amount }; });
+    } catch { return []; }
+  };
+  const [block, refunds, splits] = await Promise.all([
     p.getBlock(log.blockNumber),
     pm.refunded > 0n ? findRefunds(cfg, id, log.blockNumber, head) : [],
+    splitsOf(),
   ]);
   return {
     id, tx: log.transactionHash, site: ev.site, orderId: ev.orderId, payout: ev.payout,
-    wallet: pm.wallet, amount: pm.amount, refunded: pm.refunded, time: new Date(block.timestamp * 1000), refunds,
+    wallet: pm.wallet, amount: pm.amount, refunded: pm.refunded, time: new Date(block.timestamp * 1000), refunds, splits: splits.length > 1 ? splits.sort((a, b) => (b.to === ev.payout) - (a.to === ev.payout)) : [],
   };
 }
 
@@ -95,6 +115,11 @@ function Copy({ text, what }) {
   return html`<button type="button" class=${'btn' + (done ? ' done' : '')} onClick=${click} aria-label=${'Copy ' + what}>${done ? 'Copied' : 'Copy'}</button>`;
 }
 
+// Share of the payment as a percentage, up to two decimals (10000 = whole payment, in basis points).
+const share = (part, total) => {
+  const bps = Number((part * 10000n) / total);
+  return (bps / 100).toFixed(bps % 100 ? (bps % 10 ? 2 : 1) : 0) + '%';
+};
 const Hash = ({ value, what }) => html`<div class="cp"><span class="mono">${value}</span><${Copy} text=${value} what=${what} /></div>`;
 const Row = ({ k, children }) => html`<div class="row"><dt>${k}</dt><dd>${children}</dd></div>`;
 const Ext = ({ href, children }) => (href ? html`<a href=${href} target="_blank" rel="noopener noreferrer">${children}</a>` : children);
@@ -123,10 +148,14 @@ function Receipt({ cfg, r }) {
         <${Row} k="Website">${r.site}<//>
         <${Row} k="Order reference">${order ? html`<span class="mono">${order}</span>` : html`<span class="mono">${r.orderId}</span>`}${!order && html`<span class="hint">Not text; shown as raw bytes32.</span>`}<//>
         <${Row} k="Paid by"><${Hash} value=${r.wallet} what="payer wallet" /><//>
-        <${Row} k="Paid to"><${Hash} value=${r.payout} what="payout wallet" /><//>
+        ${r.splits.length
+          ? html`<${Row} k="Split between"><ul class="splits">${r.splits.map((x) => html`<li key=${x.to}>
+              <div class="cp"><span class="mono">${x.to}</span><${Copy} text=${x.to} what="recipient wallet" /></div>
+              <span class="hint">${share(x.amount, r.amount)} · ${fmtUsdt(x.amount)} USDT</span></li>`)}</ul><//>`
+          : html`<${Row} k="Paid to"><${Hash} value=${r.payout} what="payout wallet" /><//>`}
         <${Row} k="Time">${when.format(r.time)}<span class="hint">${r.time.toISOString()}</span><//>
         ${r.refunded > 0n && html`<${Row} k="Refunded">${fmtUsdt(r.refunded)} USDT${r.refunds.length > 0 && html`
-          <ul class="sub-list">${r.refunds.map((f) => html`<li key=${f.hash}>${fmtUsdt(f.amount)} USDT in <${Ext} href=${txUrl(cfg, f.hash)}><span class="mono">${f.hash}</span><//></li>`)}</ul>`}<//>`}
+          <ul class="sub-list">${r.refunds.map((f) => html`<li key=${f.hash}>${fmtUsdt(f.amount)} USDT${f.by && html`<br />by <span class="mono">${f.by}</span>`}<br />tx <${Ext} href=${txUrl(cfg, f.hash)}><span class="mono">${f.hash}</span><//></li>`)}</ul>`}<//>`}
         <${Row} k="Transaction"><${Hash} value=${r.tx} what="transaction hash" /><//>
         ${url && html`<${Row} k="Explorer"><${Ext} href=${url}><span class="mono">${url}</span><//><//>`}
         <${Row} k="Payment id"><${Hash} value=${r.id} what="payment id" /><//>
