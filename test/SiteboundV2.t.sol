@@ -14,6 +14,7 @@ contract SiteboundV2Test is Test {
     string constant SHOP = "http://127.0.0.1:8001";
     string constant EVIL = "https://evil.example";
     uint64 constant DELAY = 1 hours;
+    address constant GUARDIAN = address(0x6A4D);
     bytes32 constant ATTEST =
         keccak256("Attest(bytes32 siteHash,address[] to,uint16[] bps,uint256 nonce,uint256 setId,uint64 deadline)");
     bytes32 constant ROTATE = keccak256("Rotate(address[] attestors,uint256 threshold,uint256 setId,uint64 deadline)");
@@ -47,7 +48,7 @@ contract SiteboundV2Test is Test {
     // ------------------------------------------------------------- helpers
 
     function _deploy(address[] memory att, uint256 k) internal returns (SiteboundV2) {
-        return new SiteboundV2(IERC20(address(usdt)), FRAME, rp, att, k, DELAY);
+        return new SiteboundV2(IERC20(address(usdt)), FRAME, rp, att, k, DELAY, GUARDIAN);
     }
 
     function _one(address a) internal pure returns (address[] memory l) {
@@ -266,7 +267,8 @@ contract SiteboundV2Test is Test {
                 sha256(bytes(vm.parseJsonString(j, ".rpId"))),
                 _one(vm.addr(attestorKey)),
                 uint256(1),
-                DELAY
+                DELAY,
+                GUARDIAN
             ),
             at
         );
@@ -375,7 +377,7 @@ contract SiteboundV2Test is Test {
         address[] memory att = _one(vm.addr(attestorKey));
         bytes32 rp = sha256("localhost");
         vm.expectRevert("token has no code");
-        new SiteboundV2(IERC20(address(0xdead)), FRAME, rp, att, 1, DELAY);
+        new SiteboundV2(IERC20(address(0xdead)), FRAME, rp, att, 1, DELAY, GUARDIAN);
     }
 
     function test_wrong_origin_reverts() public {
@@ -497,6 +499,57 @@ contract SiteboundV2Test is Test {
         p.authenticatorData = abi.encodePacked(sha256("other"), bytes1(0x05), uint32(1));
         vm.expectRevert("bad rpId");
         sb.pay(p);
+    }
+
+    function test_relayer_fee_is_capped_on_chain() public {
+        Opts memory o = _opts("K1");
+        o.fee = sb.MAX_RELAYER_FEE();
+        SiteboundV2.PayInput memory p = _input(o);
+        vm.prank(relayer);
+        sb.pay(p);
+        assertEq(usdt.balanceOf(relayer), 1e6);
+        o = _opts("K2");
+        o.fee = 1e6 + 1; // signed by the buyer and within the caps, but over the contract's cap
+        p = _input(o);
+        vm.expectRevert("fee over cap");
+        sb.pay(p);
+    }
+
+    function test_guardian_pause_stops_only_new_payments() public {
+        bytes32 id = _pay(_opts("P1"));
+        bytes32 siteHash = keccak256(bytes(SHOP));
+        vm.expectRevert("not guardian");
+        sb.setPaused(true);
+        vm.prank(GUARDIAN);
+        sb.setPaused(true);
+        SiteboundV2.PayInput memory p = _input(_opts("P2"));
+        vm.expectRevert("paused");
+        sb.pay(p);
+        // everything else still works while paused
+        _approve(shopWallet);
+        vm.prank(shopWallet);
+        sb.refund(id, 1e6);
+        _register(EVIL, evilWallet);
+        _register(SHOP, address(0x2222));
+        vm.prank(shopWallet);
+        sb.setRefundOperator(siteHash, address(0x0FF1CE));
+        vm.prank(shopWallet);
+        sb.freeze(siteHash);
+        vm.prank(shopWallet);
+        sb.unfreeze(siteHash);
+        vm.prank(wallet);
+        sb.unbind(cred);
+        _bind(walletKey, 50e6, 100e6, uint64(block.timestamp + 30 days));
+        vm.prank(GUARDIAN);
+        sb.setPaused(false);
+        sb.pay(_input(_opts("P2")));
+    }
+
+    function test_no_guardian_means_no_pause() public {
+        sb = new SiteboundV2(IERC20(address(usdt)), FRAME, rp, _one(vm.addr(attestorKey)), 1, DELAY, address(0));
+        vm.prank(address(0x6A4D));
+        vm.expectRevert("not guardian");
+        sb.setPaused(true);
     }
 
     // ------------------------------------------------------------ binding
@@ -805,7 +858,7 @@ contract SiteboundV2Test is Test {
         address at = 0x00000000000000000000000000000000005B7e02;
         deployCodeTo(
             "SiteboundV2.sol:SiteboundV2",
-            abi.encode(address(usdt), FRAME, sha256("localhost"), _one(0x501D9b198010BC786D8b0DAc53ac700c8ACdc02d), uint256(1), DELAY),
+            abi.encode(address(usdt), FRAME, sha256("localhost"), _one(0x501D9b198010BC786D8b0DAc53ac700c8ACdc02d), uint256(1), DELAY, GUARDIAN),
             at
         );
         sb = SiteboundV2(at);
@@ -963,7 +1016,7 @@ contract SiteboundV2Test is Test {
     function testFuzz_split_parts_sum_to_amount(uint256 amount, uint256 fee, uint8 n, uint256 seed) public {
         n = uint8(bound(n, 1, 5));
         amount = bound(amount, 1, 30e6);
-        fee = bound(fee, 0, 50e6 - amount);
+        fee = bound(fee, 0, 1e6); // MAX_RELAYER_FEE; amount + fee stays under the 50 USDT per-pay cap
         address[] memory to = new address[](n);
         uint16[] memory bps = new uint16[](n);
         uint256 left = 10_000;
@@ -1001,7 +1054,7 @@ contract SiteboundV2Test is Test {
         address at = 0x00000000000000000000000000000000005B7e02;
         deployCodeTo(
             "SiteboundV2.sol:SiteboundV2",
-            abi.encode(address(usdt), FRAME, sha256("localhost"), _one(0x501D9b198010BC786D8b0DAc53ac700c8ACdc02d), uint256(1), DELAY),
+            abi.encode(address(usdt), FRAME, sha256("localhost"), _one(0x501D9b198010BC786D8b0DAc53ac700c8ACdc02d), uint256(1), DELAY, GUARDIAN),
             at
         );
         sb = SiteboundV2(at);
@@ -1133,7 +1186,7 @@ contract SiteboundV2Test is Test {
     function test_pay_and_refund_cannot_be_reentered() public {
         ReentrantToken bad = new ReentrantToken();
         address[] memory att = _one(vm.addr(attestorKey));
-        sb = new SiteboundV2(IERC20(address(bad)), FRAME, rp, att, 1, DELAY);
+        sb = new SiteboundV2(IERC20(address(bad)), FRAME, rp, att, 1, DELAY, GUARDIAN);
         usdt = MockToken(address(bad));
         bad.mint(wallet, 1000e6);
         vm.prank(wallet);

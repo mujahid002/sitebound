@@ -12,6 +12,8 @@ interface IERC20 {
 /// A site's payout can be split between up to 5 wallets; the first one is the site's owner.
 contract SiteboundV2 {
     uint256 public constant MAX_RECIPIENTS = 5;
+    /// On-chain cap on the relayer fee, on top of the buyer signing the exact fee: 1 USDT (6 decimals).
+    uint256 public constant MAX_RELAYER_FEE = 1e6;
     uint256 constant BPS = 10_000;
 
     /// Who gets paid, in basis points summing to 10000. to[0] owns the site (freeze, unfreeze, refund)
@@ -87,6 +89,9 @@ contract SiteboundV2 {
     IERC20 public immutable token;
     bytes32 public immutable rpIdHash;
     uint64 public immutable delay;
+    /// Can pause and unpause new payments, and nothing else. address(0): no one can.
+    address public immutable guardian;
+    bool public paused;
     string frameOrigin;
 
     /// Attestor sets by id. Set 1 comes from the constructor; each proposal gets the next id.
@@ -129,6 +134,7 @@ contract SiteboundV2 {
     event PayoutSplit(bytes32 indexed paymentId, address indexed to, uint256 amount);
     event RefundedBy(bytes32 indexed paymentId, address indexed by);
     event RefundOperatorProposed(bytes32 indexed siteHash, address operator, uint64 activeAt);
+    event Paused(bool paused);
     event AttestorsProposed(uint256 indexed setId, address[] attestors, uint256 threshold, uint64 activeAt);
 
     modifier nonReentrant() {
@@ -144,13 +150,15 @@ contract SiteboundV2 {
         bytes32 rpIdHash_,
         address[] memory attestors,
         uint256 threshold_,
-        uint64 delay_
+        uint64 delay_,
+        address guardian_
     ) {
         require(address(token_).code.length > 0, "token has no code");
         token = token_;
         frameOrigin = frameOrigin_;
         rpIdHash = rpIdHash_;
         delay = delay_;
+        guardian = guardian_;
         activeSet = _newSet(attestors, threshold_);
         activeThreshold = threshold_;
     }
@@ -328,6 +336,13 @@ contract SiteboundV2 {
         }
     }
 
+    /// Stops new pay() calls only. Refunds, registrations, freezes and bindings keep working.
+    function setPaused(bool paused_) external {
+        require(msg.sender == guardian, "not guardian");
+        paused = paused_;
+        emit Paused(paused_);
+    }
+
     // ----------------------------------------------------------------- binding
 
     /// Ties a passkey to a wallet with caps and an expiry. Only the wallet's own EIP-712 signature
@@ -376,7 +391,9 @@ contract SiteboundV2 {
     /// Permissionless: anyone can submit, the signature fixes site, order, amount and fee.
     /// The payout is never an input; it comes from the registry entry of the signed topOrigin.
     function pay(PayInput calldata p) external nonReentrant returns (bytes32 paymentId) {
+        require(!paused, "paused");
         require(p.amount > 0, "zero amount");
+        require(p.relayerFee <= MAX_RELAYER_FEE, "fee over cap");
         Buyer storage b = buyers[p.credentialHash];
         _spend(b, p.amount + p.relayerFee);
         bytes32 siteHash = _verify(p, b);
