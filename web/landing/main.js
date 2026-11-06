@@ -42,22 +42,29 @@ const hostOf = (o) => { try { return new URL(o).host; } catch { return o; } };
 
 // ---------------------------------------------------------------- the orbit
 
-const KEY = 'sitebound.ring';
-const recall = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
-const remember = (list) => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch { /* private mode */ } };
-
-// Real sites only: the live demo, the owner's own site (a portfolio with a coffee checkout), and the fake copy of the demo.
-const BASE = [
-  C.demoShop && { origin: C.demoShop, label: hostOf(C.demoShop), kind: 'live' },
-  { origin: 'https://0xmujahid.xyz', label: '0xmujahid.xyz', kind: 'live' },
-  C.fakeShop && { origin: C.fakeShop, label: hostOf(C.fakeShop), kind: 'fake' },
+// Phase 2 fills this list and nothing else: { domain, label, kind }. kind 'real' is a well-known site that shows what
+// the checkout problem looks like in the wild; 'ours' is a site that runs Sitebound. `origin` is only needed when it is
+// not https://<domain> (the local demo). Each chip fetches https://<domain>/favicon.ico; add `logo: 'path'` to ship an
+// icon yourself. PLACEHOLDER sites until real-sites.md lands: these are not claims about those sites.
+const SITES = [
+  C.demoShop && { domain: hostOf(C.demoShop), origin: C.demoShop, label: 'the Sitebound demo', kind: 'ours' },
+  { domain: '0xmujahid.xyz', label: '0xmujahid.xyz', kind: 'ours' },
+  { domain: 'etsy.com', label: 'Etsy', kind: 'real' },
+  { domain: 'substack.com', label: 'Substack', kind: 'real' },
+  { domain: 'gumroad.com', label: 'Gumroad', kind: 'real' },
+  { domain: 'bandcamp.com', label: 'Bandcamp', kind: 'real' },
+  { domain: 'patreon.com', label: 'Patreon', kind: 'real' },
+  { domain: 'ghost.org', label: 'Ghost', kind: 'real' },
+  { domain: 'wikipedia.org', label: 'Wikipedia', kind: 'real' },
+  { domain: 'humblebundle.com', label: 'Humble Bundle', kind: 'real' },
 ].filter(Boolean);
-let typed = recall().filter((o) => typeof o === 'string' && /^https:\/\/[^/]+$/.test(o)).slice(-6);
-// Narrow screens show only the first few, so: the live demo, then what the visitor typed (newest first), then the rest.
+// Sites the visitor typed join the orbit for this visit only; nothing is stored, so no old entry can come back.
+try { localStorage.removeItem('sitebound.ring'); } catch { /* private mode */ }
+let typed = [];
 const ringSites = () => [
-  ...BASE.filter((b) => b.kind === 'live'),
-  ...typed.filter((o) => !BASE.some((b) => b.origin === o)).reverse().map((o) => ({ origin: o, label: hostOf(o), kind: 'user' })),
-  ...BASE.filter((b) => b.kind !== 'live'),
+  ...SITES.filter((b) => b.kind === 'ours'),
+  ...typed.filter((o) => !SITES.some((b) => (b.origin || `https://${b.domain}`) === o)).reverse().map((o) => ({ origin: o, domain: hostOf(o), label: hostOf(o), kind: 'user' })),
+  ...SITES.filter((b) => b.kind !== 'ours'),
 ];
 
 // Theme: index.html sets data-theme before first paint; the toggle flips it and remembers the choice.
@@ -84,9 +91,8 @@ const orbit = mountOrbit($('orbit'), {
 });
 
 function addToRing(origin) {
-  if (BASE.some((b) => b.origin === origin) || typed.includes(origin)) return;
+  if (SITES.some((b) => (b.origin || `https://${b.domain}`) === origin) || typed.includes(origin)) return;
   typed = [...typed, origin].slice(-6);
-  remember(typed);
   orbit.setSites(ringSites());
 }
 
@@ -176,7 +182,7 @@ if (isAddr(C.address)) {
 }
 if (C.relayerFee) for (const el of document.querySelectorAll('[data-cfg-fee]')) el.textContent = C.relayerFee;
 
-const copyBtn = document.querySelector('[data-copy]');
+const copyBtn = document.querySelector('[data-copy-address]');
 copyBtn?.addEventListener('click', async () => {
   const text = document.querySelector('.vaddr code').textContent;
   try { await navigator.clipboard.writeText(text); copyBtn.textContent = 'Copied'; } catch { copyBtn.textContent = 'Select the address to copy'; }
@@ -266,11 +272,20 @@ async function runCheck() {
   }
 }
 
-// The route diagram and the step lists draw their connectors once, when they scroll into view.
+// Scroll reveal and the drawn connectors: one observer. [data-reveal] fades up (200 to 300 ms, CSS), [data-flow] draws
+// its connectors. Both get .is-in once. Reduced motion: nothing is hidden, so nothing needs revealing. The hidden start
+// state exists only after this script runs (.reveal-ready), so the page stays readable if it never does.
+const reveal = !reduced() && 'IntersectionObserver' in window;
+if (reveal) {
+  document.documentElement.classList.add('reveal-ready');
+  for (const group of new Set([...document.querySelectorAll('[data-reveal]')].map((el) => el.parentElement))) {
+    [...group.children].filter((el) => el.hasAttribute('data-reveal')).forEach((el, i) => el.style.setProperty('--i', i));
+  }
+}
 const flows = new IntersectionObserver((entries) => {
   for (const e of entries) if (e.isIntersecting) { e.target.classList.add('is-in'); flows.unobserve(e.target); }
-}, { rootMargin: '0px 0px -10% 0px' });
-for (const el of document.querySelectorAll('[data-flow]')) flows.observe(el);
+}, { rootMargin: '0px 0px -8% 0px' });
+for (const el of document.querySelectorAll('[data-flow], [data-reveal]')) flows.observe(el);
 
 const verifySection = $('verify');
 if (verifySection) {
