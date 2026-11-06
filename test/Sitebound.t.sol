@@ -247,6 +247,21 @@ contract SiteboundTest is Test {
         sb.pay(p);
     }
 
+    function test_origin_that_only_starts_like_the_frame_reverts() public {
+        Opts memory o = _opts("B5");
+        o.origin = string.concat(FRAME, ".evil.com");
+        Sitebound.PayInput memory p = _input(o);
+        vm.expectRevert("bad origin");
+        sb.pay(p);
+    }
+
+    function test_key_not_after_brace_or_comma_reverts() public {
+        Sitebound.PayInput memory p = _input(_opts("B6"));
+        p.typeIdx = p.typeIdx + 1;
+        vm.expectRevert("bad type");
+        sb.pay(p);
+    }
+
     function test_not_cross_origin_reverts() public {
         Opts memory o = _opts("B2");
         o.crossOrigin = false;
@@ -377,6 +392,16 @@ contract SiteboundTest is Test {
         sb.unbind(cred);
         vm.expectRevert("not bound");
         sb.pay(p);
+    }
+
+    function test_old_binding_signature_cannot_revive_after_unbind() public {
+        uint64 expiry = uint64(block.timestamp + 1 days);
+        (uint8 v, bytes32 r, bytes32 s) = _bindStruct(walletKey, wallet, 5e6, 5e6, expiry);
+        sb.bind(cred, px, py, 5e6, 5e6, expiry, wallet, v, r, s);
+        vm.prank(wallet);
+        sb.unbind(cred);
+        vm.expectRevert("bad binding signature");
+        sb.bind(cred, px, py, 5e6, 5e6, expiry, wallet, v, r, s);
     }
 
     function test_only_wallet_can_unbind() public {

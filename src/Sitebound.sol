@@ -281,9 +281,10 @@ contract Sitebound {
         return a;
     }
 
-    /// True when `want` appears in `data` exactly at `idx`.
+    /// True when the JSON key pattern `want` sits exactly at `idx`, right after a `{` or `,`.
     function _at(bytes calldata data, uint256 idx, bytes memory want) internal pure returns (bool) {
-        if (idx + want.length > data.length) return false;
+        if (idx == 0 || idx + want.length > data.length) return false;
+        if (data[idx - 1] != "{" && data[idx - 1] != ",") return false;
         return keccak256(data[idx:idx + want.length]) == keccak256(want);
     }
 
