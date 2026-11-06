@@ -40,6 +40,15 @@ Draft. Only things we measured; the rest is marked "not checked".
   `/api/v2/smart-contracts/verification/config` reports `is_rust_verifier_microservice_enabled: true` but returns an
   empty `solidity_compiler_versions` (and `vyper_compiler_versions`), so the verifier service looks unreachable. Build
   settings used: solc 0.8.28, via-IR, optimizer 200 runs, cancun. Not checked: other compiler versions or the UI path.
+- **Sourcify worked where Blockscout did not (6 Nov, measured).** Sourcify reports `exact_match` for both the
+  creation and the runtime code of the same contract (verified 16:59 IST):
+  https://repo.sourcify.dev/1874/0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73. During that verification, Blockscout
+  answered Sourcify's job with HTTP 403 "temporarily unavailable". So the source verifies, and the problem looks to
+  be in the explorer's verification path (inferred).
+- **When it stopped (measured 17:10 IST, 6 Nov).** The explorer's 40 most recently verified contracts were verified
+  between 12:09 and 15:03 IST, including three solc 0.8.28 via-IR builds, and none after that. So the verifier did
+  work for these settings until about 15:03 IST. Whether our first failed attempts were before or after that: not
+  checked.
 
 ## Not checked yet
 
