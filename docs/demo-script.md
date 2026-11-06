@@ -58,25 +58,27 @@ Hosts (layout from `deploy/pages.sh`; status checked 15:29 to 15:43 IST):
   - On-chain scenes need a local anvil, the way `e2e/run.mjs` does it (headless). A headed manual version is not built:
     not checked.
 
-## 1. Shop onboarding (0:00 to 0:40)
+## 1. Website onboarding (0:00 to 0:40)
 
-URLs: `https://sitebound-pay.pages.dev/landing/`, then `.../onboard/?site=https%3A%2F%2Fsitebound-demo.pages.dev`.
+URL: `https://sitebound-pay.pages.dev/landing/`. The setup opens inline on the same page.
 
-1. Landing. Hold on the hero for 2 seconds: "Sitebound", "Kill the checkout address." and the "Live on Whitechain Sepolia" chip.
-2. Click the search pill ("Type your website, e.g. shop.com"). Type `sitebound-demo.pages.dev`, then click **Connect my shop**.
-3. Onboarding opens on "Connect your shop", with "Four short steps. Your checkout code never holds a payment address."
-4. Step 1 "Connect your wallet": click **Connect wallet** and approve in the wallet. Use the payout wallet pinned in DEMO_SITES.
-5. Step 2 "Add the DNS record": show the TXT Name `_sitebound.sitebound-demo.pages.dev` and the Value `sitebound=0x…`.
+1. Landing. Hold on the hero for 2 seconds: "Addressless checkout for your website.", the website chips orbiting the
+   search bar, and the "Live on Whitechain Sepolia" chip. Move the pointer once: the dot field lights up under it.
+2. Click the search bar ("yourwebsite.com"). Type `sitebound-demo.pages.dev`, then click **Bring your website** (or
+   click the `sitebound-demo.pages.dev` chip). The setup opens below the hero on "Connect your website", with "Four
+   short steps. Your checkout code never holds a payment address."
+3. Step 1 "Connect your wallet": click **Connect wallet** and approve in the wallet. Use the payout wallet pinned in DEMO_SITES.
+4. Step 2 "Add the DNS record": show the TXT Name `_sitebound.sitebound-demo.pages.dev` and the Value `sitebound=0x…`.
    Click **Verify domain**. The step summary becomes "Record found".
-6. Step 3 "Register your shop": click **Register shop**. The button shows "Waiting for the chain…", then the panel
+5. Step 3 "Register your site": click **Register site**. The button shows "Waiting for the chain…", then the panel
    reads "Registered on Sitebound" with the badge "Active".
-7. Step 4 "Paste the snippet": point at the code (no address in it), then click **Copy snippet**.
+6. Step 4 "Paste the snippet": point at the code (no address in it), then click **Copy snippet**.
 
 Spoken:
 > "Every crypto checkout today puts a wallet address in the page, and anything that can edit the page can swap it.
-> Sitebound removes the address. A shop types its domain, connects the wallet that gets paid, proves the domain with
+> Sitebound removes the address. A site owner types the domain, connects the wallet that gets paid, proves the domain with
 > one DNS record, and the relayer registers that wallet on Whitechain for this site only. On this pages.dev demo we
-> can't add DNS, so the relayer pins this one site's wallet instead. The snippet the shop pastes has no address in it."
+> can't add DNS, so the relayer pins this one site's wallet instead. The snippet the owner pastes has no address in it."
 
 ## 2. Buyer first-time setup (0:40 to 1:15)
 
