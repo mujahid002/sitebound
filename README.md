@@ -188,7 +188,7 @@ Buyers set up again too: v1 bindings and allowances do not carry over.
 
 ## Deployments (Whitechain Sepolia, chain 1874)
 
-- SiteboundV2: `<SITEBOUND_V2_ADDRESS: filled in after the V2 deploy>`
+- SiteboundV2: `0x64117398C837a8708a816818b31C36Df5a968596`
 - v1 Sitebound (what the live frame uses until then):
   [`0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73`](https://explorer.testnet.whitechain.io/address/0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73)
   (token: Whitechain USDT, `DELAY` 1 hour, frame origin `https://sitebound-pay.pages.dev`)

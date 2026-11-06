@@ -175,7 +175,7 @@ Spoken:
 URLs:
 - `https://explorer.testnet.whitechain.io/tx/<scene 4 tx>`, reached from "View the payment on the explorer" in the
   demo shop or "Tx" on the dashboard.
-- `https://explorer.testnet.whitechain.io/address/<SITEBOUND_V2_ADDRESS: filled in after the V2 deploy>` (v1 until
+- `https://explorer.testnet.whitechain.io/address/0x64117398C837a8708a816818b31C36Df5a968596` (v1 until
   then: `0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73`). It is reached from the landing's footer strip "Live on
   Whitechain Sepolia" → **View on the explorer** (`https://sitebound-pay.pages.dev/#live`). That link follows
   `web/config.js`.

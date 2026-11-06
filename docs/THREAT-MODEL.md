@@ -3,7 +3,7 @@
 This covers SiteboundV2 (`src/SiteboundV2.sol`) as of commit 1051525, the frame (`web/frame/`) and the relayer
 (`worker/src/index.js`). Line numbers refer to those files. The live deployment on Whitechain Sepolia is still v1
 (`src/Sitebound.sol`, `0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73`) until V2 is deployed at
-`<SITEBOUND_V2_ADDRESS: filled in after the V2 deploy>`. Testnet only. An independent AI review of V2 found no
+`0x64117398C837a8708a816818b31C36Df5a968596`. Testnet only. An independent AI review of V2 found no
 critical or high issues and its fixes are in. There has been no professional audit.
 
 ## What it stops

@@ -10,7 +10,7 @@
 set -eu
 
 CONTRACT=${CONTRACT:-SiteboundV2}
-ADDRESS=${ADDRESS:-0x0000000000000000000000000000000000000000} # PLACEHOLDER: the V2 address after the deploy
+ADDRESS=${ADDRESS:-0x64117398C837a8708a816818b31C36Df5a968596} # SiteboundV2 on Whitechain Sepolia
 RPC=${RPC_URL:-https://rpc.testnet.whitechain.io}
 cd "$(dirname "$0")/.."
 
