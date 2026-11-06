@@ -397,7 +397,7 @@ function SiteStatus({ cfg, site, info, wallet, refresh }) {
           </button>
           ${!info.frozen && html`<span class="hint">Stops all payments and cancels any pending change.</span>`}
         </div>`
-      : html`<p class="hint">${wallet.account ? 'Switch to the payout wallet to freeze or unfreeze.' : 'Connect the payout wallet in step 1 to freeze or unfreeze.'}</p>`}
+      : html`<p class="hint">${wallet.account ? 'Switch to the payout wallet to freeze or unfreeze.' : 'Connect the payout wallet to freeze or unfreeze.'}</p>`}
     <div aria-live="polite">
       ${tx.state === 'wait' && html`<p class="hint">Waiting for confirmation: <${TxLink} cfg=${cfg} hash=${tx.hash} /></p>`}
       ${tx.state === 'done' && html`<p class="hint">Done: <${TxLink} cfg=${cfg} hash=${tx.hash} /></p>`}
