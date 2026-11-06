@@ -204,15 +204,15 @@ footer{margin-top:72px;padding-top:28px;border-top:1px solid var(--line);text-al
   .item{grid-template-columns:minmax(0,1fr)}
 }
 
-/* Buy me a coffee: a Sitebound checkout. Uses the page's own tokens. */
-.coffee{list-style:none;margin:18px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.coffee li{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
-.coffee .amt{font-size:1.5rem;font-weight:600;letter-spacing:-.01em;color:var(--fg)}
-.coffee .amt small{font-size:.8rem;font-weight:500;color:var(--mute);margin-left:4px}
-.coffee .what{font-size:.86rem;color:var(--soft);margin:-6px 0 0}
-.coffee-status{min-height:1.4em;margin:14px 0 0;font-size:.92rem;color:var(--t-green)}
-.coffee-fine{font-size:.82rem;color:var(--mute);margin:10px 0 0}
-@media (max-width:640px){.coffee{grid-template-columns:1fr}}
+/* Buy me a coffee: a Sitebound checkout, laid out like the Education rows. */
+.coffee{list-style:none;margin:18px 0 0;padding:0}
+.coffee li{display:grid;grid-template-columns:1fr auto;align-items:center;gap:16px;padding:12px 0;border-top:1px solid var(--line)}
+.coffee li:last-child{border-bottom:1px solid var(--line)}
+.coffee b{font-weight:600;color:var(--fg);font-size:15px}
+.coffee sitebound-pay::part(button){padding:7px 14px;font:500 14px var(--sans);border-radius:8px;background:transparent;color:var(--fg);border:1px solid var(--line-2);box-shadow:none;transform:none}
+.coffee sitebound-pay::part(button):hover{background:var(--card-2);border-color:#3c3c3c;box-shadow:none;transform:none}
+.coffee-status{min-height:1.4em;margin:14px 0 0;font-size:14px;color:var(--t-green)}
+.coffee-fine{font-size:13px;color:var(--mute);margin:10px 0 0}
 </style>
 </head>
 <body>
@@ -283,9 +283,9 @@ footer{margin-top:72px;padding-top:28px;border-top:1px solid var(--line);text-al
     <h2>Buy me a coffee</h2>
     <p>If something I built or wrote helped you, you can send a few USDT. The checkout is <a href="https://sitebound-pay.pages.dev" target="_blank" rel="noopener">Sitebound</a>: this page holds no wallet address, and the wallet that gets paid is registered on-chain for <b>0xmujahid.xyz</b>, so a hacked page cannot redirect the money.</p>
     <ul class="coffee" id="coffee-tiers">
-      <li><span class="amt">3 <small>USDT</small></span><p class="what">A coffee</p><div class="slot" data-amount="3"></div></li>
-      <li><span class="amt">5 <small>USDT</small></span><p class="what">Coffee and a snack</p><div class="slot" data-amount="5"></div></li>
-      <li><span class="amt">10 <small>USDT</small></span><p class="what">A round for the team</p><div class="slot" data-amount="10"></div></li>
+      <li><b>A coffee</b><div class="slot" data-amount="3"></div></li>
+      <li><b>Coffee and a snack</b><div class="slot" data-amount="5"></div></li>
+      <li><b>A round for the team</b><div class="slot" data-amount="10"></div></li>
     </ul>
     <div class="coffee-status" id="coffee-status" role="status" aria-live="polite"></div>
     <noscript><p class="coffee-fine">Payments need JavaScript, which is switched off here.</p></noscript>
