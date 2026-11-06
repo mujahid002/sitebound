@@ -33,6 +33,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="why.css">
   <link rel="stylesheet" href="proof.css">
+  <link rel="stylesheet" href="roadmap.css">
   <script type="importmap">
   {
     "imports": {
@@ -493,6 +494,46 @@
         </figure>
       </div>
     </section>
+
+    <section id="roadmap" class="band roadmap" aria-labelledby="roadmap-h">
+      <h2 id="roadmap-h" class="section-title" data-reveal>What is live, and what is not built yet</h2>
+      <p class="rm-lede" data-reveal>No dates and no promises. Live means running on Whitechain Sepolia testnet today.</p>
+      <div class="rm-board">
+        <div class="rm-col rm-now" data-reveal>
+          <div class="rm-head"><h3 class="rm-h">Now</h3><span class="rm-tag">Live on testnet</span></div>
+          <ul class="rm-list">
+            <li><b>Addressless payment</b><span>The contract pays the wallet registered for the site.</span></li>
+            <li><b>Touch ID confirmation</b><span>A passkey signs the site and the amount.</span></li>
+            <li><b>Gasless for buyers</b><span>A relayer pays gas. Buyers pay USDT and a 0.01 fee.</span></li>
+            <li><b>DNS TXT onboarding</b><span>Your payout wallet is created in your browser.</span></li>
+            <li><b>Refunds and splits</b><span>Merchant-funded refunds, and payouts split across up to 5 wallets.</span></li>
+            <li><b>Optional quotes</b><span>Your server signs the amount, so a page cannot change it.</span></li>
+          </ul>
+          <p class="rm-note"><b>Verified source.</b> It matches on Sourcify and the Whitechain explorer. <a href="#verify">Check the live code</a></p>
+        </div>
+        <div class="rm-col rm-next" data-reveal>
+          <div class="rm-head"><h3 class="rm-h">Next</h3><span class="rm-tag">Planned, not built</span></div>
+          <ul class="rm-list">
+            <li><b>Public API for adding sites</b><span>Today only our admin script does it.</span></li>
+            <li><b>Team payout wallet</b><span>Several owners, passkey-bound. Needs a new contract; today one browser key.</span></li>
+            <li><b>More than one DNS checker</b><span>The contract supports it. Today there is one.</span></li>
+            <li><b>Safari and Firefox testing</b><span>Only Chrome is measured so far.</span></li>
+          </ul>
+          <p class="rm-note">Planned, not built. Order and timing are not fixed.</p>
+        </div>
+        <div class="rm-col rm-later" data-reveal>
+          <div class="rm-head"><h3 class="rm-h">Later</h3><span class="rm-tag">Planned, not built</span></div>
+          <ul class="rm-list">
+            <li><b>Audit, then mainnet</b><span>A professional audit first, then real USDT.</span></li>
+            <li><b>Pay from any chain</b><span>Needs a route into Whitechain; we found none yet.</span></li>
+            <li><b>Shop plugins</b><span>Ready-made server code for common store platforms.</span></li>
+            <li><b>Overlay detection</b><span>Warn when a page draws over the payment window.</span></li>
+            <li><b>On-chain DNSSEC proof</b><span>Replaces the trusted DNS checker.</span></li>
+          </ul>
+          <p class="rm-note">Planned, not built. Depends on the steps before it.</p>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="foot">
@@ -511,6 +552,7 @@
       <nav aria-label="Footer">
         <a href="#verify">Rules you can check</a>
         <a href="#try">Try it</a>
+        <a href="#roadmap">Roadmap</a>
       </nav>
     </div>
     <p class="foot-limit">Testnet only, not audited. Known limits are in the docs.</p>
