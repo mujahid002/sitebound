@@ -134,6 +134,13 @@ Known limits:
 - **Linkability.** Credential hashes are on-chain, so a buyer's purchases can be linked across shops.
 - **Pubkey squatting.** An attacker can front-run `bind` and bind a victim's passkey public key to the attacker's
   own wallet first. That blocks the victim's setup (nuisance), it doesn't move funds.
+- **Order squatting.** Anyone can bind their own key to their own wallet and pay a shop with any order id, which
+  burns that id for the real buyer. Zero amounts are rejected, so it costs the squatter real tokens, but a shop
+  must still check on-chain before fulfilling: `payments(paymentId).amount` equals the price, and order ids should
+  be random, not guessable. The `sitebound:paid` event alone is not proof of payment.
+- **Freeze.** A stolen payout key can freeze a site for good, and no attestation can rotate the payout while it is
+  frozen. After a pending change goes live (`DELAY`), the old payout can no longer freeze.
+- **Relayer fee** goes to whoever submits the payment first. `credentialHash` can be squatted by front-running `bind`.
 - **Issuer risk.** USDT's issuer can freeze addresses.
 - Testnet only. Not audited.
 
