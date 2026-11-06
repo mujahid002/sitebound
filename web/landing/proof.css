@@ -13,7 +13,7 @@
 .wc-nav-t { font-size: var(--fs-xs); letter-spacing: 0.02em; }
 :root[data-theme] .wc-nav .wc-l { width: auto; height: 15px; }
 :root[data-theme] .wc-nav .wc-m { width: 20px; height: 20px; display: none; }
-@media (max-width: 480px) {
+@media (max-width: 560px) {
   .wc-nav-t { display: none; }
   :root[data-theme] .wc-nav .wc-l { display: none; }
   :root[data-theme="light"] .wc-nav .wc-m.on-light, :root[data-theme="dark"] .wc-nav .wc-m.on-dark { display: block; }

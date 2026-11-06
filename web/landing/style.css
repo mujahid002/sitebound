@@ -103,7 +103,7 @@ body {
   font-size: var(--fs-sm); text-decoration: none; white-space: nowrap; transition: color 0.2s, background-color 0.2s;
 }
 .top nav a:hover { color: var(--ink); background: rgba(var(--rl), 0.06); }
-@media (max-width: 480px) {
+@media (max-width: 560px) {
   .top-brand span { display: none; }
   .top nav a { padding: 8px; }
 }
