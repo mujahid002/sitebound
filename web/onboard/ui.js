@@ -2,7 +2,7 @@
 import { h } from 'preact';
 import { useState, useEffect, useRef } from 'preact/hooks';
 import htm from 'htm';
-import { copyText, short, addrUrl, txUrl } from './lib.js';
+import { copyText, short, addrUrl, txUrl, backupText, useOwnWallet } from './lib.js';
 
 export const html = htm.bind(h);
 
@@ -82,4 +82,31 @@ export function Empty({ title, children, action }) {
     <p>${children}</p>
     ${action}
   </section>`;
+}
+
+// The wallet Sitebound made in this browser: where it lives, and an optional backup (shows the recovery phrase and
+// downloads it). Nothing here blocks anything. Renders nothing for a wallet connected from an extension.
+export function WalletNote({ cfg, wallet, own }) {
+  const [open, setOpen] = useState(false);
+  const w = wallet.localWallet;
+  if (!w) return null;
+  const download = () => {
+    const url = URL.createObjectURL(new Blob([backupText(w, cfg)], { type: 'text/plain' }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: 'sitebound-wallet-backup.txt' });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const words = w.mnemonic.phrase.split(' ');
+  return html`<div class="wallet-note">
+    <p class="hint">This wallet lives in this browser. Back it up if you want to use it elsewhere.
+      <button type="button" class="link-btn inline-link" aria-expanded=${open} onClick=${() => setOpen(!open)}>Back up this wallet</button>
+      ${own && html`<button type="button" class="link-btn inline-link" onClick=${() => useOwnWallet(true)}>I already have a wallet</button>`}</p>
+    ${wallet.kept === false && html`<p class="hint err" role="alert">This browser would not store the wallet. It is lost when you close this page, so back it up now.</p>`}
+    ${open && html`<div class="backup">
+      <ol class="phrase" aria-label="Recovery phrase, 12 words">${words.map((x) => html`<li><span class="mono">${x}</span></li>`)}</ol>
+      <p class="hint">Anyone with these words controls the money. Keep them private.</p>
+      <div class="actions"><button type="button" class="btn ghost sm" onClick=${download}>Download backup (.txt)</button>
+        <${CopyButton} text=${w.mnemonic.phrase} label="Copy phrase" what="recovery phrase" /></div>
+    </div>`}
+  </div>`;
 }

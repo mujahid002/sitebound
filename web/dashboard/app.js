@@ -1,7 +1,7 @@
 // Website dashboard: payments to one site, read from chain events. Refunds, CSV, webhook test.
 import { render } from 'preact';
 import { useState, useEffect, useRef, useCallback } from 'preact/hooks';
-import { html, Brand, Icon, Spinner, Notice, TxLink, AddrLink, Empty, useTick } from '../onboard/ui.js';
+import { html, Brand, Icon, Spinner, Notice, TxLink, AddrLink, Empty, useTick, WalletNote } from '../onboard/ui.js';
 import {
   ABI, ERC20, iface, ZERO, loadConfig, parseSite, rpc, reader, contractState, readSite, secondsLeft, useWallet,
   errText, readText, short, sameAddr, fmtUsdt, parseUsdt, orderText, duration, txUrl, copyText,
@@ -229,6 +229,7 @@ function Dashboard({ cfg, site }) {
         <p class="eyebrow">Dashboard</p>
         <h1 class="h1">${site.host}</h1>
         ${info?.registered && html`<${SiteLine} cfg=${cfg} info=${info} />`}
+        <${WalletNote} cfg=${cfg} wallet=${wallet} />
       </div>
       ${content}
     </main>

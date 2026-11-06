@@ -163,3 +163,14 @@ button { font: inherit; color: inherit; }
   * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
   .spin { animation: none; border-right-color: currentColor; opacity: 0.6; }
 }
+
+/* created payout wallet: optional backup */
+.phrase { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 14px; padding: 0; list-style: none; counter-reset: w; }
+.phrase li { counter-increment: w; display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.phrase li::before { content: counter(w); min-width: 1.4em; font-size: 0.75rem; color: var(--muted); text-align: right; }
+.phrase .mono { overflow-wrap: anywhere; user-select: all; }
+.wallet-note { margin-top: 8px; }
+.wallet-note .backup { display: grid; gap: 10px; margin-top: 8px; }
+.wallet-note .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.inline-link { padding: 0 2px; }
+@media (max-width: 420px) { .phrase { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -135,13 +135,14 @@ function useInjectedWallet(cfg) {
   const [chainId, setChainId] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [restored, setRestored] = useState(!eth); // true once an already-connected wallet has been looked for
 
   useEffect(() => {
     if (!eth) return;
     const onAccounts = (a) => setAccount(norm(a?.[0]));
     const onChain = (id) => setChainId(parseInt(id, 16));
     // Restore a wallet the user already connected here, without a prompt.
-    eth.request({ method: 'eth_accounts' }).then(onAccounts).catch(() => {});
+    eth.request({ method: 'eth_accounts' }).then(onAccounts).catch(() => {}).finally(() => setRestored(true));
     eth.request({ method: 'eth_chainId' }).then(onChain).catch(() => {});
     eth.on?.('accountsChanged', onAccounts);
     eth.on?.('chainChanged', onChain);
@@ -171,18 +172,22 @@ function useInjectedWallet(cfg) {
     return new ethers.BrowserProvider(eth, 'any').getSigner();
   }, [cfg]);
 
-  return { kind: 'injected', hasWallet: !!eth, account, chainId, onChain: chainId === cfg.chainId, busy, error, connect, getSigner };
+  return { kind: 'injected', hasWallet: !!eth, restored, account, chainId, onChain: chainId === cfg.chainId, busy, error, connect, getSigner };
 }
 
 // A payout wallet Sitebound creates for an owner who has none. The key stays in this browser: the recovery phrase
 // is stored in localStorage and goes nowhere else. Every hook instance (setup, dashboard chip, refund dialog) shares
-// it through this tiny store, so creating it in one place shows up in the rest.
+// it through this tiny store, so creating it in one place shows up in the rest. "Use my own wallet" is a separate
+// flag: it only hides this wallet (the key stays stored), so choosing it never deletes anything.
 const LOCAL_KEY = 'sitebound.payoutWallet.v1';
-const local = { wallet: null, loaded: false, subs: new Set() };
+const OWN_KEY = 'sitebound.useOwnWallet.v1';
+const local = { wallet: null, own: false, kept: true, loaded: false, subs: new Set() };
+const active = () => (local.own ? null : local.wallet);
 
 function loadLocal() {
   if (local.loaded) return local.wallet;
   local.loaded = true;
+  try { local.own = localStorage.getItem(OWN_KEY) === '1'; } catch { /* no storage */ }
   try {
     const o = JSON.parse(localStorage.getItem(LOCAL_KEY) || 'null');
     const w = o?.phrase ? ethers.Wallet.fromPhrase(o.phrase) : null;
@@ -192,14 +197,24 @@ function loadLocal() {
 }
 
 export const newLocalWallet = () => ethers.Wallet.createRandom();
+export const ownWalletChosen = () => { loadLocal(); return local.own; };
+
+// true: work with the browser's own wallet instead of the one made here. false: back to the one made here.
+export function useOwnWallet(on) {
+  loadLocal();
+  local.own = on;
+  try { on ? localStorage.setItem(OWN_KEY, '1') : localStorage.removeItem(OWN_KEY); } catch { /* no storage */ }
+  local.subs.forEach((f) => f());
+}
 
 // Keeps the wallet for the next visit. Returns false when the browser would not store it (the wallet still
-// works until the page closes, so the owner has to rely on the recovery phrase).
+// works until the page closes, and the backup is the only copy).
 export function saveLocalWallet(w) {
   let stored = true;
   try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ v: 1, address: w.address, phrase: w.mnemonic.phrase })); } catch { stored = false; }
   local.loaded = true;
   local.wallet = w;
+  local.kept = stored;
   local.subs.forEach((f) => f());
   return stored;
 }
@@ -213,9 +228,9 @@ export function backupText(w, cfg) {
 }
 
 function useLocalWallet(cfg) {
-  const [w, setW] = useState(loadLocal);
+  const [w, setW] = useState(() => { loadLocal(); return active(); });
   useEffect(() => {
-    const f = () => setW(local.wallet);
+    const f = () => setW(active());
     local.subs.add(f);
     f();
     return () => local.subs.delete(f);
@@ -223,7 +238,7 @@ function useLocalWallet(cfg) {
   if (!w) return null;
   // Same shape as the injected wallet. It signs with its own key, so there is no prompt, but it has to hold WBT for gas.
   return {
-    kind: 'local', hasWallet: true, account: w.address, chainId: cfg.chainId, onChain: true, busy: false, error: '',
+    kind: 'local', localWallet: w, kept: local.kept, hasWallet: true, account: w.address, chainId: cfg.chainId, onChain: true, busy: false, error: '',
     connect: async () => {},
     getSigner: async () => w.connect(rpc(cfg)),
   };
