@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+node_modules/
+out/
+cache/
+broadcast/*/31337/
+.wrangler/
+.DS_Store
+*.log
+log.jsonl
