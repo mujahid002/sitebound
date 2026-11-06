@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'preact/hooks';
 import { html, Brand, Icon, Spinner, Notice, TxLink, AddrLink, Empty, useTick } from '../onboard/ui.js';
 import {
   ABI, ERC20, iface, ZERO, loadConfig, parseSite, rpc, reader, contractState, readSite, secondsLeft, useWallet,
-  errText, readText, short, sameAddr, fmtUsdt, parseUsdt, orderText, duration, txUrl,
+  errText, readText, short, sameAddr, fmtUsdt, parseUsdt, orderText, duration, txUrl, copyText,
 } from '../onboard/lib.js';
 
 const { ethers } = window;
@@ -70,8 +70,9 @@ const csvCell = (v) => {
   return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 };
 const plain = (v) => { const [i, f = ''] = ethers.formatUnits(v, 6).split('.'); return i + '.' + f.padEnd(2, '0'); };
+const CSV_HEAD = ['time_utc', 'order_id', 'order_id_hex', 'buyer', 'amount_usdt', 'refunded_usdt', 'status', 'payment_id', 'tx_hash'];
 function toCsv(rows) {
-  const head = ['time_utc', 'order_id', 'order_id_hex', 'buyer', 'amount_usdt', 'refunded_usdt', 'status', 'payment_id', 'tx_hash'];
+  const head = CSV_HEAD;
   const lines = rows.map((r) => [
     new Date(r.time * 1000).toISOString(), orderText(r.order) ?? '', r.order, r.buyer,
     plain(r.amount), plain(r.refunded), statusOf(r).label, r.id, r.tx,
@@ -95,6 +96,42 @@ function statusOf(r) {
   return { kind: 'warn', label: `Refunded ${fmtUsdt(r.refunded)} of ${fmtUsdt(r.amount)}` };
 }
 
+// Presentation only: chip text for the table (statusOf above feeds the CSV and stays as it is).
+function chipOf(r) {
+  if (r.refunded === 0n) return { cls: 'ok', text: 'Paid', note: '' };
+  if (r.refunded >= r.amount) return { cls: 'muted', text: 'Refunded', note: '' };
+  return { cls: 'warn', text: 'Partly refunded', note: `${fmtUsdt(r.refunded)} of ${fmtUsdt(r.amount)}` };
+}
+
+// Icon-only copy button for hashes and addresses.
+function CopyMini({ text, what }) {
+  const [done, setDone] = useState(false);
+  const t = useRef();
+  useEffect(() => () => clearTimeout(t.current), []);
+  const click = async () => {
+    if (await copyText(text)) { setDone(true); clearTimeout(t.current); t.current = setTimeout(() => setDone(false), 1500); }
+  };
+  return html`<button type="button" class=${'copy-mini' + (done ? ' done' : '')} onClick=${click} aria-label=${(done ? 'Copied ' : 'Copy ') + what}>
+    <${Icon} name=${done ? 'check' : 'copy'} /></button>`;
+}
+
+// Light by default, dark on request; same key as the landing page and receipt.
+function ThemeToggle() {
+  const [dark, setDark] = useState(() => document.documentElement.dataset.theme === 'dark');
+  const flip = () => {
+    const next = dark ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#07080a' : '#fafaf7');
+    try { localStorage.setItem('sitebound.theme', next); } catch { /* private mode */ }
+    setDark(!dark);
+  };
+  return html`<button type="button" class="theme-btn" onClick=${flip} aria-label=${dark ? 'Switch to light theme' : 'Switch to dark theme'}>
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      ${dark ? html`<circle cx="12" cy="12" r="4" /><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4" />`
+        : html`<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z" />`}
+    </svg></button>`;
+}
+
 // ---------------------------------------------------------------- page
 
 function App() {
@@ -105,16 +142,16 @@ function App() {
   let body;
   if (site.error) {
     body = html`<${Empty} title="Which website?" action=${html`<a class="btn" href="../landing/index.html#site">Type your website</a>`}>
-      Open the dashboard with <span class="mono">?site=https://your-site.com</span>, with the exact site you registered.<//>`;
+      Open the dashboard with <span class="mono">?site=https://your-site.com</span>, using the exact address you registered.<//>`;
   } else if (boot.status === 'loading') {
-    body = html`<p class="lede" role="status">Loading your orders…</p>`;
+    body = html`<p class="lede" role="status">Loading your dashboard…</p>`;
   } else if (boot.status === 'error') {
     body = html`<${Empty} title="The dashboard is not configured yet">
       It needs the site's <span class="mono">config.js</span> (chain, RPC and contract address).<//>`;
   } else {
     return html`<${Dashboard} cfg=${boot.cfg} site=${site} />`;
   }
-  return html`<header class="bar"><${Brand} /></header><main id="main" class="page">${body}</main>`;
+  return html`<header class="bar"><${Brand} /><div class="bar-end"><${ThemeToggle} /></div></header><main id="main" class="page wide">${body}</main>`;
 }
 
 // Orders for one site, read from chain events. Also used inline by the landing page (web/landing/kit.js).
@@ -169,14 +206,14 @@ function Dashboard({ cfg, site }) {
   let content;
   if (chain.status === 'none') {
     content = html`<${Empty} title="Not deployed yet" action=${html`<a class="btn ghost" href=${'../onboard/index.html?site=' + encodeURIComponent(site.origin)}>Set up your site</a>`}>
-      The Sitebound contract has no address on ${cfg.chainName} yet, so there are no payments to show. This page fills in once it is live.<//>`;
+      The Sitebound contract has no address on ${cfg.chainName} yet, so there are no payments to show.<//>`;
   } else if (chain.status === 'error') {
     content = html`<${Notice} kind="error" title="Could not read the chain">${chain.message}
       <div class="row"><button class="link-btn" onClick=${() => load(false)}>Try again</button></div><//>`;
   } else {
     content = html`
       ${info && !info.registered && html`<${Notice} kind="warn" title="This site is not registered yet">
-        Payments only reach you after you register it. <a href=${'../onboard/index.html?site=' + encodeURIComponent(site.origin)}>Set up your site</a>.<//>`}
+        Payments to it fail until you register it. <a href=${'../onboard/index.html?site=' + encodeURIComponent(site.origin)}>Set up your site</a>.<//>`}
       <${Totals} feed=${feed} />
       <${Orders} cfg=${cfg} site=${site} feed=${feed} load=${load} onRefund=${setRefund} />
       <${Webhook} site=${site} />`;
@@ -185,11 +222,11 @@ function Dashboard({ cfg, site }) {
   return html`
     <header class="bar">
       <${Brand} />
-      <div class="bar-end">${chain.status === 'ok' && html`<${WalletChip} wallet=${wallet} isPayout=${isPayout} />`}</div>
+      <div class="bar-end">${chain.status === 'ok' && html`<${WalletChip} wallet=${wallet} isPayout=${isPayout} />`}<${ThemeToggle} /></div>
     </header>
     <main id="main" class="page wide">
       <div class="head">
-        <p class="eyebrow">Orders</p>
+        <p class="eyebrow">Dashboard</p>
         <h1 class="h1">${site.host}</h1>
         ${info?.registered && html`<${SiteLine} cfg=${cfg} info=${info} />`}
       </div>
@@ -198,7 +235,7 @@ function Dashboard({ cfg, site }) {
     ${refund && html`<${RefundDialog} cfg=${cfg} row=${refund} info=${info} wallet=${wallet} isPayout=${isPayout}
       onClose=${() => setRefund(null)} onDone=${rowDone} />`}
     <footer class="foot wide-foot">
-      <p>Read straight from ${cfg.chainName}. Nothing here is stored on a Sitebound server.</p>
+      <p>Read from ${cfg.chainName}. Sitebound stores none of this.</p>
     </footer>`;
 }
 
@@ -206,7 +243,7 @@ function SiteLine({ cfg, info }) {
   useTick(1000, !!info.pending);
   return html`<p class="siteline">
     ${info.frozen ? html`<span class="badge err">Frozen</span>` : info.pending ? html`<span class="badge warn">Payout change pending</span>` : html`<span class="badge ok">Active</span>`}
-    <span>Paying <${AddrLink} cfg=${cfg} address=${info.payout} /></span>
+    <span>Payouts go to <${AddrLink} cfg=${cfg} address=${info.payout} /></span>
     ${info.pending && html`<span class="hint">New wallet <${AddrLink} cfg=${cfg} address=${info.pending} /> in ${duration(secondsLeft(info))}</span>`}
   </p>`;
 }
@@ -227,44 +264,68 @@ export function Totals({ feed }) {
   const count = feed.rows.length;
   const volume = feed.rows.reduce((s, r) => s + r.amount, 0n);
   const refunded = feed.rows.reduce((s, r) => s + r.refunded, 0n);
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime() / 1000;
+  const month = feed.rows.reduce((s, r) => (r.time >= monthStart ? s + r.amount : s), 0n);
+  const monthName = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(now);
   const first = feed.loading && !count;
-  const stat = (label, value, unit) => html`<div class="stat"><dt>${label}</dt>
-    <dd>${first ? html`<span class="skel" aria-hidden="true"></span><span class="sr-only">Loading</span>` : html`${value}${unit ? html`<small>${unit}</small>` : null}`}</dd></div>`;
-  return html`<section class="totals" aria-label="Totals">
-    <dl>${stat('Payments', count.toLocaleString())}${stat('Volume', cents(volume))}${stat('Refunded', cents(refunded))}</dl>
-    ${feed.from !== null && html`<p class="hint">Counts blocks ${feed.from.toLocaleString()} to ${feed.head?.toLocaleString()}${feed.more ? '. Load older orders to include earlier ones.' : '. This is the whole history.'} Amounts are in USDT.</p>`}
+  const stat = (label, value, note, big) => html`<div class=${'stat' + (big ? ' big' : '')}><dt>${label}</dt>
+    <dd>${first ? html`<span class="skel" aria-hidden="true"></span><span class="sr-only">Loading</span>` : value}</dd>
+    <p class="stat-note">${note}</p></div>`;
+  const usdt = (v) => html`${cents(v)}<small>USDT</small>`;
+  return html`<section class="totals" aria-label="Summary">
+    <dl>
+      ${stat('Total received', usdt(volume), 'Before refunds', true)}
+      ${stat('Payments', count.toLocaleString(), 'Paid orders')}
+      ${stat('Refunded', usdt(refunded), 'Sent back to buyers')}
+      ${stat('This month', usdt(month), monthName)}
+    </dl>
+    ${feed.from !== null && html`<p class="hint">Covers blocks ${feed.from.toLocaleString()} to ${feed.head?.toLocaleString()}${feed.more ? '. Load older payments to include earlier ones.' : ', the whole history.'}</p>`}
   </section>`;
 }
 
 export function Orders({ cfg, site, feed, load, onRefund }) {
   const { rows, loading, error, more } = feed;
   const exportCsv = () => download(`sitebound-${site.hostname}-orders.csv`, toCsv(rows));
+  const setup = '../onboard/index.html?site=' + encodeURIComponent(site.origin);
   let inner;
   if (loading && !rows.length) {
-    inner = html`<div class="skeleton-rows" role="status"><span class="sr-only">Loading orders</span>
+    inner = html`<div class="skeleton-rows" role="status"><span class="sr-only">Loading payments</span>
       ${[0, 1, 2].map(() => html`<div class="skel-row" aria-hidden="true"><span class="skel"></span><span class="skel short"></span></div>`)}</div>`;
   } else if (error && !rows.length) {
-    inner = html`<${Notice} kind="error" title="Could not load orders">${error}
+    inner = html`<${Notice} kind="error" title="Could not load payments">${error}
       <div class="row"><button class="link-btn" onClick=${() => load(false)}>Try again</button></div><//>`;
   } else if (!rows.length) {
-    inner = html`<${Empty} title="No payments yet" action=${html`<a class="btn ghost" href=${'../onboard/index.html?site=' + encodeURIComponent(site.origin)}>Get the checkout snippet</a>`}>
-      ${more ? 'Nothing in the recent blocks. Older orders may be further back.' : 'Once a buyer pays through Sitebound, the order shows up here.'}<//>`;
+    inner = html`<div class="blank">
+      <h3>No payments yet</h3>
+      <p>${more ? 'None in the latest blocks. Older payments may be further back.' : `Nothing has been paid to ${site.host} on ${cfg.chainName}.`}</p>
+      <ol>
+        <li><strong>Add the pay button.</strong> Copy the snippet from setup and paste it on your checkout page.</li>
+        <li><strong>Make a test payment.</strong> Pay 1.00 USDT through the button, then press Refresh here.</li>
+      </ol>
+      <div class="row"><a class="btn sm" href=${setup}>Get the pay button</a>
+        ${more && html`<button class="btn ghost sm" onClick=${() => load(true)} disabled=${loading}>${loading ? 'Loading…' : 'Load older'}</button>`}</div>
+    </div>`;
   } else {
-    inner = html`<div class="table" role="table" aria-label="Orders">
+    inner = html`<div class="table" role="table" aria-label="Payments">
       <div class="thead" role="rowgroup"><div class="tr" role="row">
-        <span role="columnheader">Order</span><span role="columnheader">Time</span><span role="columnheader">Buyer</span>
-        <span role="columnheader" class="num">Amount</span><span role="columnheader">Status</span><span role="columnheader"><span class="sr-only">Actions</span></span>
+        <span role="columnheader">Date</span><span role="columnheader">Order</span><span role="columnheader">Payer</span>
+        <span role="columnheader" class="num">Amount</span><span role="columnheader">Status</span><span role="columnheader">Links</span>
       </div></div>
       <div role="rowgroup">${rows.map((r) => html`<${OrderRow} key=${r.id} cfg=${cfg} r=${r} onRefund=${onRefund} />`)}</div>
     </div>`;
   }
   return html`<section class="orders" aria-labelledby="orders-h">
     <div class="orders-top">
-      <h2 id="orders-h" class="sect">Orders</h2>
-      <div class="row">
-        <button class="btn ghost sm" onClick=${() => load(false)} disabled=${loading}>Refresh</button>
-        <button class="btn ghost sm" onClick=${exportCsv} disabled=${!rows.length}>Export CSV</button>
+      <h2 id="orders-h" class="sect">Payments${rows.length ? html` <span class="count">${rows.length.toLocaleString()}</span>` : null}</h2>
+      <button class="btn ghost sm" onClick=${() => load(false)} disabled=${loading}>${loading && rows.length ? html`<${Spinner} />` : null}Refresh</button>
+    </div>
+    <div class="export">
+      <div class="export-text">
+        <strong>Export for your accountant</strong>
+        <p>One CSV row per payment. Columns: <span class="mono">${CSV_HEAD.join(', ')}</span>.</p>
       </div>
+      <button class="btn" onClick=${exportCsv} disabled=${!rows.length}>Export CSV</button>
     </div>
     ${inner}
     ${error && rows.length > 0 && html`<${Notice} kind="error" title="Could not load more">${error}<//>`}
@@ -275,16 +336,18 @@ export function Orders({ cfg, site, feed, load, onRefund }) {
 
 function OrderRow({ cfg, r, onRefund }) {
   const text = orderText(r.order);
-  const st = statusOf(r);
+  const st = chipOf(r);
   const left = r.amount - r.refunded;
+  const when = new Date(r.time * 1000);
   return html`<div class="tr" role="row">
+    <span role="cell" class="c-time" title=${when.toISOString()}>${fmtTime.format(when)}</span>
     <span role="cell" class="c-order"><span class=${text ? 'order' : 'order mono'} title=${r.order}>${text ?? short(r.order)}</span></span>
-    <span role="cell" class="c-time">${fmtTime.format(new Date(r.time * 1000))}</span>
-    <span role="cell" class="c-buyer mono" title=${r.buyer}>${short(r.buyer)}</span>
+    <span role="cell" class="c-buyer"><span class="mono" title=${r.buyer}>${short(r.buyer)}</span><${CopyMini} text=${r.buyer} what="payer address" /></span>
     <span role="cell" class="c-amt num">${fmtUsdt(r.amount)} <small>USDT</small></span>
-    <span role="cell" class="c-status"><span class=${'badge ' + (st.kind === 'ok' ? 'ok' : st.kind === 'warn' ? 'warn' : '')}>${st.label}</span></span>
+    <span role="cell" class="c-status"><span class=${'pst ' + st.cls}>${st.text}</span>${st.note && html`<span class="pst-note">${st.note}</span>`}</span>
     <span role="cell" class="c-act">
-      <${TxLink} cfg=${cfg} hash=${r.tx}>Tx<//>
+      <a class="exlink" href=${'../receipt/?id=' + r.id} target="_blank" rel="noopener" aria-label=${'Receipt for order ' + (text ?? short(r.order))}>Receipt</a>
+      <${TxLink} cfg=${cfg} hash=${r.tx}>Explorer<//>
       ${left > 0n && html`<button class="btn ghost sm" onClick=${() => onRefund(r)} aria-label=${'Refund order ' + (text ?? short(r.order))}>Refund</button>`}
     </span>
   </div>`;
@@ -347,14 +410,15 @@ export function RefundDialog({ cfg, row, info, wallet, isPayout, onClose, onDone
       <div class="dlg-top"><h2 id="dlg-h">Refund ${text ? html`<span class="order">${text}</span>` : 'payment'}</h2>
         <button type="button" class="icon-btn" aria-label="Close" onClick=${() => ref.current.close()} disabled=${working}>×</button></div>
 
+      <p class="explain">Refunds are paid from your wallet back to the buyer. You approve USDT first, then confirm the refund.</p>
       <dl class="facts">
-        <div><dt>Goes back to</dt><dd><${AddrLink} cfg=${cfg} address=${row.buyer} full=${true} /></dd></div>
+        <div><dt>Goes back to</dt><dd><span class="addr"><${AddrLink} cfg=${cfg} address=${row.buyer} full=${true} /></span><${CopyMini} text=${row.buyer} what="buyer address" /></dd></div>
         <div class="pair">
           <div><dt>Paid</dt><dd>${fmtUsdt(row.amount)} USDT</dd></div>
           <div><dt>Already refunded</dt><dd>${fmtUsdt(row.refunded)} USDT</dd></div>
         </div>
       </dl>
-      <p class="hint strong">Refunds can only go to the wallet that paid. The contract sends them there, and nobody can pick another address.</p>
+      <p class="hint">A refund can only go to the wallet that paid. The contract allows no other address.</p>
 
       <div class="field">
         <label for="amt">Refund amount (USDT)</label>
@@ -363,7 +427,7 @@ export function RefundDialog({ cfg, row, info, wallet, isPayout, onClose, onDone
             aria-describedby="amt-msg" disabled=${working || step.phase === 'done'} onInput=${(e) => setVal(e.target.value)} />
           <button type="button" class="btn ghost sm" onClick=${() => setVal(inputOf(left))} disabled=${working}>Max</button>
         </div>
-        <p id="amt-msg" class=${'hint' + (bad ? ' err' : '')}>${bad || `Up to ${fmtUsdt(left)} USDT. Your wallet pays it from its own USDT.`}</p>
+        <p id="amt-msg" class=${'hint' + (bad ? ' err' : '')}>${bad || `Up to ${fmtUsdt(left)} USDT, taken from your wallet's USDT balance.`}</p>
       </div>
 
       ${!wallet.account || !wallet.onChain
@@ -375,7 +439,7 @@ export function RefundDialog({ cfg, row, info, wallet, isPayout, onClose, onDone
       <div aria-live="polite" class="live">
         ${step.approveHash && html`<p class="hint">Approval: <${TxLink} cfg=${cfg} hash=${step.approveHash} /></p>`}
         ${step.hash && html`<p class="hint">Refund: <${TxLink} cfg=${cfg} hash=${step.hash} /></p>`}
-        ${step.phase === 'done' && html`<${Notice} kind="ok" title="Refund sent">The buyer's wallet has the USDT back.<//>`}
+        ${step.phase === 'done' && html`<${Notice} kind="ok" title="Refund sent">The USDT is back in the buyer's wallet.<//>`}
         ${step.phase === 'error' && html`<${Notice} kind="error" title="Refund did not go through">${step.message}<//>`}
       </div>
 
@@ -386,7 +450,7 @@ export function RefundDialog({ cfg, row, info, wallet, isPayout, onClose, onDone
             <button type="submit" class="btn" disabled=${!walletOk || !!bad || working}>
               ${working ? html`<${Spinner} />` : null}${working ? label : 'Refund'}</button>`}
       </div>
-      <p class="hint">If USDT allowance is short, your wallet asks for an approval first, then the refund.</p>
+      <p class="hint">Two wallet prompts if the USDT allowance is short: approve, then refund.</p>
     </form>
   </dialog>`;
 }
@@ -426,7 +490,7 @@ function Webhook({ site }) {
   };
   return html`<section class="webhook" aria-labelledby="wh-h">
     <div class="orders-top"><h2 id="wh-h" class="sect">Webhook</h2><span class="badge warn">Not wired yet</span></div>
-    <p class="hint">Real webhooks need the Sitebound relayer to watch for payments and post them to your server. That part is not built, so nothing is sent for real orders. This box saves the address in this browser only and lets you check that your endpoint accepts the format.</p>
+    <p class="hint">Real webhooks need the Sitebound relayer to post payments to your server. That part is not built, so no real order is sent. Here you can save an address in this browser and test that your endpoint accepts the format.</p>
     <div class="field">
       <label for="wh">Webhook URL</label>
       <input id="wh" class="input" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://example.com/webhook"

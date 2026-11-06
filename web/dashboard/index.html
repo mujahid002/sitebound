@@ -3,11 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Orders: Sitebound</title>
-  <meta name="description" content="Payments to your site, refunds, CSV export and webhook test.">
+  <title>Dashboard: Sitebound</title>
+  <meta name="description" content="Payments to your site: totals, refunds, receipts and CSV export.">
   <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#fafaf7" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#0d0f11" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#fafaf7">
+  <script>
+    try {
+      var t = localStorage.getItem('sitebound.theme');
+      if (t !== 'light' && t !== 'dark') t = 'light';
+      document.documentElement.dataset.theme = t;
+      if (t === 'dark') document.querySelector('meta[name="theme-color"]').setAttribute('content', '#07080a');
+    } catch (e) { document.documentElement.dataset.theme = 'light'; }
+  </script>
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
   <link rel="stylesheet" href="../onboard/common.css">
@@ -28,7 +35,7 @@
   <a class="skip" href="#main">Skip to content</a>
   <div id="app">
     <header class="bar"><a class="brand-link" href="../landing/index.html"><span>Sitebound</span></a></header>
-    <main id="main" class="page wide"><p class="lede">Loading your orders…</p></main>
+    <main id="main" class="page wide"><p class="lede">Loading your dashboard…</p></main>
     <noscript><p class="page lede">The dashboard needs JavaScript to read payments from the chain.</p></noscript>
   </div>
 </body>
