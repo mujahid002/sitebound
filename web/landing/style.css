@@ -173,10 +173,27 @@ a { color: inherit; }
 
 .closing { display: flex; justify-content: center; padding: 8px var(--pad) clamp(64px, 10vw, 112px); }
 
-.foot { width: min(1040px, 100% - 2 * var(--pad)); margin: 0 auto; padding: 28px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.875rem; }
-.foot a { text-underline-offset: 3px; }
-.foot a:hover { color: var(--ink); }
-.limits { margin-top: 6px; max-width: 70ch; }
+/* "Live" chip under the search, and the live strip in the footer */
+.dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--accent); }
+.live-line { margin-top: clamp(28px, 6vh, 52px); }
+.live-chip {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 12px;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--surface);
+  color: var(--muted); font-size: 0.85rem; text-decoration: none; transition: color 0.2s, border-color 0.2s;
+}
+.live-chip:hover { color: var(--ink); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+
+.foot { width: min(1040px, 100% - 2 * var(--pad)); margin: 0 auto; padding: 32px 0 44px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.875rem; }
+.foot a { color: var(--ink); text-underline-offset: 3px; text-decoration-color: var(--line); transition: text-decoration-color 0.2s; }
+.foot a:hover { text-decoration-color: currentColor; }
+.live-title { display: flex; align-items: center; gap: 10px; color: var(--ink); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.addr { margin-top: 14px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+.addr code {
+  color: var(--ink); font: 500 0.875rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere; user-select: all;
+}
+.links { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px 20px; }
+.limits { margin-top: 16px; max-width: 70ch; }
 
 @media (max-width: 400px) {
   .pill { padding: 0 20px; }
@@ -200,9 +217,12 @@ a { color: inherit; }
 @media (prefers-reduced-motion: no-preference) {
   @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
   @keyframes settle { from { transform: translate(7px, -7px) scale(0.6); opacity: 0; } to { transform: none; opacity: 1; } }
-  .brand, .tagline, .search { animation: rise 0.8s var(--ease) both; }
+  @keyframes beat { 0%, 70%, 100% { box-shadow: 0 0 0 0 var(--ring); } 35% { box-shadow: 0 0 0 5px transparent; } }
+  .brand, .tagline, .search, .live-line { animation: rise 0.8s var(--ease) both; }
   .tagline { animation-delay: 0.08s; }
   .search { animation-delay: 0.16s; }
+  .live-line { animation-delay: 0.24s; }
+  .live-chip .dot { animation: beat 2.8s ease-out 1.2s infinite; }
   .mark-dot { animation: settle 0.9s var(--ease) 0.25s both; }
 }
 @media (prefers-reduced-motion: reduce) {
