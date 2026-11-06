@@ -1,0 +1,16 @@
+{
+  "name": "sitebound-relayer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node test/local.mjs"
+  },
+  "dependencies": {
+    "ethers": "6.17.0"
+  },
+  "devDependencies": {
+    "wrangler": "4.158.0"
+  }
+}

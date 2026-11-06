@@ -1,0 +1,20 @@
+name = "sitebound-relayer"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# Secrets (wrangler secret put): RELAYER_KEY, RPC_URL
+[vars]
+CHAIN_ID = "1874"
+SITEBOUND_ADDRESS = ""
+TOKEN_ADDRESS = "0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7"
+ALLOWED_ORIGINS = ""
+MIN_FEE = "10000"
+PAY_DAILY_CAP = "20"
+SETUP_DAILY_CAP = "3"
+REGISTER_DAILY_CAP = "3"
+
+# Daily caps. Create with `npx wrangler kv namespace create CAPS`, paste the id, uncomment.
+# Without it the caps live in isolate memory (dev only).
+# [[kv_namespaces]]
+# binding = "CAPS"
+# id = ""
