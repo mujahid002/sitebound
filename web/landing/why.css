@@ -6,11 +6,30 @@
 .gi { display: block; flex: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .wi-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
 
-.why { padding-bottom: clamp(32px, 5vw, 48px); }
+/* The orbit chips in the hero are clipped to the hero, but keep the heading well clear of that edge anyway. */
+.why { padding-top: clamp(64px, 9vw, 112px); padding-bottom: clamp(32px, 5vw, 48px); }
 .how { padding-top: clamp(24px, 4vw, 40px); padding-bottom: clamp(16px, 3vw, 24px); }
 
-.why-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s2) var(--s4); }
-.why-lede { margin-top: var(--s2); max-width: 54ch; color: var(--muted); font-size: var(--fs-lg); line-height: 1.5; text-wrap: pretty; }
+.why-head { display: grid; gap: var(--s2); justify-items: start; }
+.why-head .tag { margin: 0; }
+.why .section-title { max-width: 14em; font-size: var(--fs-hero); letter-spacing: -0.04em; line-height: 1.05; }
+/* "checkout address": greyed out, with a line struck through it that is drawn in when the heading is on screen. */
+.kill {
+  white-space: nowrap; color: var(--muted);
+  background: linear-gradient(var(--err), var(--err)) no-repeat 0 58% / 100% 0.07em; transition: background-size 0.6s var(--ease) 0.5s;
+}
+.why-ready .why-head:not(.is-play) .kill { background-size: 0 0.07em; }
+.why-lede { max-width: 46ch; color: var(--muted); font-size: var(--fs-lg); line-height: 1.5; text-wrap: pretty; }
+
+/* One purpose = a mono number, a short title and one or two plain sentences. */
+.pp { margin-top: clamp(40px, 6vw, 64px); }
+.pp-top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s2) var(--s4); }
+.pp-n {
+  display: inline-block; margin-bottom: 10px; padding: 2px 9px; border: 1px solid var(--line-2); border-radius: 999px;
+  color: var(--muted); font: 500 var(--fs-xs) var(--mono); letter-spacing: 0.04em;
+}
+.pp h3, .pp-card h3 { font-size: var(--fs-xl); font-weight: 650; letter-spacing: -0.03em; line-height: 1.2; text-wrap: balance; }
+.pp-t p, .cxc-copy p { margin-top: 8px; max-width: 46ch; color: var(--muted); line-height: 1.55; text-wrap: pretty; }
 .ba-replay {
   display: none; align-items: center; gap: 6px; height: 32px; padding: 0 14px 0 10px; border: 1px solid var(--line-2); border-radius: 999px;
   background: var(--surface); color: var(--muted); font: 500 var(--fs-sm) var(--font); cursor: pointer;
@@ -117,9 +136,9 @@
 .res.bad { --c: var(--err); }
 .res.good { --c: var(--accent); }
 .ba-foot { color: var(--muted); font-size: 13px; line-height: 1.5; }
-.ba-foot a, .pt-s a { color: var(--ink); text-underline-offset: 3px; text-decoration-color: var(--line-2); }
-.ba-foot a:hover, .pt-s a:hover { text-decoration-color: currentColor; }
-.ba-foot a[target="_blank"]::after, .pt-s a[target="_blank"]::after { content: "\2197"; margin-left: 3px; font-size: 0.85em; }
+.ba-foot a { color: var(--ink); text-underline-offset: 3px; text-decoration-color: var(--line-2); }
+.ba-foot a:hover:hover { text-decoration-color: currentColor; }
+.ba-foot a[target="_blank"]::after[target="_blank"]::after { content: "\2197"; margin-left: 3px; font-size: 0.85em; }
 
 /* narrow cards: the path runs downwards */
 @container (max-width: 379px) {
@@ -136,32 +155,145 @@
   .ba-after { --d0: 2.2s; }
 }
 
-/* ------------------------------------------------------------------ proof tiles */
-.pt, .oc { display: grid; gap: var(--s2); margin-top: var(--s2); }
-.pt li {
-  position: relative; display: flex; flex-direction: column; gap: 10px; padding: var(--s3); border: 1px solid var(--line-2); border-radius: var(--r-lg);
-  background: var(--surface); overflow: hidden;
+/* ------------------------------------------------------------------ 02: the confirmation, looping */
+.pp-card {
+  position: relative; display: grid; gap: var(--s4); margin-top: clamp(40px, 6vw, 64px); padding: var(--s3);
+  border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow);
 }
-.pt li::before { content: ""; position: absolute; inset: 0 0 auto; height: 2px; background: linear-gradient(90deg, var(--err), transparent 75%); opacity: 0.75; }
-.pt-n { font-size: clamp(2.5rem, 1.6rem + 3vw, 3.5rem); font-weight: 700; letter-spacing: -0.045em; line-height: 1; font-variant-numeric: tabular-nums; }
-.pt-c { color: var(--muted); font-weight: 500; }
-.pt-w { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; font-size: var(--fs-md); font-weight: 600; letter-spacing: -0.01em; }
-.pt-w span { color: var(--muted); font: 500 12px var(--mono); }
-.pt-d { color: var(--muted); font-size: var(--fs-sm); line-height: 1.55; text-wrap: pretty; }
-.pt-s { display: flex; flex-wrap: wrap; gap: 0 16px; margin-top: auto; padding-top: 6px; font-size: 13px; }
-.pt-s a { padding: 6px 0; }
+.cxc-copy p + p { margin-top: 10px; color: var(--ink); }
+.cx-ctl { display: flex; align-items: center; gap: var(--s2); margin-top: var(--s3); }
+.cx-ctl .ba-replay { display: none; }
+.why-ready .cx-ctl .ba-replay { display: inline-flex; }
+.cx-pause { display: none; }
+.why-ready .cx-pause { display: inline-block; }
 
-/* ------------------------------------------------------------------ other problems */
-.oc li { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: color-mix(in srgb, var(--surface) 70%, transparent); }
-.oc-i { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line-2); background: var(--field); color: var(--ink); }
-.oc-i .gi { width: 18px; height: 18px; }
-.oc p { padding-top: 6px; color: var(--muted); font-size: var(--fs-sm); line-height: 1.5; }
-.oc a { color: var(--ink); text-underline-offset: 3px; text-decoration-color: var(--line-2); white-space: nowrap; }
-.oc a[target="_blank"]::after { content: "\2197"; margin-left: 3px; font-size: 0.85em; }
-.oc .view { margin-left: 2px; }
+.cx { container-type: inline-size; min-width: 0; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--field); overflow: hidden; }
+.cx-page { position: relative; display: grid; place-items: center; min-height: 264px; padding: var(--s3) var(--s2); background: var(--sunk); overflow: hidden; }
+.cx-sk { position: absolute; inset: var(--s2) var(--s2) auto; display: grid; gap: 8px; opacity: 0.8; }
+.cx-sk i { display: block; height: 10px; border-radius: 6px; background: var(--line); }
+.cx-sk i:nth-child(1) { width: 46%; }
+.cx-sk i:nth-child(2) { width: 72%; }
+.cx-sk i:nth-child(3) { width: 30%; height: 26px; border-radius: 8px; margin-top: 4px; }
+.cx-sheet {
+  position: relative; display: grid; width: min(100%, 320px); padding: var(--s2); border: 1px solid var(--line-2); border-radius: 14px;
+  background: var(--surface); box-shadow: var(--shadow);
+}
+.cx-ask, .cx-paid { grid-area: 1 / 1; display: grid; align-content: center; gap: 2px; min-width: 0; }
+/* The finished state is the default: the sheet reads Paid. The loop (below) walks through the three steps. */
+.cx-ask { opacity: 0; visibility: hidden; }
+.cx-paid { justify-items: center; text-align: center; padding: 4px 0; }
+.cx-top { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.cx-top .gi { width: 16px; height: 16px; color: var(--accent); }
+.cx-top em { margin-left: auto; font-style: normal; font-weight: 500; }
+.cx-line { margin-top: 10px; color: var(--muted); font-size: var(--fs-sm); line-height: 1.4; }
+.cx-line b { color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
+.cx-amt { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.2; }
+.cx-id { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 6px 12px 6px 6px; border: 1px solid var(--line-2); border-radius: 12px; font-size: 13px; font-weight: 600; }
+.cx-fp { position: relative; display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 12%, var(--field)); color: var(--accent); }
+.cx-fp .gi { width: 18px; height: 18px; }
+.cx-fp::after { content: ""; position: absolute; inset: 0; border: 2px solid var(--accent); border-radius: 50%; opacity: 0; }
+.cx-ok { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 6px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line-2)); background: color-mix(in srgb, var(--accent) 12%, var(--field)); color: var(--accent); }
+.cx-ok svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; }
+.cx-paid .cx-line { margin-top: 4px; }
+
+.cx-steps { display: flex; align-items: center; gap: 8px; padding: 12px var(--s2); border-top: 1px solid var(--line); background: var(--field); font-size: 12px; font-weight: 600; }
+.cx-steps li:not(.cx-ln) { display: inline-flex; align-items: center; gap: 6px; flex: none; color: var(--ink); white-space: nowrap; }
+.cx-steps li i {
+  display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font: 600 11px var(--mono); font-style: normal;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line-2)); background: color-mix(in srgb, var(--accent) 12%, var(--field)); color: var(--accent);
+}
+.cx-ln { position: relative; flex: 1 1 8px; min-width: 8px; height: 2px; border-radius: 2px; background: var(--line-2); overflow: hidden; }
+.cx-steps .cx-ln i { position: absolute; inset: 0; display: block; width: auto; height: auto; border: 0; border-radius: 0; background: var(--accent); transform-origin: left center; }
+@container (max-width: 359px) { .cx-steps { font-size: 11px; gap: 6px; } .cx-top em { display: none; } }
+
+@media (min-width: 860px) {
+  .pp-card.cxc { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: center; gap: var(--s6); padding: var(--s4); }
+}
+
+/* ------------------------------------------------------------------ 03, 04, 05 */
+.tiles { display: grid; gap: var(--s2); margin-top: var(--s2); }
+.tile {
+  display: flex; flex-direction: column; align-items: flex-start; padding: var(--s3); border: 1px solid var(--line-2); border-radius: var(--r-lg);
+  background: var(--surface); box-shadow: var(--shadow);
+}
+.tile h3 { font-size: var(--fs-lg); font-weight: 650; letter-spacing: -0.02em; line-height: 1.3; }
+.tile p { margin-top: 6px; color: var(--muted); font-size: var(--fs-sm); line-height: 1.55; text-wrap: pretty; }
+.tile p a { color: var(--ink); text-underline-offset: 3px; text-decoration-color: var(--line-2); white-space: nowrap; }
+.tile p a:hover { text-decoration-color: currentColor; }
+.tile p a[target="_blank"]::after, .rf-s::after { content: "\2197"; margin-left: 3px; font-size: 0.85em; }
+.tv {
+  align-self: stretch; display: flex; flex-direction: column; justify-content: center; gap: 12px; min-height: 176px; margin-bottom: var(--s3); padding: 16px;
+  border: 1px solid var(--line); border-radius: var(--r-md); background: var(--field); overflow: hidden;
+}
+
+/* 03: a domain is typed, three steps tick */
+.ob-in { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line-2)); border-radius: 999px; background: var(--surface); font: 600 13px var(--mono); }
+.ob-in .gi { width: 16px; height: 16px; color: var(--muted); }
+.ob-ty { display: inline-block; width: 12ch; overflow: hidden; white-space: nowrap; }
+.ob-rows { display: grid; gap: 8px; }
+.ob-rows li { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; }
+.ob-ck { display: grid; place-items: center; flex: none; width: 20px; height: 20px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line-2)); background: color-mix(in srgb, var(--accent) 12%, var(--field)); color: var(--accent); }
+.ob-ck .gi { width: 12px; height: 12px; stroke-width: 2.2; }
+
+/* 04: a receipt */
+.rc { display: grid; gap: 0; font-size: 13px; }
+.rc > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; border-bottom: 1px dashed var(--line-2); }
+.rc > div:last-child { border-bottom: 0; }
+.rc dt { color: var(--muted); }
+.rc dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rc-ok { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px 0 8px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line-2)); background: color-mix(in srgb, var(--accent) 10%, var(--field)); color: var(--accent); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.rc-ok .gi { width: 14px; height: 14px; }
+
+/* 05: USDT settles on Whitechain. Only height and width on the logos: display belongs to the on-light/on-dark switch in proof.css. */
+.sx-logo .wc-img { width: auto; height: 22px; }
+.sx-path { display: flex; align-items: center; gap: 8px; }
+.sx-chip { flex: none; padding: 4px 10px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--surface); font: 600 12px var(--mono); }
+.sx-line { position: relative; flex: 1 1 16px; min-width: 16px; height: 2px; border-radius: 2px; background: var(--line-2); }
+.sx-line i { position: absolute; inset: 0; border-radius: 2px; background: var(--accent); transform-origin: left center; }
+.sx-line b { position: absolute; top: -3px; left: calc(100% - 8px); width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.sx-ok { display: inline-flex; align-items: center; gap: 6px; flex: none; height: 26px; padding: 0 10px 0 8px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line-2)); background: color-mix(in srgb, var(--accent) 10%, var(--field)); color: var(--accent); font-size: 12px; font-weight: 600; }
+.sx-ok .gi { width: 14px; height: 14px; }
+.sx-note { color: var(--muted); font-size: 12px; }
+
+@media (min-width: 560px) and (max-width: 999px) {
+  .tile { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--s4); align-content: center; }
+  .tile .tv { grid-row: 1 / span 3; margin-bottom: 0; }
+  .tile .pp-n { align-self: end; }
+}
+@media (min-width: 1000px) {
+  .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s3); }
+}
+
+/* ------------------------------------------------------------------ references */
+.refs { margin-top: clamp(40px, 6vw, 64px); }
+.refs .why-sub { margin-top: 0; }
+.refs .rf-sub { margin-top: var(--s5); }
+.rf-in, .rf-chk { display: grid; gap: var(--s2); margin-top: var(--s2); }
+.rf {
+  position: relative; display: flex; flex-direction: column; gap: 6px; height: 100%; padding: var(--s3); border: 1px solid var(--line-2); border-radius: var(--r-lg);
+  background: var(--surface); color: var(--ink); text-decoration: none; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.rf:hover { border-color: var(--hover-line); box-shadow: var(--shadow); }
+.rf:focus-visible { outline-offset: 2px; }
+.rf-loss::before { content: ""; position: absolute; inset: 0 0 auto; height: 2px; background: linear-gradient(90deg, var(--err), transparent 75%); opacity: 0.75; }
+.rf-n { font-size: clamp(2.25rem, 1.5rem + 2.4vw, 3rem); font-weight: 700; letter-spacing: -0.045em; line-height: 1; font-variant-numeric: tabular-nums; }
+.rf-c { color: var(--muted); font-weight: 500; }
+.rf-w { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; margin-top: 4px; font-weight: 600; letter-spacing: -0.01em; }
+.rf-w small { color: var(--muted); font: 500 12px var(--mono); }
+.rf-d { color: var(--muted); font-size: var(--fs-sm); line-height: 1.5; text-wrap: pretty; }
+.rf-s { margin-top: auto; padding-top: 8px; font-size: 13px; font-weight: 500; text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+.rf:hover .rf-s { text-decoration-color: currentColor; }
+.rf-row { flex-direction: row; align-items: flex-start; gap: 14px; padding: 16px 18px; border-radius: var(--r-md); }
+.rf-row::after { content: "\2197"; margin-left: auto; color: var(--muted); }
+.rf-row b { display: block; font-weight: 600; letter-spacing: -0.01em; }
+.rf-row .rf-d { display: block; margin-top: 2px; }
+.rf-row code { font: 12px var(--mono); color: var(--ink); }
+.rf-i { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line-2); background: var(--field); color: var(--ink); }
+.rf-i .gi { width: 18px; height: 18px; }
 
 @media (min-width: 760px) {
-  .pt, .oc { grid-template-columns: repeat(3, 1fr); }
+  .rf-in { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .rf-chk { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* ------------------------------------------------------------------ how it works */
@@ -206,20 +338,52 @@
 }
 
 /* ------------------------------------------------------------------ motion */
-/* Each scene is held at its start until .is-play, then plays once. 200 to 600 ms steps, ease-out, no loops. */
+/* Each scene is held at its start until .is-play, then plays once. 200 to 600 ms steps, ease-out, no loops.
+   The one loop is the confirmation in card 02: it runs only while it is on screen and not paused. */
 @keyframes a-chip { from { opacity: 0; transform: translateY(-6px); } }
 @keyframes a-grow { from { transform: scale(var(--gx, 0), var(--gy, 1)); } }
 @keyframes a-rise { from { opacity: 0; transform: translateY(6px); } }
 @keyframes a-in { from { opacity: 0; transform: translateY(5px); } }
 @keyframes a-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-5px); } }
 @keyframes a-pop { from { opacity: 0; transform: scale(0.8); } }
+@keyframes a-type { from { width: 0; } }
+@keyframes a-travel { from { left: 0; } }
 @keyframes a-unflag { from { border-color: var(--line-2); background: var(--sunk); } }
 @keyframes a-unlit { from { color: var(--muted); border-color: var(--line-2); background: var(--field); } }
 @keyframes a-ring { from { box-shadow: 0 0 0 0 rgba(var(--spot), 0.5); } to { box-shadow: 0 0 0 12px rgba(var(--spot), 0); } }
 
-.why-ready .ba-side .an { animation: var(--k) var(--dur, 0.35s) var(--ease) calc(var(--d0, 0s) + var(--at, 0s)) both paused; }
-.why-ready .ba-side.is-play .an { animation-play-state: running; }
+.why-ready :is(.ba-side, .tile) .an { animation: var(--k) var(--dur, 0.35s) var(--ease) calc(var(--d0, 0s) + var(--at, 0s)) both paused; }
+.why-ready :is(.ba-side, .tile).is-play .an { animation-play-state: running; }
+.why-ready :is(.ba-side, .tile) .an.step { animation-timing-function: steps(12, end); }
 .why-ready .ba.is-reset .an { animation: none; }
+
+/* Card 02, one 9 s loop: the site asks, Touch ID, Paid, then it starts again. */
+@keyframes cx-ask { 0% { opacity: 0; transform: translateY(8px); } 5%, 40% { opacity: 1; transform: none; } 45%, 100% { opacity: 0; transform: translateY(-6px); } }
+@keyframes cx-paid { 0%, 42% { opacity: 0; transform: translateY(8px); } 48%, 91% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; transform: translateY(-6px); } }
+@keyframes cx-ring { 0%, 18% { opacity: 0; transform: scale(1); } 20% { opacity: 0.9; transform: scale(1); } 30% { opacity: 0; transform: scale(1.9); } 31% { opacity: 0.9; transform: scale(1); } 40%, 100% { opacity: 0; transform: scale(1.9); } }
+@keyframes cx-id { 0%, 18% { border-color: var(--line-2); } 24%, 40% { border-color: color-mix(in srgb, var(--accent) 60%, var(--line-2)); } 100% { border-color: var(--line-2); } }
+@keyframes cx-draw { 0%, 49% { stroke-dashoffset: 1; } 58%, 100% { stroke-dashoffset: 0; } }
+@keyframes cx-pop { 0%, 47% { transform: scale(0.7); } 54%, 100% { transform: none; } }
+@keyframes cx-s1 { 0% { opacity: 0.45; filter: grayscale(1); } 5%, 95% { opacity: 1; filter: none; } 98%, 100% { opacity: 0.45; filter: grayscale(1); } }
+@keyframes cx-s2 { 0%, 22% { opacity: 0.45; filter: grayscale(1); } 27%, 95% { opacity: 1; filter: none; } 98%, 100% { opacity: 0.45; filter: grayscale(1); } }
+@keyframes cx-s3 { 0%, 47% { opacity: 0.45; filter: grayscale(1); } 52%, 95% { opacity: 1; filter: none; } 98%, 100% { opacity: 0.45; filter: grayscale(1); } }
+@keyframes cx-l1 { 0%, 5% { transform: scaleX(0); } 22%, 95% { transform: scaleX(1); } 98%, 100% { transform: scaleX(0); } }
+@keyframes cx-l2 { 0%, 27% { transform: scaleX(0); } 47%, 95% { transform: scaleX(1); } 98%, 100% { transform: scaleX(0); } }
+
+.why-ready .cx { --T: 9s; }
+.why-ready .cx-ask { visibility: visible; animation: cx-ask var(--T) linear infinite both paused; }
+.why-ready .cx-paid { animation: cx-paid var(--T) linear infinite both paused; }
+.why-ready .cx-fp::after { animation: cx-ring var(--T) ease-out infinite both paused; }
+.why-ready .cx-id { animation: cx-id var(--T) linear infinite both paused; }
+.why-ready .cx-ok { animation: cx-pop var(--T) var(--ease) infinite both paused; }
+.why-ready .cx-ok path { animation: cx-draw var(--T) var(--ease) infinite both paused; }
+.why-ready .cx-s1 { animation: cx-s1 var(--T) linear infinite both paused; }
+.why-ready .cx-s2 { animation: cx-s2 var(--T) linear infinite both paused; }
+.why-ready .cx-s3 { animation: cx-s3 var(--T) linear infinite both paused; }
+.why-ready .cx-ln i { animation: cx-l1 var(--T) var(--ease) infinite both paused; }
+.why-ready .cx-ln2 i { animation-name: cx-l2; }
+.why-ready .cx.is-live:not(.is-still) *, .why-ready .cx.is-live:not(.is-still) *::after { animation-play-state: running; }
+.why-ready .cx.is-reset *, .why-ready .cx.is-reset *::after { animation: none; }
 
 .why-ready .hf:not(.is-play) .hf-wire::before { opacity: 0; }
 .why-ready .hf:not(.is-play) .hf-i:nth-child(n+2) .hf-ico { color: var(--muted); border-color: var(--line-2); background: var(--field); }
@@ -229,5 +393,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hf-wire::after, .hf-wire::before, .hf-ico { transition: none; }
+  .hf-wire::after, .hf-wire::before, .hf-ico, .kill { transition: none; }
+  .cx *, .cx *::after { animation: none !important; }
+  .cx-ctl { display: none; }
 }
