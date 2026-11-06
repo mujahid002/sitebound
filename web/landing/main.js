@@ -42,21 +42,18 @@ const hostOf = (o) => { try { return new URL(o).host; } catch { return o; } };
 
 // ---------------------------------------------------------------- the orbit
 
-// Phase 2 fills this list and nothing else: { domain, label, kind }. kind 'real' is a well-known site that shows what
-// the checkout problem looks like in the wild; 'ours' is a site that runs Sitebound. `origin` is only needed when it is
-// not https://<domain> (the local demo). Each chip fetches https://<domain>/favicon.ico; add `logo: 'path'` to ship an
-// icon yourself. PLACEHOLDER sites until real-sites.md lands: these are not claims about those sites.
+// The orbit's data: { domain, label, kind } and nothing else to edit. kind 'real' is a business that shows a deposit
+// address to copy today (checked 7 Nov 2026, listed in the notes for the page, not an endorsement and not a Sitebound
+// customer); 'ours' is a Sitebound example. `origin` is only needed when it is not https://<domain> (the local demo).
+// Each chip loads https://<domain>/favicon.ico; `logo` names a different icon URL where that one does not work.
 const SITES = [
   C.demoShop && { domain: hostOf(C.demoShop), origin: C.demoShop, label: 'the Sitebound demo', kind: 'ours' },
   { domain: '0xmujahid.xyz', label: '0xmujahid.xyz', kind: 'ours' },
-  { domain: 'etsy.com', label: 'Etsy', kind: 'real' },
-  { domain: 'substack.com', label: 'Substack', kind: 'real' },
-  { domain: 'gumroad.com', label: 'Gumroad', kind: 'real' },
-  { domain: 'bandcamp.com', label: 'Bandcamp', kind: 'real' },
-  { domain: 'patreon.com', label: 'Patreon', kind: 'real' },
-  { domain: 'ghost.org', label: 'Ghost', kind: 'real' },
-  { domain: 'wikipedia.org', label: 'Wikipedia', kind: 'real' },
-  { domain: 'humblebundle.com', label: 'Humble Bundle', kind: 'real' },
+  { domain: 'surfercloud.com', label: 'SurferCloud', kind: 'real', logo: 'https://cdn.udelivrs.com/2024/06/45a0684f8481db470c2dfcf60b7a7356_1718953536546.ico' },
+  { domain: 'protonvpn.com', label: 'Proton VPN', kind: 'real' },
+  { domain: 'cloudzy.com', label: 'Cloudzy', kind: 'real', logo: 'https://cloudzy.com/apple-touch-icon.png' },
+  { domain: 'bitrefill.com', label: 'Bitrefill', kind: 'real' },
+  { domain: 'bitlaunch.io', label: 'BitLaunch', kind: 'real' },
 ].filter(Boolean);
 // Sites the visitor typed join the orbit for this visit only; nothing is stored, so no old entry can come back.
 try { localStorage.removeItem('sitebound.ring'); } catch { /* private mode */ }
@@ -87,7 +84,7 @@ const orbit = mountOrbit($('orbit'), {
   sites: ringSites(),
   onPick: (origin) => open(origin),
   around: $('search-row'),
-  keepClear: [...document.querySelectorAll('.hero-h, .tagline, #search-row, .trust, .hero-links > *')],
+  keepClear: [...document.querySelectorAll('.hero-h, .tagline, #search-row, .trust, .hero-links > *, .orbit-key')],
 });
 
 function addToRing(origin) {
@@ -163,7 +160,7 @@ document.querySelector('[data-focus-search]').addEventListener('click', (e) => {
   input.focus({ preventScroll: true });
 });
 
-const demoLink = document.querySelector('[data-demo-shop]');
+const demoLink = document.querySelector('[data-demo-link]');
 if (demoLink && C.demoShop) demoLink.href = C.demoShop + '/';
 
 // A shared link (?site=https://example.com) opens straight into that site's kit.
