@@ -22,11 +22,12 @@ Draft. Only things we measured; the rest is marked "not checked".
 - **No cross-chain route in.** Relay's chain API (checked 6 Nov) lists no Whitechain: none among its 58 mainnet
   chains, and its testnet list has only Base Sepolia and Sepolia. So we could not offer "pay from any chain" and
   dropped it.
-- **Local testing of P-256.** `forge test` (Foundry 1.7.1) has no precompile at `0x100`: a call with a valid
-  `vm.signP256` signature returns success with empty data, with `evm_version` cancun, prague and osaka, and also
-  with `-n optimism`. We etched a Solidity P-256 verifier at `0x100` for tests. `anvil` 1.7.1 does return 1 for the
-  same calldata (default and `--hardfork osaka`). Not Whitechain's bug, but a note in the docs ("P-256 at 0x100;
-  in forge tests, etch a verifier or use anvil") would help.
+- **Local testing of P-256.** Inside `forge test` (Foundry 1.7.1), a call to `0x100` with a valid `vm.signP256`
+  signature returned success with empty data, with `--evm-version` cancun, prague and osaka and with
+  `-n optimism`, so our unit tests etch a Solidity P-256 verifier at `0x100`. `anvil --hardfork osaka` does verify at
+  `0x100`: our relayer's local test checks the real Chrome fixture signature against it. (Plain `anvil` 1.7.1 also
+  returned 1 for one `vm.signP256` signature in a single `cast call`; not tested further.) Not Whitechain's bug, but
+  a docs note ("P-256 at 0x100; for local tests use `anvil --hardfork osaka` or etch a verifier") would help.
 - **Getting test USDT.** The faucet gives 2 WBT per day and needs a GitHub account older than 30 days. There is no
   USDT faucet; the path is swapping WBT to USDT on YetiTrade (not checked yet).
 
