@@ -1,0 +1,58 @@
+{
+  "chainId": 1874,
+  "address": "0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73",
+  "solc": "0.8.28",
+  "evmVersion": "cancun",
+  "viaIR": true,
+  "optimizer": {
+    "enabled": true,
+    "runs": 200
+  },
+  "metadataBytecodeHash": "ipfs",
+  "commit": "84d5c9a0b041d49ff095641953477e014d828791",
+  "source": "src/Sitebound.sol:Sitebound",
+  "deployTx": "0x9d1278d275ab2003a996ac46cad324364d01465e85029263ccc433f7fbdd6b78",
+  "runtimeCodeLength": 8612,
+  "runtimeCodeHashMasked": "0xaa7fc4f738a41cc4ff55b7dfc84353a4ee48244e2074ddbdeecab73c19633f1f",
+  "method": "Fetch the runtime code with eth_getCode. Overwrite every byte range listed in immutables[*].offsets (each immutables[*].length bytes) with zero bytes. Take keccak256 of the resulting bytes and compare with runtimeCodeHashMasked. The same recipe applied to the locally compiled deployedBytecode (scripts/verify.sh) gives the same hash.",
+  "immutables": {
+    "token": {
+      "offsets": [
+        236,
+        8091
+      ],
+      "length": 32,
+      "value": "0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7"
+    },
+    "rpIdHash": {
+      "offsets": [
+        1771,
+        2051
+      ],
+      "length": 32,
+      "value": "0x8ffe2127ed75c36647d195c03abb12495aa9148e687218b86ee92ffc592840b0"
+    },
+    "delay": {
+      "offsets": [
+        1157,
+        6905
+      ],
+      "length": 32,
+      "value": "3600"
+    }
+  },
+  "constructorArgs": {
+    "token": "0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7",
+    "frameOrigin": "https://sitebound-pay.pages.dev",
+    "rpIdHash": "0x8ffe2127ed75c36647d195c03abb12495aa9148e687218b86ee92ffc592840b0",
+    "attestors": [
+      "0xDf54063Eb6FEF689965d470c6b5aab0489eA5b4A"
+    ],
+    "delay": 3600,
+    "note": "frameOrigin is read from storage slot 0 (short string, stored inline); rpIdHash is sha256 of the RP ID; the attestor is confirmed by isAttestor() on chain."
+  },
+  "sourcify": {
+    "match": "exact_match",
+    "url": "https://sourcify.dev/server/v2/contract/1874/0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73"
+  }
+}
