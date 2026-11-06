@@ -125,13 +125,18 @@ URL: the same demo shop tab, with the frame open.
 
 1. Click **Pay with passkey**. Point at the note "Adds a 0.01 USDT relayer fee, so you need no gas."
 2. Touch ID. The status reads "Sending…" and then "Confirming on Whitechain…" (cut the wait).
-3. The receipt shows "Paid" with Amount 12.00 USDT, To sitebound-demo.pages.dev, Order HCS-… and the Transaction hash. Click **Done**.
-4. The demo shop shows "Order confirmed" and "Thanks. Order HCS-… is paid."
+3. The demo shop hides its pay panel, frame included, as soon as the frame reports the payment. In e2e the frame's
+   receipt ("Paid", amount, site, order, transaction) did not stay visible on the demo shop, so don't plan a shot of it.
+4. The demo shop reads "Checking the payment…" and "Asking Whitechain, not the page.", then "Order confirmed" and
+   "Thanks. Order HCS-… is paid: 12.00 USDT, checked on Whitechain." It asks the chain itself (`verifyPayment`).
+5. Optional (+10 s, not in the runtime below): before step 1, click **Demo: fire a forged “paid” event** under the
+   button. The shop reads "Not shipped" and "The page said order HCS-… was paid. The chain says: paymentId is not
+   this site and order." Then click **Start a new order**, **Checkout**, and pay as above.
 
 Spoken:
 > "From now on a payment is one Touch ID. The frame comes from Sitebound's own origin, and it shows the site the browser reports and the amount.
 > The browser writes that site into the signature, and the contract pays only the wallet registered for it.
-> The website's page never names the payee."
+> The website's page never names the payee. And the shop doesn't trust the page saying "paid": it asks the chain."
 
 ## 5. Fake site embedding the real frame (2:30 to 3:00)
 

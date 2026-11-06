@@ -91,7 +91,8 @@ if (!r.ok) throw new Error(`not paid: ${r.reason}`);
 It recomputes the payment id from your site and order, then reads `payments(id)` on chain. It requires a payer, your
 site, the exact amount, and nothing refunded. Use random order ids: anyone can pay an unused one at their own cost.
 In e2e it accepts a real payment and refuses five wrong claims: a different amount, another order's id, an unpaid
-order, a refunded order, and another site.
+order, a refunded order, and another site. The demo shop runs the same check in the page (a real website runs it on
+its server): a forged `sitebound:paid` gets "Not shipped", a real payment "Order confirmed".
 
 ### Merchant quotes (optional)
 
@@ -142,8 +143,8 @@ Requires Foundry, Node, Python 3 and Chrome (the only browser measured so far).
 forge install foundry-rs/forge-std   # lib/ is not committed
 forge test                           # v1, SiteboundV2 and the V2 invariant suites
 node web/dev/check-lib.mjs           # the frame's encoders and the merchant helper, on the real Chrome fixture
-cd worker && npm install && node test/local.mjs   # relayer against anvil, then under wrangler dev
-cd e2e && npm install && npm test                 # headless Chromium: setup, pay, refund, quotes, verifyPayment
+(cd worker && npm install && node test/local.mjs)  # relayer against anvil, then under wrangler dev
+(cd e2e && npm install && npm test)                # headless Chromium: setup, pay, refund, demo shop, quotes
 ```
 
 `forge test` has no P-256 precompile, so the tests etch a Solidity verifier (`test/utils/P256Verifier.sol`) at
