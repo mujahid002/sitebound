@@ -13,8 +13,10 @@ interface IERC1271 {
 /// Pays a website's registered wallet, and only that wallet. The site comes from the browser:
 /// the passkey signs clientDataJSON, which carries "topOrigin" (the site the buyer is on).
 /// v2: a site registration needs `threshold` distinct attestors, and the attestor set changes only
-/// when the current set's quorum signs a new one, which takes effect after `delay`. There is no owner.
+/// when the current set's quorum signs a new one, which takes effect after `delay`. There is no contract
+/// owner and no upgrade path; an optional guardian, fixed at deploy, can pause new payments and nothing else.
 /// A site's payout can be split between up to 5 wallets; the first one is the site's owner.
+/// Trust model and limits: docs/THREAT-MODEL.md.
 contract SiteboundV2 {
     uint256 public constant MAX_RECIPIENTS = 5;
     uint256 public constant MAX_ADMINS = 3;

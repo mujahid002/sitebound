@@ -1,24 +1,29 @@
 #!/bin/sh
 # Check that the Sitebound contract on Whitechain Sepolia (chain 1874) is the code in this repo.
 # Rebuilds from source, fetches the deployed runtime code, zeroes the immutable slots in both
-# (the constructor args are baked into them), and compares. Needs only forge and cast.
+# (the constructor args are baked into them: SiteboundV2 has token, rpIdHash, delay, maxRelayerFee and
+# guardian), and compares. Needs only forge and cast.
 #   RPC_URL   optional, defaults to the public Whitechain testnet RPC (never printed)
-#   ADDRESS   optional, defaults to the deployment below
+#   ADDRESS   the deployment to check. SiteboundV2: set after the V2 deploy (placeholder below).
+#   CONTRACT  optional, SiteboundV2 by default. The v1 deployment the live frame still uses:
+#             CONTRACT=Sitebound ADDRESS=0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73 sh scripts/verify.sh
 set -eu
 
-ADDRESS=${ADDRESS:-0x43bb27f7079c76d6f0fa4b4e6d69843e0457DF73}
+CONTRACT=${CONTRACT:-SiteboundV2}
+ADDRESS=${ADDRESS:-0x0000000000000000000000000000000000000000} # PLACEHOLDER: the V2 address after the deploy
 RPC=${RPC_URL:-https://rpc.testnet.whitechain.io}
 cd "$(dirname "$0")/.."
 
 die() { echo "error: $*" >&2; exit 2; }
+[ "$ADDRESS" != 0x0000000000000000000000000000000000000000 ] || die "set ADDRESS: SiteboundV2 is not deployed yet"
 
 # 1. Rebuild with foundry.toml settings (solc 0.8.28, via_ir, optimizer 200, cancun).
 forge build --force >/dev/null 2>&1 || die "forge build failed (run it directly to see why)"
 
 # 2. Local runtime bytecode, and the immutable byte ranges from the build artifact.
-local_hex=$(forge inspect Sitebound deployedBytecode 2>/dev/null) || die "forge inspect failed"
+local_hex=$(forge inspect "$CONTRACT" deployedBytecode 2>/dev/null) || die "forge inspect failed"
 local_hex=${local_hex#0x}
-artifact=out/Sitebound.sol/Sitebound.json
+artifact=out/$CONTRACT.sol/$CONTRACT.json
 [ -f "$artifact" ] || die "missing $artifact"
 # One line of JSON; take the pairs after "deployedBytecode" (the creation bytecode has none).
 ranges=$(sed 's/.*"deployedBytecode"://' "$artifact" \

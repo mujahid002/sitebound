@@ -1,6 +1,6 @@
 {
   "chainId": 1874,
-  "address": "0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73",
+  "address": "<SITEBOUND_V2_ADDRESS: set after the V2 deploy>",
   "solc": "0.8.28",
   "evmVersion": "cancun",
   "viaIR": true,
@@ -9,36 +9,57 @@
     "runs": 200
   },
   "metadataBytecodeHash": "ipfs",
-  "commit": "84d5c9a0b041d49ff095641953477e014d828791",
-  "source": "src/Sitebound.sol:Sitebound",
-  "deployTx": "0x9d1278d275ab2003a996ac46cad324364d01465e85029263ccc433f7fbdd6b78",
-  "runtimeCodeLength": 8612,
-  "runtimeCodeHashMasked": "0xaa7fc4f738a41cc4ff55b7dfc84353a4ee48244e2074ddbdeecab73c19633f1f",
+  "commit": "<commit the V2 deploy was built from: set after the V2 deploy>",
+  "source": "src/SiteboundV2.sol:SiteboundV2",
+  "deployTx": "<SET AFTER THE V2 DEPLOY>",
+  "runtimeCodeLength": 21074,
+  "runtimeCodeHashMasked": "0xc9c9a99f74a8066af413321ad482f1aa0da0a9620ba248423284edd25b1c49e6",
   "method": "Fetch the runtime code with eth_getCode. Overwrite every byte range listed in immutables[*].offsets (each immutables[*].length bytes) with zero bytes. Take keccak256 of the resulting bytes and compare with runtimeCodeHashMasked. The same recipe applied to the locally compiled deployedBytecode (scripts/verify.sh) gives the same hash.",
   "immutables": {
     "token": {
       "offsets": [
-        236,
-        8091
+        522,
+        859,
+        19482
       ],
       "length": 32,
       "value": "0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7"
     },
     "rpIdHash": {
       "offsets": [
-        1771,
-        2051
+        5629,
+        14639
       ],
       "length": 32,
       "value": "0x8ffe2127ed75c36647d195c03abb12495aa9148e687218b86ee92ffc592840b0"
     },
     "delay": {
       "offsets": [
-        1157,
-        6905
+        1627,
+        2375,
+        3954,
+        4578,
+        5148,
+        10827
       ],
       "length": 32,
       "value": "3600"
+    },
+    "maxRelayerFee": {
+      "offsets": [
+        7899,
+        14448
+      ],
+      "length": 32,
+      "value": "1000000"
+    },
+    "guardian": {
+      "offsets": [
+        5208,
+        6193
+      ],
+      "length": 32,
+      "value": null
     }
   },
   "constructorArgs": {
@@ -48,11 +69,27 @@
     "attestors": [
       "0xDf54063Eb6FEF689965d470c6b5aab0489eA5b4A"
     ],
+    "threshold": 1,
     "delay": 3600,
-    "note": "frameOrigin is read from storage slot 0 (short string, stored inline); rpIdHash is sha256 of the RP ID; the attestor is confirmed by isAttestor() on chain."
+    "guardian": "<SET AFTER THE V2 DEPLOY>",
+    "note": "frameOrigin is read from storage slot 0 (short string, stored inline); rpIdHash is sha256 of the RP ID; the attestor set is confirmed by quorum() and isAttestor() on chain; maxRelayerFee is 10 ** token.decimals(), set in the constructor. guardian value is null until the deploy fixes it (0x0 if GUARDIAN is unset)."
   },
+  "hashNote": "runtimeCodeHashMasked is for src/SiteboundV2.sol exactly as committed with this file; any later edit to that file, comments included, changes it. Recompute with scripts/verify.sh before the deploy.",
   "sourcify": {
-    "match": "exact_match",
-    "url": "https://sourcify.dev/server/v2/contract/1874/0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73"
+    "match": "<SET AFTER THE V2 DEPLOY>",
+    "url": "<SET AFTER THE V2 DEPLOY>"
+  },
+  "previous": {
+    "note": "v1, the deployment the live frame uses until V2 is deployed",
+    "address": "0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73",
+    "source": "src/Sitebound.sol:Sitebound",
+    "commit": "84d5c9a0b041d49ff095641953477e014d828791",
+    "deployTx": "0x9d1278d275ab2003a996ac46cad324364d01465e85029263ccc433f7fbdd6b78",
+    "runtimeCodeLength": 8612,
+    "runtimeCodeHashMasked": "0xaa7fc4f738a41cc4ff55b7dfc84353a4ee48244e2074ddbdeecab73c19633f1f",
+    "sourcify": {
+      "match": "exact_match",
+      "url": "https://sourcify.dev/server/v2/contract/1874/0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73"
+    }
   }
 }
