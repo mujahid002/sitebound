@@ -335,3 +335,7 @@ that were not measured are marked "not checked".
 ## License
 
 MIT, see `LICENSE`.
+
+---
+
+Built at ETHGlobal Mumbai 2026 with love by [mujahid002](https://github.com/mujahid002) and [sowjanyalakshmi001](https://github.com/sowjanyalakshmi001).
