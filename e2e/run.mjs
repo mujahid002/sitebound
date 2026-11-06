@@ -392,6 +392,31 @@ async function main() {
     await frame.locator('#pay').waitFor({ state: 'visible', timeout: 15_000 });
   };
 
+  // Before quotes are on: the demo shop sends no quote.
+  await step('demo shop: a forged paid event is not shipped, a passkey payment is confirmed on chain', async () => {
+    await page.goto(`${SHOP}/demo-shop/`);
+    await page.locator('#products .card button').first().click(); // Ceramic pour-over dripper, 12.00
+    await page.locator('#checkout').click();
+    await page.locator('#forge').click();
+    await page.locator('#done-title', { hasText: 'Not shipped' }).waitFor({ timeout: 15_000 });
+    const forged = (await page.locator('#done-text').textContent()).trim();
+    await page.locator('#again').click();
+    await page.locator('#checkout').click();
+    const order = (await page.locator('#order-id').textContent()).trim();
+    const shopBefore = await bal(shop.address);
+    await page.locator('sitebound-pay button.pay').click();
+    await frame.locator('#pay').waitFor({ state: 'visible', timeout: 15_000 });
+    await frame.locator('#pay').click();
+    // On sitebound:paid the shop hides its pay panel, frame included, so wait on the shop's own verdict.
+    await page.locator('#done-title', { hasText: /Order confirmed|Not shipped/ }).waitFor({ timeout: 60_000 });
+    const title = (await page.locator('#done-title').textContent()).trim();
+    const text = (await page.locator('#done-text').textContent()).trim();
+    expect(title === 'Order confirmed', `demo shop says ${title}: ${text}`);
+    expect((await bal(shop.address)) - shopBefore === USDT(12), 'the shop was not paid 12');
+    await page.goto(`${SHOP}/dev/shop.html`);
+    return `forged: "${forged}"; real ${order}: "${text}"`;
+  });
+
   await step('shop turns on merchant quotes; a quoted payment pays A126', async () => {
     const v = await sb.configVersion(siteHash);
     await (await sb.connect(await provider.getSigner(shop.address)).setQuoteSigner(siteHash, merchantKey.address)).wait();
