@@ -18,9 +18,15 @@
       Sitebound
     </span>
     <div>
-      <h1 class="title">Pay with a passkey, on any site</h1>
-      <p class="lead">One-time setup. Your wallet signs twice; after that, each payment is one Touch ID. You can revoke at any time.</p>
+      <h1 class="title">Set up once, then pay with Touch ID</h1>
+      <p class="lead">Three steps, about a minute. After this, each payment on any website is one Touch ID.</p>
     </div>
+
+    <ol class="progress" aria-label="Setup progress">
+      <li data-p="1"><b>Connect wallet</b><span>Your USDT stays in your wallet until you pay.</span></li>
+      <li data-p="2"><b>Set limits</b><span>Caps on what Sitebound can ever take.</span></li>
+      <li data-p="3"><b>Confirm with Touch ID</b><span>Touch ID creates your passkey, then your wallet signs twice.</span></li>
+    </ol>
 
     <section id="s-connect" class="stack">
       <button id="connect" class="btn" type="button">Connect wallet</button>
@@ -31,18 +37,24 @@
       <p class="meta">Wallet <span id="account" class="mono"></span></p>
       <fieldset class="fields">
         <legend class="sr-only">Limits</legend>
-        <label>Per payment (USDT)<input id="perPay" inputmode="decimal" value="50" required></label>
-        <label>Total (USDT)<input id="total" inputmode="decimal" value="200" required></label>
-        <label>Expires in (days)<input id="days" inputmode="numeric" value="30" required></label>
+        <label>Per payment<input id="perPay" inputmode="decimal" value="50" required></label>
+        <label>Total<input id="total" inputmode="decimal" value="200" required></label>
+        <label>Days valid<input id="days" inputmode="numeric" value="30" required></label>
       </fieldset>
-      <p class="note">Sitebound can never move more than these limits, and only to a site you are paying on.</p>
-      <button id="go" class="btn" type="submit">Create passkey and sign</button>
+      <p class="meta">Amounts are in USDT. Defaults, edit any of them:</p>
+      <ul class="why">
+        <li><b>50 per payment:</b> no single payment can be larger.</li>
+        <li><b>200 total:</b> all payments together stop here, until you set up again.</li>
+        <li><b>30 days:</b> after that the passkey stops working. You can revoke it sooner.</li>
+      </ul>
+      <p class="note">Sitebound can never move more than these limits, and only to the website you are paying on.</p>
+      <button id="go" class="btn" type="submit">Confirm with Touch ID</button>
     </form>
 
     <ol id="steps" class="steps" hidden>
-      <li data-k="passkey">Create your passkey</li>
-      <li data-k="permit">Sign the USDT allowance (permit)</li>
-      <li data-k="bind">Sign the passkey binding and limits</li>
+      <li data-k="passkey">Create your passkey (Touch ID)</li>
+      <li data-k="permit">Allow USDT up to your total (wallet signature)</li>
+      <li data-k="bind">Lock in your limits (wallet signature)</li>
       <li data-k="submit">Save it on Whitechain</li>
     </ol>
 

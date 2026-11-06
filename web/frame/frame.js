@@ -39,7 +39,7 @@ let versionP = readVersion().catch(() => null);
 $('amount').textContent = $('line-amount').textContent = validAmount ? amountText : '—';
 $('site').textContent = site;
 $('order').textContent = order && `Order ${order}`;
-$('fee').textContent = `Adds a ${C.relayerFee} USDT relayer fee, so you need no gas.`;
+$('fee').textContent = `+${C.relayerFee} USDT network fee, taken from your wallet. You need no gas.`;
 if (!ao || ao.length !== 1) {
   $('warn').hidden = false;
   $('warn').textContent = ao?.length > 1
@@ -47,16 +47,16 @@ if (!ao || ao.length !== 1) {
     : `Your browser does not report the page around this checkout. The payment only goes through if it is ${site}.`;
 }
 
-function say(text, { err = false, tx = null } = {}) {
+function say(text, { err = false, tx = null, busy = false } = {}) {
   const m = $('msg');
-  m.className = err ? 'msg err' : 'msg';
+  m.className = err ? 'msg err' : busy ? 'msg busy' : 'msg';
   m.textContent = text;
   if (tx) m.append(' ', Object.assign(document.createElement('a'), { className: 'link', href: `${C.explorer}/tx/${tx}`, target: '_blank', rel: 'noopener', textContent: 'View transaction' }));
 }
 function lock(on) {
   for (const id of ['pay', 'pay-wallet', 'continue']) $(id).disabled = on || !!problem;
 }
-const busy = (text) => (lock(true), say(text));
+const busy = (text) => (lock(true), say(text, { busy: true }));
 const fail = (text, opts) => (lock(false), say(text, { err: true, ...opts }));
 
 async function pay(mode) {
@@ -64,10 +64,10 @@ async function pay(mode) {
   const deadline = BigInt(Math.floor(Date.now() / 1000) + 600);
   const configVersion = await versionP;
   versionP = readVersion().catch(() => null);
-  if (configVersion == null) return fail('Could not read this site’s settings from Whitechain. Try again.');
+  if (configVersion == null) return fail('Could not read this website’s settings from Whitechain. Check your connection and try again.');
   const challenge = challengeOf({ chainId: C.chainId, address: C.address, siteHash, configVersion, orderId, amount, relayerFee, deadline });
   $('continue').hidden = true;
-  busy('Confirm with your passkey…');
+  busy('Waiting for Touch ID…');
   let cred;
   try {
     cred = await navigator.credentials.get({
@@ -75,8 +75,8 @@ async function pay(mode) {
     });
   } catch (e) {
     if (e.name !== 'NotAllowedError') return fail(errText(e));
-    $('pay').textContent = 'Pay again';
-    return fail('Cancelled, or there is no Sitebound passkey on this device yet.');
+    $('pay').textContent = 'Try again';
+    return fail('Touch ID was cancelled, or this device has no Sitebound passkey yet. Try again, or set up below.');
   }
   try {
     const r = cred.response;
@@ -84,7 +84,7 @@ async function pay(mode) {
     checkClientData(clientDataJSON, { challenge, frameOrigin: location.origin, topOrigin });
     const input = payInputOf({ rawId: cred.rawId, authenticatorData: r.authenticatorData, clientDataJSON, signature: r.signature, orderId, amount, relayerFee, deadline });
     const { wallet } = await new ethers.Contract(C.address, SITEBOUND_ABI, rpc).buyers(input.credentialHash);
-    if (wallet === ethers.ZeroAddress) throw new Error('This passkey is not linked to a wallet yet. Use “Set up” below.');
+    if (wallet === ethers.ZeroAddress) throw new Error('This passkey is not linked to a wallet yet. Choose “Set up” below.');
     if (mode === 'relayer') return await settle(await viaRelayer(input));
     if (window.ethereum) {
       busy('Confirm in your wallet…');
@@ -94,29 +94,29 @@ async function pay(mode) {
     pending = input;
     lock(false);
     $('continue').hidden = false;
-    say('Passkey confirmed. Your wallet opens in a new window.');
+    say('Touch ID confirmed. Your wallet opens in a new window.');
   } catch (e) {
     fail(errText(e));
   }
 }
 
 async function viaRelayer(input) {
-  busy('Sending…');
+  busy('Paying. This takes a few seconds.');
   let res;
   try {
     const req = quote ? { ...input, quoteExpiry: quote.expiry, quoteSig: quote.sig } : input;
     res = await fetch(`${C.relayerUrl}/pay`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: jsonOf(req) });
   } catch {
-    throw new Error('The relayer is unreachable. Try “Pay from my wallet”.');
+    throw new Error('Could not reach the payment service. Try again, or choose “Pay from my wallet instead”.');
   }
   const body = await res.json().catch(() => ({}));
-  if (!res.ok || !/^0x[0-9a-fA-F]{64}$/.test(body.txHash ?? '')) throw new Error(body.error || `The relayer refused (${res.status}). Try “Pay from my wallet”.`);
+  if (!res.ok || !/^0x[0-9a-fA-F]{64}$/.test(body.txHash ?? '')) throw new Error(body.error || `The payment was refused (${res.status}). Try again, or choose “Pay from my wallet instead”.`);
   return body.txHash;
 }
 
 // Trust the chain, not whoever sent the transaction: the receipt must carry Paid for this order.
 async function settle(txHash) {
-  busy('Confirming on Whitechain…');
+  busy('Paying. This takes a few seconds.');
   try {
     const rc = await rpc.waitForTransaction(txHash, 1, 180_000);
     const paid = rc?.status === 1 && rc.logs.some((l) =>
@@ -130,6 +130,7 @@ async function settle(txHash) {
   $('r-amount').textContent = `${amountText} USDT`;
   $('r-site').textContent = site;
   $('r-order').textContent = order;
+  $('r-receipt').href = new URL(`../receipt/?tx=${txHash}`, location.href).href;
   Object.assign($('r-tx'), { href: `${C.explorer}/tx/${txHash}`, textContent: `${txHash.slice(0, 10)}…${txHash.slice(-6)}` });
   $('done').focus();
   parent.postMessage({ type: 'sitebound:paid', orderId: order, txHash, paymentId }, parentOrigin);
@@ -144,13 +145,13 @@ addEventListener('keydown', (e) => e.key === 'Escape' && close());
 
 $('continue').onclick = () => {
   sendWin = open('send.html', 'sitebound-send', 'popup,width=440,height=600');
-  if (!sendWin) return fail('Allow pop-ups for this checkout, then try again.');
+  if (!sendWin) return fail('Your browser blocked the wallet window. Allow pop-ups for this checkout, then try again.');
   busy('Finish in the wallet window…');
   const w = sendWin;
   const watch = setInterval(() => {
     if (!w.closed) return;
     clearInterval(watch);
-    if (sendWin === w) fail('The wallet window closed before paying.');
+    if (sendWin === w) fail('The wallet window closed before paying. Try again.');
   }, 500);
 };
 $('setup').onclick = (e) => {
@@ -162,9 +163,9 @@ addEventListener('message', (e) => {
   if (e.origin !== location.origin || !e.data) return;
   const d = e.data;
   if (e.source === setupWin && d.type === 'sitebound:setup-done') {
-    $('pay').textContent = 'Pay with passkey';
+    $('pay').textContent = 'Pay with Touch ID';
     lock(false);
-    say('Setup complete. Pay with your passkey.');
+    say('Setup complete. Pay with Touch ID.');
   }
   if (e.source !== sendWin) return;
   if (d.type === 'sitebound:send-ready') sendWin.postMessage({ type: 'sitebound:send', input: jsonOf(pending), quote: quote && { expiry: String(quote.expiry), sig: quote.sig }, site, amount: amountText }, location.origin);

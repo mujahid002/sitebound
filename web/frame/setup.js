@@ -16,7 +16,7 @@ function say(text, err = false) {
 
 $('connect').onclick = async () => {
   $('connect').disabled = true;
-  say('Check your wallet…');
+  say('Check your wallet to connect…');
   try {
     signer = await connect(window.ethereum);
     account = await signer.getAddress();
@@ -89,7 +89,7 @@ $('s-caps').onsubmit = async (e) => {
 
     signed = { permit: { ...permit, v: ps.v, r: ps.r, s: ps.s }, bind: { ...bind, wallet: account, v: bs.v, r: bs.r, s: bs.s } };
     step((k = 'submit'), 'doing');
-    say('Saving…');
+    say('Saving. This takes a few seconds.');
     await confirmBound(await viaRelayer(signed));
     finished();
   } catch (e) {
@@ -151,8 +151,8 @@ function finished() {
   step('submit', 'done');
   $('s-caps').hidden = $('self').hidden = true;
   $('finish').hidden = false;
-  say('Done. Each payment is now one Touch ID.');
+  say('Done. From now on each payment is one Touch ID.');
   opener?.postMessage({ type: 'sitebound:setup-done' }, location.origin);
 }
 $('finish').onclick = () => close();
-if (!window.ethereum) say('No browser wallet found. Install one (MetaMask, Rabby, …) and reload.', true);
+if (!window.ethereum) say('No browser wallet found. Install one (MetaMask, Rabby, …), then reload this page.', true);
