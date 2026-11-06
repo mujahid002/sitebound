@@ -31,9 +31,18 @@ Draft. Only things we measured; the rest is marked "not checked".
 - **Getting test USDT.** The faucet gives 2 WBT per day and needs a GitHub account older than 30 days. There is no
   USDT faucet; the path is swapping WBT to USDT on YetiTrade (not checked yet).
 
+## What broke
+
+- **Blockscout contract verification (6 Nov, measured).** Contract `0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73`.
+  `forge verify-contract --verifier blockscout` and a direct POST of the standard-JSON input to
+  `/api/v2/smart-contracts/<addr>/verification/via/standard-input` both end in "Fail - Unable to verify". The local
+  build output equals the creation bytecode on the explorer, including the metadata hash, so the source matches.
+  `/api/v2/smart-contracts/verification/config` reports `is_rust_verifier_microservice_enabled: true` but returns an
+  empty `solidity_compiler_versions` (and `vyper_compiler_versions`), so the verifier service looks unreachable. Build
+  settings used: solc 0.8.28, via-IR, optimizer 200 runs, cancun. Not checked: other compiler versions or the UI path.
+
 ## Not checked yet
 
-- Contract verification on Blockscout (`https://explorer.testnet.whitechain.io`).
 - A real signed USDT `permit` submitted on Whitechain.
 - The YetiTrade WBT to USDT swap.
 - Gas costs of `pay()` on Whitechain.
