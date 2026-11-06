@@ -308,3 +308,4 @@
 /* Whitechain lockup inside the hero subline */
 .wc-inline { display: inline-flex; vertical-align: -0.2em; margin: 0 0.15em; }
 .wc-inline .wc-img { width: auto; height: 1.15em; }
+.tagline .tl { display: block; }
