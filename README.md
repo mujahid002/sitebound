@@ -1,10 +1,172 @@
 # Sitebound
 
-Kill the checkout address. Every payment is bound to the site.
+Addressless stablecoin checkout: every payment is bound to the site the buyer is actually on.
 
-A shop never puts a wallet address in its checkout code. It proves it owns its domain once and
-registers a payout wallet. When a buyer pays, their browser signs which site they are actually on,
-and the contract pays only the wallet registered for that site. Hacked checkout code can change
-what the page says, but not where the money goes.
+Built for ETHGlobal Mumbai (Nov 2026) on Whitechain Sepolia testnet. Not audited.
 
-Status: under construction for ETHGlobal Mumbai (Nov 2026).
+## The problems
+
+1. **Hacked checkout code swaps addresses.** The shop's address lives in its checkout JavaScript. One
+   compromised dependency rewrites it (on the page or in the clipboard) and the money goes to the attacker.
+   The npm "qix" package compromise in Sep 2025 rewrote crypto recipients this way.
+2. **Addresses are bad checkout UX.** Shops paste and manage an address per chain. Buyers copy, paste or scan
+   one and have to compare 40 hex characters they can't read.
+3. **Crypto has no 3-D Secure.** Card buyers get a confirmation step from their bank that shows the merchant and
+   the amount. Crypto buyers sign raw transactions.
+
+## How it works
+
+- **Shop, once.** It proves it controls its domain with a DNS TXT record (`_sitebound.<host>` =
+  `sitebound=<payout>`). An attestor checks the record and signs; anyone submits `register()`. The registry now maps
+  `keccak256("https://shop.com")` to the shop's payout wallet. The shop pastes one script tag and a
+  `<sitebound-pay amount="12.00" order="A123">` element. There is no address in its code.
+- **Buyer, first time.** In a popup on the Sitebound origin: connect a wallet, sign a capped EIP-2612 permit and an
+  EIP-712 binding (passkey public key, per-payment cap, total cap, expiry), and create a passkey. One passkey is bound
+  to one wallet.
+- **Buyer, every payment.** The button opens the Sitebound frame in a cross-origin iframe. The frame shows the site
+  (from `location.ancestorOrigins`) and the amount, and calls WebAuthn `get()`. One Touch ID signs one exact
+  payment: site, order id, amount, relayer fee, deadline.
+- **Contract.** Chrome writes the embedding page's origin into the signed `clientDataJSON` as `topOrigin`. Page
+  code can't change it. `pay()` checks the passkey signature with the P-256 precompile at `0x100`, checks that the
+  signature came from the Sitebound frame (`origin`, `crossOrigin:true`), and moves USDT from the buyer's wallet to
+  `registry[keccak256(topOrigin)]`. There is no payee field in the call.
+
+Hacked checkout code can change what the page shows. It can't change who gets paid.
+
+**Why on-chain settlement:** the site check runs in the same contract that moves the money, so hacked checkout code
+can't redirect it. An off-chain processor can't give the buyer that guarantee.
+
+## Architecture
+
+| Part | Path | What it does |
+|---|---|---|
+| Contract | `src/Sitebound.sol` | Site registry, passkey bindings with caps, `pay()`, refunds. No owner. |
+| Frame | `web/frame/` | Checkout iframe (`get()` only) and the first-time setup popup. Vanilla JS + vendored ethers 6.17.0. |
+| Button | `web/button/sitebound.js` | The `<sitebound-pay>` element. Opens the frame from its own host; fires `sitebound:paid`. |
+| Relayer (optional) | `worker/` | Cloudflare Worker. Pays gas for `register`, `permit`, `bind`, `pay`. Also the DNS attestor. See `worker/README.md`. |
+| Onboarding | `web/onboard/` | Shop setup: wallet, DNS TXT check, register, snippet. |
+| Dashboard | `web/dashboard/` | Payments to one site from chain events, refunds, CSV. |
+| Landing | `web/landing/` | Public page. |
+| Demo shop | `web/demo-shop/` | A store whose checkout is only the `<sitebound-pay>` element. |
+| Attack demos | `web/attack/` | Address swap on a classic checkout, the same script against Sitebound, a fake site embedding the frame. |
+
+The relayer only pays gas. `pay()` is permissionless and the payee comes from the registry, so a relayer can refuse
+a payment but can't redirect one. The frame also offers "Pay from my wallet": the buyer submits `pay()` with
+`relayerFee = 0` and pays gas in WBT.
+
+## Setup and local dev
+
+Requires Foundry, Python 3 and Chrome (the only browser measured so far).
+
+```sh
+forge install foundry-rs/forge-std   # lib/ is not committed
+forge test
+```
+
+`forge test` has no P-256 precompile, so the tests etch a Solidity verifier (`test/utils/P256Verifier.sol`) at
+`0x100`. One test replays a real Chrome assertion from a cross-origin iframe (`test/fixtures/frame_assertion.json`).
+
+Web, locally (shop and frame must be different origins):
+
+```sh
+python3 web/dev/serve.py
+# shop  http://127.0.0.1:8001   (web/ served with no-store)
+# frame http://localhost:8002   (the same web/ folder, a different origin)
+```
+
+- Demo shop: http://127.0.0.1:8001/demo-shop/
+- Attack demos: http://127.0.0.1:8001/attack/. For the fake-site page, serve `web/` on a third origin too:
+  `python3 -m http.server 8003 --bind 127.0.0.1 --directory web`, then open http://127.0.0.1:8003/attack/phish.html.
+- Local passkeys use rpId `localhost`, so the frame must be on `localhost`.
+- `web/config.js` holds the chain id, RPC, explorer, contract address and relayer URL for the frame.
+
+Paying on the local shop needs `http://127.0.0.1:8001` registered on the deployed contract. The relayer only attests
+`https://` origins, so that registration needs a separately signed attestation: not checked.
+
+### Demo shop
+
+The demo shop is static and can be its own Cloudflare Pages project. A real shop loads the button from the
+Sitebound frame host, because the button opens the frame next to its own script URL. Before deploying, point the
+`<script src>` in `web/demo-shop/index.html` (and in `web/attack/sitebound.html`, `web/attack/phish.html`) at the
+deployed frame host, then:
+
+```sh
+mkdir -p dist && cp -r web/demo-shop web/attack dist/
+npx wrangler pages deploy dist --project-name <name>
+```
+
+Not checked yet. The shop's Pages origin (e.g. `https://<name>.pages.dev`) has to be registered like any other site.
+
+### Deploy the contract
+
+```sh
+FRAME_ORIGIN=https://<frame host> RP_ID=<frame host> ATTESTOR=<attestor address> DELAY=3600 \
+  forge script script/Deploy.s.sol --rpc-url $RPC_URL --account <keystore> --broadcast
+```
+
+Token: Whitechain Sepolia USDT `0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7` (6 decimals). `DELAY` defaults to 1 hour.
+
+## Deployments (Whitechain Sepolia, chain 1874)
+
+- Sitebound contract: TBD (not deployed yet)
+- Verified source on Blockscout: TBD
+- First USDT payment: TBD
+- Explorer: https://explorer.testnet.whitechain.io
+
+## Threat model and limits
+
+What it stops: hacked checkout JavaScript on the real shop redirecting a payment. The payee is
+`registry[topOrigin]`, and `topOrigin` is written by the browser into the signed data. A fake site embedding the
+frame can only pay its own registry entry. Editing the signed origin, or signing from a lookalike frame on another
+origin, fails the contract's checks. Each signature is for one order id, one amount and one deadline.
+
+Known limits:
+
+- **UI redressing.** A hacked or fake page can draw over the frame and lie about the site or amount shown. It can't
+  change the payee, and the buyer's caps bound the amount. A fake site that registered its own domain does get paid
+  by a buyer it fooled: Sitebound shows the real site, it does not vouch for what a shop sells.
+- **Amount.** Hacked page code chooses the amount it asks for. The buyer sees it in the frame and confirms it.
+- **Safari** may omit `topOrigin` (one forum report; not measured). Firefox: not checked.
+- **DNS.** Someone who takes over the shop's DNS can get a new payout attested. Changing an existing site's payout
+  waits `DELAY`, and the current payout can `freeze()` the site in that window.
+- **The attestor's DNS check is trusted.** It reads TXT over Cloudflare DNS-over-HTTPS, without DNSSEC.
+- **Our frame's code is trusted.** Whoever serves the frame origin can make it show anything.
+- **Linkability.** Credential hashes are on-chain, so a buyer's purchases can be linked across shops.
+- **Pubkey squatting.** An attacker can front-run `bind` and bind a victim's passkey public key to the attacker's
+  own wallet first. That blocks the victim's setup (nuisance), it doesn't move funds.
+- **Issuer risk.** USDT's issuer can freeze addresses.
+- Testnet only. Not audited.
+
+## CROPS notes
+
+- **No owner, admin, pause or upgrade.** Token, frame origin, rpId, attestor set and delay are set in the
+  constructor and never change.
+- **Permissionless `pay()`.** Anyone can relay and earn the signed fee, or the buyer submits it from their own
+  wallet with no fee.
+- **One trusted role, bounded.** The DNS attestor set is fixed at deploy. A new site registers immediately; changing
+  an existing site's payout always waits `DELAY`, and the current payout can freeze it. Roadmap: an on-chain DNSSEC
+  proof instead of the attestor.
+- **Walkaway.** The contract never holds funds; each payment moves wallet to payout in one transaction. If we
+  disappear, buyers revoke with `unbind()` or `approve(0)`, and shops keep what they were paid.
+- **Self-hostable.** The frame origin is a constructor argument: anyone can host their own frame and deploy their
+  own instance. The RPC is configurable. No analytics.
+- **Privacy: No.** Wallet, credential hash, site and amount of every payment are public.
+- **License:** MIT.
+
+## Prior art
+
+- [anandh8x/payeelock](https://github.com/anandh8x/payeelock): Confirmation of Payee for invoices, with a DNS-TXT
+  verifier, a domain attestor and an on-chain payee registry. It has no passkeys and no binding to the browser's
+  origin. Domain to payout registries are not new; checking the browser-attested site on-chain at payment time, for
+  website checkout, is what Sitebound adds.
+- On-chain WebAuthn verifiers (Solady, base/webauthn-sol) verify the signature but not `topOrigin`.
+
+## AI use
+
+Claude Code wrote much of the code, tests, pages and these docs under the author's direction. The author made the
+design calls and reviewed the changes, and signs every transaction; the AI never held a key. Claims in this repo
+that were not measured are marked "not checked".
+
+## License
+
+MIT, see `LICENSE`.
