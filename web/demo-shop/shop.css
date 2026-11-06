@@ -21,6 +21,7 @@
     --brand-ink: #1a0d05;
   }
 }
+@media (prefers-color-scheme: dark) { .swatch { filter: brightness(0.82); } }
 
 *, *::before, *::after { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 400 1rem/1.5 var(--font); }
@@ -51,33 +52,54 @@ h1 { font-size: 1.9rem; letter-spacing: -0.03em; }
 .lede { color: var(--muted); margin-top: 4px; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 20px; }
-.card { display: flex; flex-direction: column; gap: 6px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
-.swatch { aspect-ratio: 4 / 3; border-radius: 6px; background: var(--c); margin-bottom: 6px; }
+.card {
+  display: flex; flex-direction: column; gap: 6px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.card:hover { border-color: color-mix(in srgb, var(--brand) 30%, var(--line)); box-shadow: 0 6px 20px rgba(29, 26, 23, 0.06); }
+.swatch {
+  aspect-ratio: 4 / 3; border-radius: 8px; margin-bottom: 6px; background: var(--c);
+  background-image: radial-gradient(120% 90% at 28% 18%, rgba(255, 255, 255, 0.28), transparent 55%),
+    linear-gradient(to top, rgba(0, 0, 0, 0.06), transparent 40%);
+}
 .card h2 { font-size: 1rem; font-weight: 600; }
 .card p { color: var(--muted); font-size: 0.9rem; flex: 1; }
 .row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
 .row b::after { content: " USDT"; font-weight: 400; color: var(--muted); font-size: 0.85em; }
-.row button { padding: 6px 16px; border: 1px solid var(--brand); border-radius: 6px; background: transparent; color: var(--brand); font-weight: 600; }
+.row button {
+  padding: 6px 16px; border: 1px solid var(--brand); border-radius: 8px; background: transparent; color: var(--brand); font-weight: 600;
+  transition: background-color 0.15s, color 0.15s, transform 0.15s;
+}
+.row button:active { transform: scale(0.96); }
 .row button:hover { background: var(--brand); color: var(--brand-ink); }
 
-.cart { align-self: start; padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.cart { align-self: start; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .cart h2 { font-size: 1.1rem; margin-bottom: 10px; }
 .lines li { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 0.92rem; }
 .qty { display: inline-flex; align-items: center; gap: 6px; }
 .qty button { width: 24px; height: 24px; border: 1px solid var(--line); border-radius: 4px; background: transparent; line-height: 1; }
 .muted { color: var(--muted); font-size: 0.9rem; }
-.total { display: flex; justify-content: space-between; margin: 14px 0; }
-.btn { width: 100%; height: 44px; border: 0; border-radius: 8px; background: var(--brand); color: var(--brand-ink); font-weight: 600; }
+.total { display: flex; justify-content: space-between; align-items: baseline; margin: 14px 0; }
+.total b { font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.btn { width: 100%; height: 44px; border: 0; border-radius: 10px; background: var(--brand); color: var(--brand-ink); font-weight: 600; transition: filter 0.15s, transform 0.15s; }
+.btn:not(:disabled):hover { filter: brightness(1.08); }
+.btn:not(:disabled):active { transform: scale(0.99); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .pay { display: grid; gap: 10px; }
 .fine { color: var(--muted); font-size: 0.8rem; }
-.done { display: grid; gap: 6px; padding-top: 4px; }
+.done { display: grid; gap: 6px; padding: 12px 14px; border-radius: 10px; background: color-mix(in srgb, var(--brand) 8%, var(--surface)); }
 .done h3 { color: var(--brand); }
 .quiet { justify-self: start; padding: 4px 0; border: 0; background: none; color: var(--muted); text-decoration: underline; }
 
 .foot { padding: 20px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; }
 
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; }
+}
+
 @media (min-width: 860px) {
   main.wrap { grid-template-columns: 1fr 340px; }
+  .grid { grid-template-columns: repeat(2, 1fr); }
+  .swatch { aspect-ratio: 16 / 9; }
   .cart { position: sticky; top: 16px; }
 }

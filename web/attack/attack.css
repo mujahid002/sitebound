@@ -18,6 +18,7 @@
 
 .notes { display: grid; gap: 12px; max-width: 64ch; }
 .notes h2 { font-size: 1.2rem; }
+.notes code { overflow-wrap: anywhere; }
 .notes h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 .notes .btn { width: auto; justify-self: start; padding: 0 20px; }
 .btn.danger { background: var(--warn); }
@@ -35,7 +36,21 @@
 .fake .big { font-size: 2rem; font-weight: 650; }
 .fake small { font-size: 1rem; color: #565c66; }
 
-.index { padding: 40px 0; display: grid; gap: 12px; }
-.demos { display: grid; gap: 16px; margin: 12px 0 0; padding-left: 20px; }
-.demos a { font-weight: 600; }
-.demos p { color: var(--muted); }
+/* Index: one column (main.wrap is a two-column grid on wide screens), demos as numbered cards. */
+main.index { display: grid; gap: 12px; max-width: 720px; padding: 48px 0; grid-template-columns: none; }
+.demos { display: grid; gap: 12px; margin: 16px 0 0; padding: 0; list-style: none; counter-reset: demo; }
+.demos li {
+  position: relative; padding: 16px 18px 16px 58px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface); counter-increment: demo; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.demos li::before {
+  content: counter(demo); position: absolute; left: 18px; top: 15px; width: 26px; height: 26px;
+  display: grid; place-items: center; border-radius: 50%; background: var(--warn-bg); color: var(--warn);
+  font-size: 0.85rem; font-weight: 700;
+}
+.demos li:hover { border-color: color-mix(in srgb, var(--warn) 35%, var(--line)); box-shadow: 0 6px 20px rgba(29, 26, 23, 0.06); }
+.demos a { font-weight: 600; text-decoration: none; }
+.demos a::after { content: ""; position: absolute; inset: 0; border-radius: 12px; }
+.demos a:focus-visible { outline: none; }
+.demos li:has(a:focus-visible) { outline: 3px solid var(--brand); outline-offset: 2px; }
+.demos p { margin-top: 4px; color: var(--muted); font-size: 0.95rem; }
