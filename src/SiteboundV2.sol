@@ -27,6 +27,9 @@ contract SiteboundV2 {
         uint64 activeAt;
         bool frozen;
         uint256 nonce;
+        address refundOperator;
+        address pendingOperator;
+        uint64 operatorAt; // 0: no operator change pending
     }
 
     struct Buyer {
@@ -96,6 +99,7 @@ contract SiteboundV2 {
     uint64 pendingSetAt;
 
     mapping(bytes32 => Site) internal _sites;
+    uint256 private _lock = 1;
     mapping(bytes32 => Buyer) public buyers;
     mapping(address => uint256) public bindNonce;
     /// One wallet per passkey: the challenge does not name the payer, so a key bound twice could be charged on the wrong wallet.
@@ -123,7 +127,16 @@ contract SiteboundV2 {
     event SplitSet(bytes32 indexed siteHash, address[] to, uint16[] bps, uint64 activeAt);
     /// One per recipient, only for a payment split between more than one wallet. Paid.payout is then to[0].
     event PayoutSplit(bytes32 indexed paymentId, address indexed to, uint256 amount);
+    event RefundedBy(bytes32 indexed paymentId, address indexed by);
+    event RefundOperatorProposed(bytes32 indexed siteHash, address operator, uint64 activeAt);
     event AttestorsProposed(uint256 indexed setId, address[] attestors, uint256 threshold, uint64 activeAt);
+
+    modifier nonReentrant() {
+        require(_lock == 1, "reentrant");
+        _lock = 2;
+        _;
+        _lock = 1;
+    }
 
     constructor(
         IERC20 token_,
@@ -288,10 +301,30 @@ contract SiteboundV2 {
         return sp.to.length == 0 ? address(0) : sp.to[0];
     }
 
+    /// The owner names a wallet that may also refund; it takes effect after `delay`. address(0) removes it.
+    function setRefundOperator(bytes32 siteHash, address operator) external {
+        Site storage st = _sites[siteHash];
+        _promote(st);
+        require(msg.sender == _first(st.payout), "not payout");
+        st.pendingOperator = operator;
+        st.operatorAt = uint64(block.timestamp) + delay;
+        emit RefundOperatorProposed(siteHash, operator, st.operatorAt);
+    }
+
+    function refundOperatorOf(bytes32 siteHash) external view returns (address operator, address pending, uint64 activeAt) {
+        Site storage st = _sites[siteHash];
+        return (st.refundOperator, st.pendingOperator, st.operatorAt);
+    }
+
     function _promote(Site storage st) internal {
         if (st.pending.to.length != 0 && block.timestamp >= st.activeAt) {
             st.payout = st.pending;
             delete st.pending;
+        }
+        if (st.operatorAt != 0 && block.timestamp >= st.operatorAt) {
+            st.refundOperator = st.pendingOperator;
+            st.pendingOperator = address(0);
+            st.operatorAt = 0;
         }
     }
 
@@ -342,7 +375,7 @@ contract SiteboundV2 {
 
     /// Permissionless: anyone can submit, the signature fixes site, order, amount and fee.
     /// The payout is never an input; it comes from the registry entry of the signed topOrigin.
-    function pay(PayInput calldata p) external returns (bytes32 paymentId) {
+    function pay(PayInput calldata p) external nonReentrant returns (bytes32 paymentId) {
         require(p.amount > 0, "zero amount");
         Buyer storage b = buyers[p.credentialHash];
         _spend(b, p.amount + p.relayerFee);
@@ -418,18 +451,21 @@ contract SiteboundV2 {
 
     // ------------------------------------------------------------------ refund
 
-    /// The site's owner (its first payout wallet) returns money to the ORIGINAL payer only, up to what was paid.
-    /// The site approves this contract for the token once.
-    function refund(bytes32 paymentId, uint256 amount) external {
+    /// Refunds are paid by the refunder: the site's owner (its first payout wallet) or its refund operator
+    /// sends its own tokens, through its allowance to this contract, to the ORIGINAL payer only. Split
+    /// recipients are never charged. The total refunded per payment is capped at the payment's amount; the
+    /// relayer fee is not part of it and is not refundable.
+    function refund(bytes32 paymentId, uint256 amount) external nonReentrant {
         Payment storage pm = payments[paymentId];
         require(pm.wallet != address(0), "no such payment");
         Site storage st = _sites[pm.siteHash];
         _promote(st);
-        require(msg.sender == _first(st.payout), "not payout");
+        require(msg.sender == _first(st.payout) || msg.sender == st.refundOperator, "not refunder");
         require(pm.refunded + amount <= pm.amount, "over refund");
         pm.refunded += amount;
         _transferFrom(msg.sender, pm.wallet, amount);
         emit Refunded(paymentId, pm.wallet, amount);
+        emit RefundedBy(paymentId, msg.sender);
     }
 
     // ----------------------------------------------------------------- helpers

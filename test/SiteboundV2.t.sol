@@ -1037,14 +1037,151 @@ contract SiteboundV2Test is Test {
         assertEq(usdt.balanceOf(wallet), 1000e6);
     }
 
-    function test_refund_only_by_payout() public {
+    function test_refund_only_by_owner_or_operator() public {
         bytes32 id = _pay(_opts("F2"));
-        vm.expectRevert("not payout");
+        vm.expectRevert("not refunder");
         sb.refund(id, 1e6);
+    }
+
+    function _approve(address a) internal {
+        usdt.mint(a, 100e6);
+        vm.prank(a);
+        usdt.approve(address(sb), type(uint256).max);
+    }
+
+    function test_refund_operator_after_delay_refunds_to_payer_only() public {
+        address op = address(0x0FF1CE);
+        _approve(op);
+        bytes32 siteHash = keccak256(bytes(SHOP));
+        vm.expectRevert("not payout");
+        sb.setRefundOperator(siteHash, op);
+        vm.prank(shopWallet);
+        sb.setRefundOperator(siteHash, op);
+        bytes32 id = _pay(_opts("G1"));
+        vm.prank(op);
+        vm.expectRevert("not refunder"); // not yet
+        sb.refund(id, 1e6);
+
+        vm.warp(block.timestamp + DELAY);
+        (address cur,,) = sb.refundOperatorOf(siteHash);
+        assertEq(cur, address(0)); // promoted lazily, on the next call that touches the site
+        uint256 payerBefore = usdt.balanceOf(wallet);
+        vm.expectEmit(address(sb));
+        emit SiteboundV2.Refunded(id, wallet, 4e6);
+        vm.expectEmit(address(sb));
+        emit SiteboundV2.RefundedBy(id, op);
+        vm.prank(op);
+        sb.refund(id, 4e6);
+        assertEq(usdt.balanceOf(wallet), payerBefore + 4e6);
+        assertEq(usdt.balanceOf(op), 96e6); // the operator paid it
+        assertEq(usdt.balanceOf(shopWallet), 10e6); // the owner was not charged
+
+        // owner and operator share one cap
+        _approve(shopWallet);
+        vm.prank(shopWallet);
+        sb.refund(id, 5e6);
+        vm.prank(op);
+        vm.expectRevert("over refund");
+        sb.refund(id, 2e6);
+        vm.prank(op);
+        sb.refund(id, 1e6);
+        (,,, uint256 refunded) = sb.payments(id);
+        assertEq(refunded, 10e6);
+
+        // removing the operator also waits for the delay
+        vm.prank(shopWallet);
+        sb.setRefundOperator(siteHash, address(0));
+        bytes32 id2 = _pay(_opts("G2"));
+        vm.prank(op);
+        sb.refund(id2, 1e6);
+        vm.warp(block.timestamp + DELAY);
+        vm.prank(op);
+        vm.expectRevert("not refunder");
+        sb.refund(id2, 1e6);
+    }
+
+    function test_refund_of_a_split_payment_is_paid_by_the_refunder_not_the_recipients() public {
+        (address[] memory to, uint16[] memory bps) = _split3();
+        _registerSplit(EVIL, to, bps);
+        Opts memory o = _opts("G3");
+        o.top = EVIL;
+        o.fee = 1e5;
+        SiteboundV2.PayInput memory p = _input(o);
+        vm.prank(relayer);
+        bytes32 id = sb.pay(p);
+        assertEq(usdt.balanceOf(R0), 7e6);
+        _approve(R0); // R0 owns the site; now holds 107 USDT
+        vm.prank(R0);
+        sb.refund(id, 3e6);
+        vm.prank(R0);
+        sb.refund(id, 6e6);
+        vm.prank(R1); // a recipient that is not the owner cannot refund
+        vm.expectRevert("not refunder");
+        sb.refund(id, 1e6);
+        vm.prank(R0);
+        vm.expectRevert("over refund"); // 9 + 2 > 10: the 0.1 fee is not refundable
+        sb.refund(id, 2e6);
+        vm.prank(R0);
+        sb.refund(id, 1e6);
+        assertEq(usdt.balanceOf(wallet), 1000e6 - 1e5); // all of the amount back, the fee not
+        assertEq(usdt.balanceOf(R0), 107e6 - 10e6);
+        assertEq(usdt.balanceOf(R1), 2e6); // not clawed back
+        assertEq(usdt.balanceOf(R2), 1e6);
+        assertEq(usdt.balanceOf(relayer), 1e5);
+    }
+
+    function test_pay_and_refund_cannot_be_reentered() public {
+        ReentrantToken bad = new ReentrantToken();
+        address[] memory att = _one(vm.addr(attestorKey));
+        sb = new SiteboundV2(IERC20(address(bad)), FRAME, rp, att, 1, DELAY);
+        usdt = MockToken(address(bad));
+        bad.mint(wallet, 1000e6);
+        vm.prank(wallet);
+        bad.approve(address(sb), type(uint256).max);
+        _register(SHOP, shopWallet);
+        _bind(walletKey, 50e6, 100e6, uint64(block.timestamp + 30 days));
+        SiteboundV2.PayInput memory p = _input(_opts("H1"));
+        bad.arm(abi.encodeCall(SiteboundV2.pay, (_input(_opts("H2")))));
+        bytes32 id = sb.pay(p);
+        assertEq(bad.reason(), "reentrant");
+        _approve(shopWallet);
+        bad.arm(abi.encodeCall(SiteboundV2.refund, (id, 1e6)));
+        vm.prank(shopWallet);
+        sb.refund(id, 1e6);
+        assertEq(bad.reason(), "reentrant");
     }
 
     function test_contract_holds_no_funds() public {
         _pay(_opts("F3"));
         assertEq(usdt.balanceOf(address(sb)), 0);
+    }
+}
+
+/// On transferFrom, calls back into the caller once with `armed` and records the revert reason.
+contract ReentrantToken is MockToken {
+    bytes armed;
+    string public reason;
+
+    function arm(bytes calldata data) external {
+        armed = data;
+        reason = "";
+    }
+
+    function transferFrom(address from, address to, uint256 amount) external override returns (bool) {
+        if (armed.length != 0) {
+            bytes memory data = armed;
+            delete armed;
+            (bool ok, bytes memory ret) = msg.sender.call(data);
+            if (!ok && ret.length >= 68) {
+                assembly { ret := add(ret, 4) }
+                reason = abi.decode(ret, (string));
+            } else {
+                reason = ok ? "reentered" : "reverted without reason";
+            }
+        }
+        allowance[from][msg.sender] -= amount;
+        balanceOf[from] -= amount;
+        balanceOf[to] += amount;
+        return true;
     }
 }
