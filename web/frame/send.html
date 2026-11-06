@@ -25,11 +25,12 @@
     import { errText } from './lib.js';
     const $ = (id) => document.getElementById(id);
     const tell = (m) => opener?.postMessage(m, location.origin);
-    let input;
+    let input, quote = null;
 
     addEventListener('message', (e) => {
       if (e.origin !== location.origin || e.source !== opener || e.data?.type !== 'sitebound:send') return;
       input = JSON.parse(e.data.input);
+      quote = e.data.quote ? { expiry: BigInt(e.data.quote.expiry), sig: e.data.quote.sig } : null;
       $('lead').textContent = `Pay ${e.data.amount} USDT to ${e.data.site}.`;
       $('send').disabled = false;
     });
@@ -39,7 +40,7 @@
       $('msg').className = 'msg';
       $('msg').textContent = 'Confirm in your wallet…';
       try {
-        tell({ type: 'sitebound:sent', txHash: await sendPay(window.ethereum, input) });
+        tell({ type: 'sitebound:sent', txHash: await sendPay(window.ethereum, input, quote) });
         $('msg').textContent = 'Sent. You can close this window.';
         setTimeout(close, 1200);
       } catch (e) {

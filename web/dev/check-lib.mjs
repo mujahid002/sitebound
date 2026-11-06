@@ -1,4 +1,4 @@
-// Feeds the real Chromium assertion (test/fixtures/frame_assertion.json) through web/frame/lib.js.
+// Feeds the real Chromium assertion for SiteboundV2 (test/fixtures/frame_assertion_v2.json) through web/frame/lib.js.
 // Run from the repo root: node web/dev/check-lib.mjs
 import { createRequire } from 'node:module';
 import { readFileSync, existsSync } from 'node:fs';
@@ -8,15 +8,25 @@ const require = createRequire(import.meta.url);
 globalThis.ethers = require('../vendor/ethers-6.17.0.umd.min.js');
 const L = await import('../frame/lib.js');
 const { ethers } = globalThis;
-const fx = JSON.parse(readFileSync(new URL('../../test/fixtures/frame_assertion.json', import.meta.url)));
+const fx = JSON.parse(readFileSync(new URL('../../test/fixtures/frame_assertion_v2.json', import.meta.url)));
 const ok = (m) => console.log('ok  ', m);
 
 const siteHash = L.siteHashOf(fx.topOrigin);
-const challenge = L.challengeOf({ chainId: fx.chainId, address: fx.contract, siteHash, orderId: fx.orderId, amount: fx.amount, relayerFee: fx.relayerFee, deadline: fx.deadline });
+const challenge = L.challengeOf({ chainId: fx.chainId, address: fx.contract, siteHash, configVersion: fx.configVersion, orderId: fx.orderId, amount: fx.amount, relayerFee: fx.relayerFee, deadline: fx.deadline });
 assert.equal(challenge, fx.challenge);
-ok(`challenge ${challenge}`);
-assert.equal(ethers.hexlify(ethers.toUtf8Bytes('fixture-1')).padEnd(66, '0'), fx.orderId);
-ok('fixture orderId is bytes32("fixture-1") (the frame uses keccak256(order) instead)');
+ok(`challenge ${challenge} (configVersion ${fx.configVersion})`);
+assert.notEqual(L.challengeOf({ chainId: fx.chainId, address: fx.contract, siteHash, configVersion: fx.configVersion + 1, orderId: fx.orderId, amount: fx.amount, relayerFee: fx.relayerFee, deadline: fx.deadline }), fx.challenge);
+ok('another configVersion gives another challenge');
+assert.equal(L.orderIdOf('fixture-2'), fx.orderId);
+ok('fixture orderId is orderIdOf("fixture-2")');
+
+const sig65 = '0x' + 'ab'.repeat(65);
+assert.deepEqual(L.quoteOf(`1900000000.${sig65}`), { expiry: 1900000000n, sig: sig65 });
+for (const bad of ['', '1900000000', `x.${sig65}`, `1900000000.0xabc`, `1900000000.${sig65}.1`]) assert.equal(L.quoteOf(bad), null);
+ok('quoteOf parses "<expiry>.<0x signature>" and refuses anything else');
+const iq = new ethers.Interface(L.SITEBOUND_ABI);
+assert.equal(iq.getFunction('payWithQuote').selector, ethers.id('payWithQuote((bytes32,bytes,string,uint256,uint256,uint256,uint256,uint256,uint256,uint256,bytes32,uint256,uint256,uint256),uint64,bytes)').slice(0, 10));
+ok('payWithQuote selector matches its signature');
 
 assert.equal(JSON.parse(fx.clientDataJSON).challenge, L.b64url(challenge));
 ok('b64url(challenge) equals the challenge Chrome wrote into clientDataJSON');

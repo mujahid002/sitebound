@@ -51,6 +51,8 @@
       const src = new URL(FRAME);
       src.searchParams.set('amount', this.getAttribute('amount') ?? '');
       src.searchParams.set('order', this.getAttribute('order') ?? '');
+      // Optional: "<expiry>.<signature>" from the merchant's backend, for sites with a quote signer.
+      if (this.hasAttribute('quote')) src.searchParams.set('quote', this.getAttribute('quote'));
       this.frame = document.createElement('iframe');
       this.frame.title = 'Sitebound checkout';
       this.frame.allow = 'publickey-credentials-get *; publickey-credentials-create *';

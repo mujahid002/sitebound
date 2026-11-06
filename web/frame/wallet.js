@@ -31,8 +31,9 @@ export function notDeployed() {
   return /^0x0{40}$/i.test(C.address) ? 'Sitebound is not deployed yet: set address in config.js.' : null;
 }
 
-export async function sendPay(eth, input) {
+export async function sendPay(eth, input, quote = null) {
   const signer = await connect(eth);
-  const tx = await new ethers.Contract(C.address, SITEBOUND_ABI, signer).pay(input);
+  const sb = new ethers.Contract(C.address, SITEBOUND_ABI, signer);
+  const tx = quote ? await sb.payWithQuote(input, quote.expiry, quote.sig) : await sb.pay(input);
   return tx.hash;
 }

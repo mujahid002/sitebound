@@ -5,6 +5,8 @@ const abi = () => E().AbiCoder.defaultAbiCoder();
 
 export const SITEBOUND_ABI = [
   'function pay((bytes32 credentialHash,bytes authenticatorData,string clientDataJSON,uint256 typeIdx,uint256 challengeIdx,uint256 originIdx,uint256 crossOriginIdx,uint256 topOriginIdx,uint256 r,uint256 s,bytes32 orderId,uint256 amount,uint256 relayerFee,uint256 deadline) p) returns (bytes32)',
+  'function payWithQuote((bytes32 credentialHash,bytes authenticatorData,string clientDataJSON,uint256 typeIdx,uint256 challengeIdx,uint256 originIdx,uint256 crossOriginIdx,uint256 topOriginIdx,uint256 r,uint256 s,bytes32 orderId,uint256 amount,uint256 relayerFee,uint256 deadline) p,uint64 quoteExpiry,bytes quoteSig) returns (bytes32)',
+  'function configVersion(bytes32) view returns (uint256)',
   'function bind(bytes32 credentialHash,uint256 pubX,uint256 pubY,uint256 perPayCap,uint256 totalCap,uint64 expiry,address wallet,uint8 v,bytes32 r,bytes32 s)',
   'function bindNonce(address) view returns (uint256)',
   'function buyers(bytes32) view returns (address wallet,uint256 pubX,uint256 pubY,uint256 perPayCap,uint256 totalCap,uint256 spent,uint64 expiry)',
@@ -48,13 +50,22 @@ export const credentialHashOf = (rawId) => E().keccak256(bytes(rawId));
 export const paymentIdOf = (siteHash, orderId) => E().keccak256(abi().encode(['bytes32', 'bytes32'], [siteHash, orderId]));
 export const paidTopic = () => E().id('Paid(bytes32,bytes32,string,bytes32,address,address,uint256)');
 
-export const challengeOf = ({ chainId, address, siteHash, orderId, amount, relayerFee, deadline }) =>
+// SiteboundV2: the buyer also signs the site's configVersion, so a payment signed before a payout, split,
+// refund-operator, quote-signer or freeze change cannot execute after it.
+export const challengeOf = ({ chainId, address, siteHash, configVersion, orderId, amount, relayerFee, deadline }) =>
   E().keccak256(
     abi().encode(
-      ['uint256', 'address', 'bytes32', 'bytes32', 'uint256', 'uint256', 'uint256'],
-      [chainId, address, siteHash, orderId, amount, relayerFee, deadline],
+      ['uint256', 'address', 'bytes32', 'uint256', 'bytes32', 'uint256', 'uint256', 'uint256'],
+      [chainId, address, siteHash, configVersion, orderId, amount, relayerFee, deadline],
     ),
   );
+
+// A merchant quote, as the <sitebound-pay quote="..."> attribute carries it: "<expiry>.<0x signature>".
+// The merchant's backend signs it; the contract checks it, so a bad one only makes the payment fail.
+export function quoteOf(text) {
+  const m = /^(\d{1,12})\.(0x(?:[0-9a-fA-F]{2}){1,1024})$/.exec(text);
+  return m ? { expiry: BigInt(m[1]), sig: m[2] } : null;
+}
 
 export const b64url = (b) =>
   btoa(String.fromCharCode(...bytes(b))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');

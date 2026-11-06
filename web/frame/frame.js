@@ -1,4 +1,4 @@
-import { units, siteHashOf, orderIdOf, paymentIdOf, paidTopic, challengeOf, checkClientData, payInputOf, jsonOf, errText, SITEBOUND_ABI } from './lib.js';
+import { units, siteHashOf, orderIdOf, paymentIdOf, paidTopic, challengeOf, quoteOf, checkClientData, payInputOf, jsonOf, errText, SITEBOUND_ABI } from './lib.js';
 import { sendPay, notDeployed } from './wallet.js';
 
 const C = window.SITEBOUND;
@@ -6,6 +6,7 @@ const $ = (id) => document.getElementById(id);
 const q = new URLSearchParams(location.search);
 const amountText = q.get('amount') ?? '';
 const order = q.get('order') ?? '';
+const quote = q.has('quote') ? quoteOf(q.get('quote')) : null;
 const rpc = new ethers.JsonRpcProvider(C.rpcUrl, C.chainId, { staticNetwork: true });
 
 // Chrome and Safari expose ancestorOrigins; Firefox does not, so fall back to the referrer.
@@ -25,10 +26,15 @@ const problem =
   window.top === window ? 'Open this checkout from a website.'
   : !validAmount ? 'This checkout has an invalid amount.'
   : !order ? 'This checkout has no order id.'
+  : q.has('quote') && !quote ? 'This checkout has an invalid quote.'
   : !topOrigin ? 'Your browser does not say which site opened this checkout.'
   : notDeployed();
 
 let pending = null, sendWin = null, setupWin = null;
+// The site's config version is part of what the passkey signs. Read it ahead of the click, so nothing slow sits
+// between the click and the passkey prompt; read it again after each attempt in case the site changed.
+const readVersion = () => (siteHash && !problem ? new ethers.Contract(C.address, SITEBOUND_ABI, rpc).configVersion(siteHash) : Promise.resolve(null));
+let versionP = readVersion().catch(() => null);
 
 $('amount').textContent = $('line-amount').textContent = validAmount ? amountText : '—';
 $('site').textContent = site;
@@ -56,7 +62,10 @@ const fail = (text, opts) => (lock(false), say(text, { err: true, ...opts }));
 async function pay(mode) {
   const relayerFee = mode === 'relayer' ? units(C.relayerFee) : 0n;
   const deadline = BigInt(Math.floor(Date.now() / 1000) + 600);
-  const challenge = challengeOf({ chainId: C.chainId, address: C.address, siteHash, orderId, amount, relayerFee, deadline });
+  const configVersion = await versionP;
+  versionP = readVersion().catch(() => null);
+  if (configVersion == null) return fail('Could not read this site’s settings from Whitechain. Try again.');
+  const challenge = challengeOf({ chainId: C.chainId, address: C.address, siteHash, configVersion, orderId, amount, relayerFee, deadline });
   $('continue').hidden = true;
   busy('Confirm with your passkey…');
   let cred;
@@ -79,7 +88,7 @@ async function pay(mode) {
     if (mode === 'relayer') return await settle(await viaRelayer(input));
     if (window.ethereum) {
       busy('Confirm in your wallet…');
-      return await settle(await sendPay(window.ethereum, input));
+      return await settle(await sendPay(window.ethereum, input, quote));
     }
     // No wallet inside this cross-origin frame: a top-level popup on our origin sends the signed input.
     pending = input;
@@ -95,7 +104,8 @@ async function viaRelayer(input) {
   busy('Sending…');
   let res;
   try {
-    res = await fetch(`${C.relayerUrl}/pay`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: jsonOf(input) });
+    const req = quote ? { ...input, quoteExpiry: quote.expiry, quoteSig: quote.sig } : input;
+    res = await fetch(`${C.relayerUrl}/pay`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: jsonOf(req) });
   } catch {
     throw new Error('The relayer is unreachable. Try “Pay from my wallet”.');
   }
@@ -157,7 +167,7 @@ addEventListener('message', (e) => {
     say('Setup complete. Pay with your passkey.');
   }
   if (e.source !== sendWin) return;
-  if (d.type === 'sitebound:send-ready') sendWin.postMessage({ type: 'sitebound:send', input: jsonOf(pending), site, amount: amountText }, location.origin);
+  if (d.type === 'sitebound:send-ready') sendWin.postMessage({ type: 'sitebound:send', input: jsonOf(pending), quote: quote && { expiry: String(quote.expiry), sig: quote.sig }, site, amount: amountText }, location.origin);
   if (d.type === 'sitebound:sent') {
     sendWin = null;
     $('continue').hidden = true;
