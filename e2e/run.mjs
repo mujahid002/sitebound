@@ -12,7 +12,7 @@ import net from 'node:net';
 import os from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { AbiCoder, Contract, HDNodeWallet, JsonRpcProvider, Signature, concat, getBytes, id, keccak256, sha256, toUtf8Bytes } from 'ethers';
+import { AbiCoder, Contract, HDNodeWallet, JsonRpcProvider, Signature, concat, encodeBytes32String, getBytes, id, keccak256, sha256, toUtf8Bytes } from 'ethers';
 import { chromium } from 'playwright-core';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -162,7 +162,7 @@ const provider = new JsonRpcProvider(RPC, 1874, { staticNetwork: true, pollingIn
 const FIX = JSON.parse(readFileSync(join(ROOT, 'test/fixtures/frame_assertion.json'), 'utf8'));
 let sb, token, relayerUrl, config;
 const siteHash = keccak256(toUtf8Bytes(SHOP));
-const paymentId = (order) => keccak256(abi.encode(['bytes32', 'bytes32'], [siteHash, id(order)]));
+const paymentId = (order) => keccak256(abi.encode(['bytes32', 'bytes32'], [siteHash, encodeBytes32String(order)]));
 const bal = async (a) => token.balanceOf(a);
 
 async function main() {
@@ -332,9 +332,8 @@ async function main() {
 
   await step('shop refunds A123 in the dashboard', async () => {
     await dash.goto(`${FRAME}/dashboard/index.html?site=${encodeURIComponent(SHOP)}`);
-    // Order ids are keccak256(text) (frame/lib.js orderIdOf), so the dashboard shows the short hash, not "A123".
-    const hex = id('A123');
-    await dash.locator(`button[aria-label="Refund order ${hex.slice(0, 6)}…${hex.slice(-4)}"], button[aria-label="Refund order A123"]`).click({ timeout: 20_000 });
+    // Short printable orders are stored as text (frame/lib.js orderIdOf), so the dashboard shows "A123".
+    await dash.locator('button[aria-label="Refund order A123"]').click({ timeout: 20_000 });
     await dash.locator('dialog form button[type="submit"]').click({ timeout: 10_000 });
     await until(dash, 'text=Refund sent', '.notice.error', 60_000);
     const pm = await sb.payments(paymentId('A123'));

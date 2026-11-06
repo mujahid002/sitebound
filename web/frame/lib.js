@@ -42,7 +42,8 @@ export const usdt = (v) => E().formatUnits(v, 6).replace(/\.0$/, '');
 export const bytes = (b) => (b instanceof ArrayBuffer ? new Uint8Array(b) : E().getBytes(b));
 
 export const siteHashOf = (origin) => E().keccak256(E().toUtf8Bytes(origin));
-export const orderIdOf = (order) => E().id(order);
+// Short printable-ASCII orders are stored as text so the dashboard can show them; longer ones are hashed.
+export const orderIdOf = (order) => (/^[\x20-\x7e]{1,31}$/.test(order) ? E().encodeBytes32String(order) : E().id(order));
 export const credentialHashOf = (rawId) => E().keccak256(bytes(rawId));
 export const paymentIdOf = (siteHash, orderId) => E().keccak256(abi().encode(['bytes32', 'bytes32'], [siteHash, orderId]));
 export const paidTopic = () => E().id('Paid(bytes32,bytes32,string,bytes32,address,address,uint256)');

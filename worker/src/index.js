@@ -71,7 +71,7 @@ export async function dnsPayout(site) {
 
 function chain(env) {
   const chainId = Number(env.CHAIN_ID);
-  const provider = new JsonRpcProvider(env.RPC_URL, chainId, { staticNetwork: true });
+  const provider = new JsonRpcProvider(env.RPC_URL, chainId, { staticNetwork: true, cacheTimeout: -1 });
   const wallet = new Wallet(env.RELAYER_KEY, provider);
   return {
     chainId,
