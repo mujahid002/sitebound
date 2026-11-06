@@ -33,7 +33,10 @@ function check(name, cond, detail) {
 
 function kv() {
   const m = new Map();
-  return { m, get: async (k) => m.get(k) ?? null, put: async (k, v) => void m.set(k, v) };
+  return {
+    m, get: async (k) => m.get(k) ?? null, put: async (k, v) => void m.set(k, v), delete: async (k) => void m.delete(k),
+    list: async ({ prefix = "" } = {}) => ({ keys: [...m.keys()].filter((k) => k.startsWith(prefix)).map((name) => ({ name })), list_complete: true }),
+  };
 }
 
 // DoH stub: only cloudflare-dns.com is intercepted; ethers in Node does not use fetch.
@@ -48,10 +51,11 @@ globalThis.fetch = async (url, init) => {
   return new Response(JSON.stringify(body), { headers: { "content-type": "application/dns-json" } });
 };
 
-async function call(env, path, body, { method = "POST", origin = "http://localhost:8002" } = {}) {
+async function call(env, path, body, { method = "POST", origin = "http://localhost:8002", auth } = {}) {
   const headers = { "content-type": "application/json" };
   if (origin) headers.origin = origin;
-  const res = await handle(new Request(`http://relayer${path}`, { method, headers, body: method === "POST" ? JSON.stringify(body) : undefined }), env);
+  if (auth) headers.authorization = auth;
+  const res = await handle(new Request(`http://relayer${path}`, { method, headers, body: ["POST", "DELETE"].includes(method) ? JSON.stringify(body) : undefined }), env);
   const text = await res.text();
   return { status: res.status, headers: res.headers, text, json: text ? JSON.parse(text) : null };
 }
@@ -216,6 +220,87 @@ async function run(stop) {
   check("valid entry after a malformed one still works", r.status === 200 && r.json.payout === DEMO && dohCalls === 1, { json: r.json, dohCalls });
   globalThis.fetch = stubFetch;
 
+  console.log("/admin/sites");
+  const TOKEN = "admin-test-token-0123456789abcdef0123456789abcdef";
+  const ADDED = newShop.address;
+  const seen = []; // every admin response body and console line, checked for the token at the end
+  const logOrig = console.log;
+  console.log = (...a) => { seen.push(a.join(" ")); logOrig(...a); };
+  const adm = async (e, method, body, auth = `Bearer ${TOKEN}`, origin = null) => {
+    const res = await call(e, "/admin/sites", body, { method, auth, origin });
+    seen.push(res.text);
+    return res;
+  };
+  for (const m of ["GET", "POST", "DELETE"]) {
+    r = await adm(env(), m, { site: "https://added.example", payout: ADDED });
+    check(`admin: ${m} 404 when ADMIN_TOKEN is unset`, r.status === 404 && r.json.error === "not found", r.json);
+  }
+  const aEnv = env({ ADMIN_TOKEN: TOKEN, DEMO_SITES: `https://demo.example=${DEMO}` });
+  for (const [label, auth] of [["no header", null], ["wrong token", "Bearer nope"], ["token without Bearer", TOKEN],
+    ["Basic scheme", `Basic ${TOKEN}`], ["token with a suffix", `Bearer ${TOKEN}x`], ["token prefix", `Bearer ${TOKEN.slice(0, -1)}`]]) {
+    r = await adm(aEnv, "POST", { site: "https://added.example", payout: ADDED }, auth);
+    check(`admin: ${label} -> 401`, r.status === 401 && r.json.error === "unauthorized", r.json);
+  }
+  r = await adm(aEnv, "PUT", null, null);
+  check("admin: auth is checked before the method", r.status === 401, r.json);
+  check("admin: nothing stored by rejected calls", aEnv.CAPS.m.size === 0, [...aEnv.CAPS.m.keys()]);
+  r = await adm(aEnv, "PUT", null);
+  check("admin: other method -> 405", r.status === 405, r.json);
+  r = await adm(env({ ADMIN_TOKEN: TOKEN, CAPS: undefined }), "GET");
+  check("admin: no KV binding -> 503", r.status === 503, r.json);
+
+  TXT["added.example"] = [`"sitebound=${shop.address}"`];
+  dohCalls = 0;
+  globalThis.fetch = async (url, init) => {
+    if (new URL(typeof url === "string" ? url : url.url).hostname === "cloudflare-dns.com") dohCalls++;
+    return stubFetch(url, init);
+  };
+  r = await call(aEnv, "/dns/check", { site: "https://added.example" });
+  check("admin: before adding, the site uses DNS", r.json.payout === shop.address && dohCalls === 1, { json: r.json, dohCalls });
+  r = await adm(aEnv, "POST", { site: "https://Added.example/", payout: ADDED.toLowerCase() });
+  check("admin: POST lowercases the host, drops the trailing slash, checksums the payout",
+    r.status === 200 && r.json.site === "https://added.example" && r.json.payout === ADDED && aEnv.CAPS.m.get("site:https://added.example") === ADDED, r.json);
+  r = await call(aEnv, "/dns/check", { site: "https://added.example" });
+  check("admin: KV beats the DNS record, with no DNS lookup", r.json.payout === ADDED && dohCalls === 1, { json: r.json, dohCalls });
+  r = await call(aEnv, "/dns/check", { site: "https://Added.example/" });
+  check("admin: /dns/check still refuses a non-canonical site", r.status === 400, r.json);
+  aEnv.CAPS.m.set("site:https://demo.example", shop.address);
+  r = await call(aEnv, "/dns/check", { site: "https://demo.example" });
+  check("admin: DEMO_SITES beats KV", r.json.payout === DEMO, r.json);
+  aEnv.CAPS.m.delete("site:https://demo.example");
+  r = await adm(aEnv, "POST", { site: "https://demo.example", payout: ADDED });
+  check("admin: a DEMO_SITES site cannot be added -> 409", r.status === 409, r.json);
+  for (const [label, body] of [
+    ["http", { site: "http://x.example", payout: ADDED }], ["a port", { site: "https://x.example:8443", payout: ADDED }],
+    ["a path", { site: "https://x.example/shop", payout: ADDED }], ["a query", { site: "https://x.example/?a=1", payout: ADDED }],
+    ["credentials", { site: "https://u@x.example", payout: ADDED }], ["an IP", { site: "https://1.2.3.4", payout: ADDED }],
+    ["no site", { payout: ADDED }], ["a bad payout", { site: "https://x.example", payout: "0x1234" }],
+    ["no payout", { site: "https://x.example" }], ["the zero payout", { site: "https://x.example", payout: "0x" + "0".repeat(40) }],
+  ]) {
+    r = await adm(aEnv, "POST", body);
+    check(`admin: POST with ${label} -> 400`, r.status === 400, r.json);
+  }
+  r = await adm(aEnv, "POST", { site: "https://x.example:443", payout: ADDED });
+  check("admin: the default port :443 is the plain origin", r.status === 200 && r.json.site === "https://x.example", r.json);
+  r = await adm(aEnv, "GET");
+  check("admin: GET lists the added sites", r.status === 200 && JSON.stringify(r.json.sites) ===
+    JSON.stringify([{ site: "https://added.example", payout: ADDED }, { site: "https://x.example", payout: ADDED }]), r.json);
+  r = await adm(aEnv, "DELETE", { site: "https://x.example" });
+  check("admin: DELETE removes the entry", r.status === 200 && r.json.removed && !aEnv.CAPS.m.has("site:https://x.example"), r.json);
+
+  const addedHash = keccak256(toUtf8Bytes("https://added.example"));
+  r = await call(aEnv, "/register", { site: "https://added.example", payout: shop.address });
+  check("admin: register with the DNS payout is refused once KV names another", r.status === 400 && /does not match/.test(r.json.error), r.json);
+  r = await call(aEnv, "/register", { site: "https://added.example", payout: ADDED });
+  check("admin: register an added site through the relayer's attestation", r.status === 200 && /^0x[0-9a-f]{64}$/.test(r.json.txHash), r.json);
+  check("admin: added site's payout on chain", (await sb.sites(addedHash)).payout === ADDED);
+  r = await adm(aEnv, "DELETE", { site: "https://added.example" });
+  r = await call(aEnv, "/dns/check", { site: "https://added.example" });
+  check("admin: after DELETE the DNS path works again", r.json.payout === shop.address && dohCalls === 2, { json: r.json, dohCalls });
+  globalThis.fetch = stubFetch;
+  console.log = logOrig;
+  check("admin: the token is in no response and no log line", seen.length > 20 && !seen.some((t) => t.includes(TOKEN.slice(6))), seen.length);
+
   // The fixture shop is http://127.0.0.1:8001, which the relayer refuses to attest; the test signs it as the attestor directly.
   const fxHash = keccak256(toUtf8Bytes(FIX.topOrigin));
   const deadline = Math.floor(Date.now() / 1000) + 3600;
@@ -302,7 +387,8 @@ async function run(stop) {
 
   if (process.env.SKIP_WRANGLER) return;
   console.log("wrangler dev (workerd + bundled ethers)");
-  const vars = { RPC_URL: RPC, RELAYER_KEY: relayer.privateKey, SITEBOUND_ADDRESS: SB, TOKEN_ADDRESS: tokenAddr, MIN_FEE: "0" };
+  const WR_TOKEN = "workerd-admin-token-" + Date.now();
+  const vars = { RPC_URL: RPC, RELAYER_KEY: relayer.privateKey, SITEBOUND_ADDRESS: SB, TOKEN_ADDRESS: tokenAddr, MIN_FEE: "0", ADMIN_TOKEN: WR_TOKEN };
   const wr = spawn("npx", ["wrangler", "dev", "--port", "8799", "--ip", "127.0.0.1", ...Object.entries(vars).flatMap(([k, v]) => ["--var", `${k}:${v}`])],
     { cwd: join(ROOT, "worker"), stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, WRANGLER_SEND_METRICS: "false" }, detached: true });
   stop.push(() => { try { process.kill(-wr.pid); } catch {} });
@@ -318,6 +404,17 @@ async function run(stop) {
   const post = async (path, body) => (await realFetch(`http://127.0.0.1:8799${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) })).json();
   check("workerd: /pay simulation reason", (await post("/pay", tampered)).error === "bad challenge");
   check("workerd: /pay replay reason", (await post("/pay", input)).error === "order used");
+  // Admin API under workerd: crypto.subtle and the local KV (persisted in .wrangler/state, so clean up after).
+  const admin = async (method, body, token = WR_TOKEN) => {
+    const res = await realFetch("http://127.0.0.1:8799/admin/sites", { method, headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: body && JSON.stringify(body) });
+    return { status: res.status, json: await res.json() };
+  };
+  const wsite = "https://workerd-admin.example";
+  check("workerd: admin wrong token -> 401", (await admin("POST", { site: wsite, payout: newShop.address }, "nope")).status === 401);
+  check("workerd: admin POST", (await admin("POST", { site: wsite, payout: newShop.address })).json.payout === newShop.address);
+  check("workerd: admin GET lists it", (await admin("GET")).json.sites?.some((x) => x.site === wsite));
+  check("workerd: /dns/check uses the added payout", (await post("/dns/check", { site: wsite })).payout === newShop.address);
+  check("workerd: admin DELETE", (await admin("DELETE", { site: wsite })).json.removed === true);
 }
 
 main().catch((e) => {

@@ -29,6 +29,7 @@ const ATTEST_TYPES = {
 const PAY_FIELDS = ["credentialHash", "authenticatorData", "clientDataJSON", "typeIdx", "challengeIdx", "originIdx",
   "crossOriginIdx", "topOriginIdx", "r", "s", "orderId", "amount", "relayerFee", "deadline"];
 const MAX_BODY = 8192;
+const SITE_KEY = "site:"; // KV: site:<origin> -> payout, written by the admin API
 const memCaps = new Map();
 
 class HttpError extends Error {
@@ -137,13 +138,21 @@ async function takeDaily(env, key, limit) {
 // ------------------------------------------------------------------ endpoints
 
 // Demo sites on hosts whose DNS we don't control (pages.dev): DEMO_SITES="<origin>=<payout>,..." pins the payout.
-// Nothing else bypasses the TXT check, and a pinned site can only register its pinned payout.
-async function payoutFor(site, env) {
+function demoPayout(site, env) {
   for (const pair of (env.DEMO_SITES || "").split(",")) {
     const [origin, payout] = pair.trim().split("=");
     if (origin === site && payout) return getAddress(payout);
   }
-  return dnsPayout(site);
+  return null;
+}
+
+// The payout a site may register: DEMO_SITES first, then a site added through the admin API (KV), then the DNS TXT
+// record. Only these two lists bypass the TXT check, and a listed site can only register its listed payout.
+async function payoutFor(site, env) {
+  const pinned = demoPayout(site, env);
+  if (pinned) return pinned;
+  const added = env.CAPS && (await env.CAPS.get(SITE_KEY + site));
+  return added ? getAddress(added) : dnsPayout(site);
 }
 
 async function dnsCheck(body, env) {
@@ -228,6 +237,50 @@ function topOriginHash(json, idx) {
   return keccak256(toUtf8Bytes(json.slice(from, json.indexOf('"', from))));
 }
 
+// ------------------------------------------------------------------ admin (demo only)
+
+// Adds a site without DNS. Off unless the ADMIN_TOKEN secret is set; then every call needs `Authorization: Bearer <it>`.
+// Browsers can't call it cross-origin: CORS allows neither the Authorization header nor DELETE.
+async function admin(req, env) {
+  if (!env.ADMIN_TOKEN) bad("not found", 404);
+  if (!(await authorized(req, env.ADMIN_TOKEN))) bad("unauthorized", 401);
+  const kv = env.CAPS || bad("the admin API needs the CAPS KV binding", 503);
+  if (req.method === "GET") {
+    const { keys } = await kv.list({ prefix: SITE_KEY });
+    return { ok: true, sites: await Promise.all(keys.map(async ({ name }) => ({ site: name.slice(SITE_KEY.length), payout: await kv.get(name) }))) };
+  }
+  if (req.method !== "POST" && req.method !== "DELETE") bad("use GET, POST or DELETE", 405);
+  const body = await readBody(req);
+  const site = adminSite(body.site);
+  if (req.method === "DELETE") {
+    await kv.delete(SITE_KEY + site);
+    return { ok: true, site, removed: true };
+  }
+  if (demoPayout(site, env)) bad("this site is pinned in DEMO_SITES", 409);
+  const payout = getAddress(body.payout ?? bad("payout missing"));
+  if (payout === ZeroAddress) bad("payout must not be the zero address");
+  await kv.put(SITE_KEY + site, payout);
+  return { ok: true, site, payout };
+}
+
+/// Constant-time: compares SHA-256 digests, so neither the length nor the first differing byte shows in the timing.
+async function authorized(req, token) {
+  const enc = new TextEncoder();
+  const [a, b] = await Promise.all([req.headers.get("authorization") || "", `Bearer ${token}`]
+    .map(async (v) => new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(v)))));
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
+
+/// The admin API accepts "https://Shop.example/" and stores "https://shop.example", the origin Chrome reports.
+function adminSite(site) {
+  let u;
+  try { u = new URL(String(site)); } catch { bad("site must be an https origin like https://shop.com"); }
+  if (u.username || u.password || u.pathname !== "/" || u.search || u.hash) bad("site must be an origin, with no path");
+  return canonicalSite(u.origin);
+}
+
 // ------------------------------------------------------------------ http
 
 const ROUTES = { "/dns/check": dnsCheck, "/register": register, "/setup": setup, "/pay": pay };
@@ -243,6 +296,12 @@ function cors(req, env) {
     h["access-control-max-age"] = "86400";
   }
   return { h, ok: !origin || "access-control-allow-origin" in h };
+}
+
+async function readBody(req) {
+  const text = await req.text();
+  if (text.length > MAX_BODY) bad("body too large", 413);
+  try { return JSON.parse(text) || {}; } catch { bad("invalid JSON"); }
 }
 
 function redact(msg, env, urls = true) {
@@ -267,14 +326,11 @@ export async function handle(req, env) {
       try { out.gasBalanceWbt = formatEther(await chain(env).wallet.provider.getBalance(out.relayer)); } catch { out.gasBalanceWbt = null; }
       return json(out);
     }
+    if (path === "/admin/sites") return json(await admin(req, env));
     const route = ROUTES[path];
     if (!route) return json({ error: "not found" }, 404);
     if (req.method !== "POST") return json({ error: "use POST" }, 405);
-    const text = await req.text();
-    if (text.length > MAX_BODY) bad("body too large", 413);
-    let body;
-    try { body = JSON.parse(text); } catch { bad("invalid JSON"); }
-    return json(await route(body || {}, env));
+    return json(await route(await readBody(req), env));
   } catch (e) {
     if (e instanceof HttpError) return json({ error: redact(e.message, env, false) }, e.status);
     if (e?.code === "INVALID_ARGUMENT" || e instanceof SyntaxError) return json({ error: redact(e.shortMessage || e.message, env) }, 400);
