@@ -1,10 +1,10 @@
-// Website onboarding: wallet -> DNS proof -> register -> snippet.
+// Website onboarding: payout wallet -> DNS proof -> register -> snippet.
 import { render } from 'preact';
 import { useState, useEffect, useRef, useCallback } from 'preact/hooks';
 import { html, Brand, Icon, Spinner, Notice, CopyButton, TxLink, AddrLink, useTick, Empty } from './ui.js';
 import {
   ABI, loadConfig, parseSite, contractState, readSite, secondsLeft, useWallet, errText,
-  short, sameAddr, duration, durationWords, readText,
+  short, sameAddr, duration, durationWords, readText, newLocalWallet, saveLocalWallet, backupText,
 } from './lib.js';
 
 const { ethers } = window;
@@ -52,7 +52,7 @@ function dnsFix(detail, name, value) {
 }
 function registerFix(message, name, value) {
   const low = (message || '').toLowerCase();
-  if (low.includes('does not match')) return `The DNS record names a different wallet than the one you connected. Set the TXT value at ${name} to ${value}, wait a few minutes, then press Register site again.`;
+  if (low.includes('does not match')) return `The DNS record names a different wallet than the payout wallet chosen here. Set the TXT value at ${name} to ${value}, wait a few minutes, then press Register site again.`;
   if (low.includes('no txt record') || low.includes('no sitebound=')) return recordFix(name, value);
   if (low.includes('daily limit')) return 'Sitebound has reached its registration limit for today. Try again tomorrow.';
   if (low.includes('too long')) return 'Sitebound did not answer in time. Wait a minute, reload this page to see whether the site registered, then press Register site again if it did not.';
@@ -195,13 +195,13 @@ export function Shop({ cfg, site, onChangeSite, onInfo, snippetExtra }) {
     </div>
 
     ${chain.status === 'none' && html`<${Notice} kind="warn" title="The Sitebound contract is not deployed yet">
-      You can connect a wallet and check your DNS now. Registering opens once the contract is live.<//>`}
+      You can set up your wallet and check your DNS now. Registering opens once the contract is live.<//>`}
     ${chain.status === 'error' && html`<${Notice} kind="error" title="Could not read the chain">${chain.message}
       <div class="row"><button class="link-btn" onClick=${refresh}>Try again</button></div><//>`}
     ${info?.registered && html`<${SiteStatus} cfg=${cfg} site=${site} info=${info} wallet=${wallet} refresh=${refresh} />`}
 
     <ol class="stepper" aria-label="Setup steps">
-      <${Step} n=${1} state=${state(1)} title="Connect your wallet"
+      <${Step} n=${1} state=${state(1)} title="Your payout wallet"
         summary=${walletDone && html`<span class="mono">${short(account)}</span> on ${cfg.chainName}`}
         hint="This wallet receives your payments.">
         <${WalletStep} cfg=${cfg} wallet=${wallet} />
@@ -241,9 +241,53 @@ function Step({ n, state, title, summary, hint, children }) {
 // ---------------------------------------------------------------- 1 wallet
 
 function WalletStep({ cfg, wallet }) {
+  const [own, setOwn] = useState(false);
+  const [fresh, setFresh] = useState(null);   // a created wallet whose recovery phrase is still on screen
+  const [saved, setSaved] = useState(false);  // "I saved my recovery phrase"
+  const [kept, setKept] = useState(true);     // false when the browser refused to store the wallet
+  if (own) {
+    return html`<${OwnWallet} cfg=${cfg} wallet=${wallet} onBack=${() => setOwn(false)} />`;
+  }
+  if (!fresh) {
+    return html`
+      <p>No extension and no gas needed. The wallet is created here and stays in this browser.</p>
+      <div class="row">
+        <button class="btn" onClick=${() => setFresh(newLocalWallet())}>Create my wallet</button>
+      </div>
+      <p class="hint">Already use a wallet such as MetaMask or Rabby? <button type="button" class="link-btn inline-link" onClick=${() => setOwn(true)}>I already have a wallet</button></p>`;
+  }
+  const words = fresh.mnemonic.phrase.split(' ');
+  const download = () => {
+    const url = URL.createObjectURL(new Blob([backupText(fresh, cfg)], { type: 'text/plain' }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: 'sitebound-wallet-backup.txt' });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const keep = () => { setKept(saveLocalWallet(fresh)); };
+  return html`
+    <dl class="records">
+      <div class="kv"><div class="kv-top"><dt class="kv-label">Your wallet address</dt><${CopyButton} text=${fresh.address} what="wallet address" /></div><dd class="kv-val">${fresh.address}</dd></div>
+      <div class="kv"><div class="kv-top"><dt class="kv-label">Recovery phrase</dt><${CopyButton} text=${fresh.mnemonic.phrase} label="Copy phrase" what="recovery phrase" /></div>
+        <dd><ol class="phrase" aria-label="Recovery phrase, 12 words">${words.map((w) => html`<li><span class="mono">${w}</span></li>`)}</ol></dd></div>
+    </dl>
+    <p class="hint">This is shown once. Anyone with these words controls the money, and Sitebound cannot recover them. They stay in this browser and are never sent anywhere.</p>
+    <div class="row">
+      <button type="button" class="btn ghost sm" onClick=${download}>Download backup (.txt)</button>
+    </div>
+    <label class="check"><input type="checkbox" checked=${saved} onChange=${(e) => setSaved(e.target.checked)} />
+      <span>I saved my recovery phrase. Sitebound cannot recover it.</span></label>
+    <div class="row">
+      <button class="btn" onClick=${keep} disabled=${!saved}>Continue</button>
+    </div>
+    ${!kept && html`<p class="hint err" role="alert">This browser would not store the wallet. It works until you close the page, so keep the phrase.</p>`}`;
+}
+
+// The wallet the owner already has, through the browser's own wallet extension.
+function OwnWallet({ cfg, wallet, onBack }) {
   if (!wallet.hasWallet) {
     return html`<${Notice} kind="warn" title="No wallet found in this browser">
-      Install a browser wallet such as MetaMask or Rabby, or open this page inside your wallet app, then reload.<//>`;
+      Install a browser wallet such as MetaMask or Rabby, or open this page inside your wallet app, then reload.
+      <div class="row"><button type="button" class="link-btn" onClick=${onBack}>Create a wallet instead</button></div><//>`;
   }
   const wrongChain = !!wallet.account && !wallet.onChain;
   return html`
@@ -255,7 +299,8 @@ function WalletStep({ cfg, wallet }) {
       </button>
     </div>
     ${wallet.error && html`<p class="hint err" role="alert">${wallet.error}</p>`}
-    <p class="hint">Adds ${cfg.chainName} (chain ${cfg.chainId}, gas token WBT) to your wallet if it is missing.</p>`;
+    <p class="hint">Adds ${cfg.chainName} (chain ${cfg.chainId}, gas token WBT) to your wallet if it is missing.
+      <button type="button" class="link-btn inline-link" onClick=${onBack}>Create a wallet instead</button></p>`;
 }
 
 // ---------------------------------------------------------------- 2 dns
@@ -289,8 +334,8 @@ function DnsStep({ cfg, site, account, dns, dnsOk, nextAt, onCheck, onStop, atte
       ${dns.state === 'unreachable' && html`<${Notice} kind="error" title="We could not reach the Sitebound server">
         Check your internet connection, then press Check now. Nothing was changed.<//>`}
       ${found && html`<${Notice} kind="error" title="The record names a different wallet">
-        <p>Your DNS says <span class="mono">${short(dns.payout)}</span> but you connected <span class="mono">${short(account)}</span>.
-        Change the record value to <span class="mono">${value}</span>, or switch to the wallet the record names.</p><//>`}
+        <p>Your DNS says <span class="mono">${short(dns.payout)}</span> but your payout wallet here is <span class="mono">${short(account)}</span>.
+        Change the record value to <span class="mono">${value}</span>, or use the wallet the record names.</p><//>`}
       ${waiting && !checking && html`<p class="hint">Checking again in ${wait} s (try ${attempts} of ${POLL_MAX}).</p>`}
       ${!waiting && !checking && attempts >= POLL_MAX && !dnsOk && html`<p class="hint">We stopped checking automatically. Press Check now when the record is in place.</p>`}
     </div>`;
@@ -396,8 +441,9 @@ function SiteStatus({ cfg, site, info, wallet, refresh }) {
             ${working ? html`<${Spinner} />` : null}${working ? 'Working…' : info.frozen ? 'Unfreeze site' : 'Freeze site'}
           </button>
           ${!info.frozen && html`<span class="hint">Stops all payments and cancels any pending change.</span>`}
-        </div>`
-      : html`<p class="hint">${wallet.account ? 'Switch to the payout wallet to freeze or unfreeze.' : 'Connect the payout wallet to freeze or unfreeze.'}</p>`}
+        </div>
+        ${wallet.kind === 'local' && html`<p class="hint">Needs a little WBT for gas. Send some to <span class="mono">${short(wallet.account)}</span> first.</p>`}`
+      : html`<p class="hint">${wallet.account ? 'Switch to the payout wallet to freeze or unfreeze.' : 'Open this page in the browser where you made the wallet, or connect the payout wallet, to freeze or unfreeze.'}</p>`}
     <div aria-live="polite">
       ${tx.state === 'wait' && html`<p class="hint">Waiting for confirmation: <${TxLink} cfg=${cfg} hash=${tx.hash} /></p>`}
       ${tx.state === 'done' && html`<p class="hint">Done: <${TxLink} cfg=${cfg} hash=${tx.hash} /></p>`}

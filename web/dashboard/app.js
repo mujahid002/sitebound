@@ -435,6 +435,7 @@ export function RefundDialog({ cfg, row, info, wallet, isPayout, onClose, onDone
             <div class="row"><button type="button" class="btn sm" onClick=${wallet.connect} disabled=${wallet.busy}>${wallet.account ? 'Switch network' : 'Connect wallet'}</button></div><//>`
         : !isPayout && html`<${Notice} kind="warn" title="This is not the payout wallet">Connected as <span class="mono">${short(wallet.account)}</span>. Switch to <span class="mono">${short(info.payout)}</span> in your wallet to refund.<//>`}
       ${wallet.error && html`<p class="hint err" role="alert">${wallet.error}</p>`}
+      ${wallet.kind === 'local' && walletOk && html`<p class="hint">Needs a little WBT for gas. Send some to <span class="mono">${short(wallet.account)}</span> first.</p>`}
 
       <div aria-live="polite" class="live">
         ${step.approveHash && html`<p class="hint">Approval: <${TxLink} cfg=${cfg} hash=${step.approveHash} /></p>`}
@@ -450,7 +451,7 @@ export function RefundDialog({ cfg, row, info, wallet, isPayout, onClose, onDone
             <button type="submit" class="btn" disabled=${!walletOk || !!bad || working}>
               ${working ? html`<${Spinner} />` : null}${working ? label : 'Refund'}</button>`}
       </div>
-      <p class="hint">Two wallet prompts if the USDT allowance is short: approve, then refund.</p>
+      ${wallet.kind !== 'local' && html`<p class="hint">Two wallet prompts if the USDT allowance is short: approve, then refund.</p>`}
     </form>
   </dialog>`;
 }

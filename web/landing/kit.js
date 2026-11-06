@@ -46,7 +46,7 @@ function Kit({ origin, config, onChange }) {
 // Shop decides; CSS hides Shop's own header and the steps that are not current.
 const STEPS = [
   { label: 'Website', title: 'Your website', why: 'This is the site that will take payments.' },
-  { label: 'Wallet', title: 'Connect your wallet', why: 'Buyers send USDT straight to this wallet. Sitebound never holds the money.' },
+  { label: 'Wallet', title: 'Your payout wallet', why: 'Sitebound creates it for you in this browser. Buyers send USDT straight to it, and Sitebound never holds the money.' },
   { label: 'DNS record', title: 'Add one DNS record', why: 'Only the domain owner can add this record, so only you can choose where the money goes.' },
   { label: 'Register', title: 'Register your site', why: 'This records your wallet on chain against this domain, so every payment from it can find you.' },
   { label: 'Add to site', title: 'Add the button to your site', why: 'The page never holds an address, so a hacked page cannot redirect a payment.' },
@@ -136,7 +136,7 @@ function Wizard({ site, info, onChange, children }) {
               <h2 class="wiz-h" tabindex="-1" ref=${head}>${info.pending ? 'Your payout change is scheduled' : 'Your site is live'}</h2>
               <p class="wiz-why">${info.pending
                 ? html`Payments for <strong>${site.host}</strong> keep going to <strong class="mono">${short(payout)}</strong> until the change goes live. The details are below.`
-                : html`Payments for <strong>${site.host}</strong> go to <strong class="mono">${short(payout)}</strong>.`}${' '}Add the button below to start taking them.</p>
+                : html`USDT from buyers arrives at <strong class="mono">${short(payout)}</strong>.`}${' '}Add the button below to start taking payments.</p>
               <${DoneLinks} site=${site} />`
           : html`<p class="wiz-count">Step ${at + 1} of 5</p>
               <h2 class="wiz-h" tabindex="-1" ref=${head}>${copy.title}</h2>

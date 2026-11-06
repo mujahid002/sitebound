@@ -129,7 +129,7 @@ export async function ensureChain(cfg) {
 
 const norm = (a) => (a ? ethers.getAddress(a) : null);
 
-export function useWallet(cfg) {
+function useInjectedWallet(cfg) {
   const eth = window.ethereum;
   const [account, setAccount] = useState(null);
   const [chainId, setChainId] = useState(null);
@@ -171,7 +171,68 @@ export function useWallet(cfg) {
     return new ethers.BrowserProvider(eth, 'any').getSigner();
   }, [cfg]);
 
-  return { hasWallet: !!eth, account, chainId, onChain: chainId === cfg.chainId, busy, error, connect, getSigner };
+  return { kind: 'injected', hasWallet: !!eth, account, chainId, onChain: chainId === cfg.chainId, busy, error, connect, getSigner };
+}
+
+// A payout wallet Sitebound creates for an owner who has none. The key stays in this browser: the recovery phrase
+// is stored in localStorage and goes nowhere else. Every hook instance (setup, dashboard chip, refund dialog) shares
+// it through this tiny store, so creating it in one place shows up in the rest.
+const LOCAL_KEY = 'sitebound.payoutWallet.v1';
+const local = { wallet: null, loaded: false, subs: new Set() };
+
+function loadLocal() {
+  if (local.loaded) return local.wallet;
+  local.loaded = true;
+  try {
+    const o = JSON.parse(localStorage.getItem(LOCAL_KEY) || 'null');
+    const w = o?.phrase ? ethers.Wallet.fromPhrase(o.phrase) : null;
+    if (w && w.address === o.address) local.wallet = w;
+  } catch { /* no storage, or a stored value that is not ours */ }
+  return local.wallet;
+}
+
+export const newLocalWallet = () => ethers.Wallet.createRandom();
+
+// Keeps the wallet for the next visit. Returns false when the browser would not store it (the wallet still
+// works until the page closes, so the owner has to rely on the recovery phrase).
+export function saveLocalWallet(w) {
+  let stored = true;
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ v: 1, address: w.address, phrase: w.mnemonic.phrase })); } catch { stored = false; }
+  local.loaded = true;
+  local.wallet = w;
+  local.subs.forEach((f) => f());
+  return stored;
+}
+
+export function backupText(w, cfg) {
+  return ['Sitebound payout wallet backup', '',
+    `Address: ${w.address}`, `Network: ${cfg.chainName}`, '',
+    'Recovery phrase (12 words, in this order):', w.mnemonic.phrase, '',
+    'Anyone who has this phrase controls the money in this wallet. Keep it private.',
+    'Sitebound cannot recover it. Import it into any Ethereum wallet app to use the wallet.', ''].join('\n');
+}
+
+function useLocalWallet(cfg) {
+  const [w, setW] = useState(loadLocal);
+  useEffect(() => {
+    const f = () => setW(local.wallet);
+    local.subs.add(f);
+    f();
+    return () => local.subs.delete(f);
+  }, []);
+  if (!w) return null;
+  // Same shape as the injected wallet. It signs with its own key, so there is no prompt, but it has to hold WBT for gas.
+  return {
+    kind: 'local', hasWallet: true, account: w.address, chainId: cfg.chainId, onChain: true, busy: false, error: '',
+    connect: async () => {},
+    getSigner: async () => w.connect(rpc(cfg)),
+  };
+}
+
+// The wallet the page works with: the one Sitebound created if there is one, else the browser's own wallet.
+export function useWallet(cfg) {
+  const injected = useInjectedWallet(cfg);
+  return useLocalWallet(cfg) || injected;
 }
 
 // ---------------------------------------------------------------- text helpers
@@ -181,7 +242,7 @@ const REVERTS = [
   ['over refund', 'That is more than is left to refund on this payment.'],
   ['frozen', 'The site is frozen. The payout wallet has to unfreeze it first.'],
   ['no such payment', 'The contract has no payment with that id.'],
-  ['insufficient funds', 'Not enough WBT in this wallet to pay for gas.'],
+  ['insufficient funds', 'Not enough WBT in this wallet to pay for gas. Send a little WBT to it, then try again.'],
   ['exceeds balance', 'Not enough USDT in this wallet.'],
 ];
 // Error text safe to show: no URLs (a provider error can carry a keyed RPC URL), short.

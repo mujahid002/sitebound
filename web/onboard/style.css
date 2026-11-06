@@ -67,3 +67,13 @@
   @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .step-body, .status, .notice { animation: rise 0.45s var(--ease) both; }
 }
+
+/* created payout wallet: recovery phrase, confirmation */
+.phrase { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 14px; padding: 0; list-style: none; counter-reset: w; }
+.phrase li { counter-increment: w; display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.phrase li::before { content: counter(w); min-width: 1.4em; font-size: 0.75rem; color: var(--muted); text-align: right; }
+.phrase .mono { overflow-wrap: anywhere; user-select: all; }
+.check { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.check input { flex: none; width: 20px; height: 20px; margin-top: 2px; accent-color: var(--accent, currentColor); }
+.inline-link { padding: 0 2px; }
+@media (max-width: 420px) { .phrase { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
