@@ -21,13 +21,13 @@
 
 /* Hero pill */
 .wc-pill {
-  display: inline-flex; align-items: center; gap: 9px; margin-bottom: var(--s3); padding: 6px 14px 6px 8px;
+  display: inline-flex; align-items: center; gap: 9px; margin-bottom: var(--s3); padding: 7px 14px;
   border: 1px solid var(--line-2); border-radius: 999px; background: var(--field); box-shadow: 0 1px 2px var(--sh1);
   color: var(--ink); font-size: var(--fs-sm); font-weight: 550; letter-spacing: -0.005em; text-decoration: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .wc-pill:hover { border-color: color-mix(in srgb, var(--accent) 55%, var(--line-2)); box-shadow: 0 0 0 3px var(--ring); }
-.wc-pill .wc-img { width: 20px; height: 20px; }
+.wc-pill .wc-img { width: auto; height: 15px; }
 .wc-pill::after { content: ""; width: 7px; height: 7px; margin-left: 2px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 0 rgba(var(--spot), 0.5); }
 @media (prefers-reduced-motion: no-preference) {
   .wc-pill { animation: rise 0.3s var(--ease) both; }
