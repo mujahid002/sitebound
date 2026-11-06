@@ -33,6 +33,8 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="why.css">
   <link rel="stylesheet" href="proof.css">
+  <link rel="stylesheet" href="roadmap.css">
+  <link rel="stylesheet" href="faq.css">
   <script type="importmap">
   {
     "imports": {
@@ -511,26 +513,92 @@
       </div>
     </section>
 
-    <section class="band limits" aria-labelledby="limits-h">
-      <h2 id="limits-h" class="section-title" data-copy="limits-title" data-reveal>Honest limits</h2>
-      <ul class="lim-grid">
-        <li class="lim" data-reveal>
-          <span class="lim-ico" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg></span>
-          <b>One trusted checker.</b>
-          <p>Our relayer alone checks DNS and signs registrations.</p>
-        </li>
-        <li class="lim" data-reveal>
-          <span class="lim-ico" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="8" cy="15.5" r="4"/><path d="M11 12.5 20 3.5M16.5 7l3 3M14 9.5l2 2"/></svg></span>
-          <b>Site owners hold power.</b>
-          <p>They can freeze payments or cut a partner's share instantly.</p>
-        </li>
-        <li class="lim" data-reveal>
-          <span class="lim-ico" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 3l7 3v5.2c0 4.3-2.8 7.7-7 9.8-4.2-2.1-7-5.5-7-9.8V6l7-3Z"/><path d="M12 8.5v4.2M12 16v.2"/></svg></span>
-          <b>Not phishing protection.</b>
-          <p>A fake site or overlay can fool buyers, not change who a real site pays.</p>
-        </li>
-      </ul>
-      <p class="lim-foot" data-reveal><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.5 22 20H2L12 3.5ZM12 10v4.5M12 17.2v.1"/></svg><span>Testnet only. Not audited.</span></p>
+    <section id="roadmap" class="band roadmap" aria-labelledby="roadmap-h">
+      <h2 id="roadmap-h" class="section-title" data-reveal>What is live, and what is not built yet</h2>
+      <p class="rm-lede" data-reveal>No dates and no promises. Live means running on Whitechain Sepolia testnet today.</p>
+      <div class="rm-board">
+        <div class="rm-col rm-now" data-reveal>
+          <div class="rm-head"><h3 class="rm-h">Now</h3><span class="rm-tag">Live on testnet</span></div>
+          <ul class="rm-list">
+            <li><b>Addressless payment</b><span>The contract pays the wallet registered for the site.</span></li>
+            <li><b>Touch ID confirmation</b><span>A passkey signs the site and the amount.</span></li>
+            <li><b>Gasless for buyers</b><span>A relayer pays gas. Buyers pay USDT and a 0.01 fee.</span></li>
+            <li><b>DNS TXT onboarding</b><span>Your payout wallet is created in your browser.</span></li>
+            <li><b>Refunds and splits</b><span>Merchant-funded refunds, and payouts split across up to 5 wallets.</span></li>
+            <li><b>Optional quotes</b><span>Your server signs the amount, so a page cannot change it.</span></li>
+          </ul>
+          <p class="rm-note"><b>Verified source.</b> It matches on Sourcify and the Whitechain explorer. <a href="#verify">Check the live code</a></p>
+        </div>
+        <div class="rm-col rm-next" data-reveal>
+          <div class="rm-head"><h3 class="rm-h">Next</h3><span class="rm-tag">Planned, not built</span></div>
+          <ul class="rm-list">
+            <li><b>Public API for adding sites</b><span>Today only our admin script does it.</span></li>
+            <li><b>Team payout wallet</b><span>Several owners, passkey-bound. Needs a new contract; today one browser key.</span></li>
+            <li><b>More than one DNS checker</b><span>The contract supports it. Today there is one.</span></li>
+            <li><b>Safari and Firefox testing</b><span>Only Chrome is measured so far.</span></li>
+          </ul>
+          <p class="rm-note">Planned, not built. Order and timing are not fixed.</p>
+        </div>
+        <div class="rm-col rm-later" data-reveal>
+          <div class="rm-head"><h3 class="rm-h">Later</h3><span class="rm-tag">Planned, not built</span></div>
+          <ul class="rm-list">
+            <li><b>Audit, then mainnet</b><span>A professional audit first, then real USDT.</span></li>
+            <li><b>Pay from any chain</b><span>Needs a route into Whitechain; we found none yet.</span></li>
+            <li><b>Shop plugins</b><span>Ready-made server code for common store platforms.</span></li>
+            <li><b>Overlay detection</b><span>Warn when a page draws over the payment window.</span></li>
+            <li><b>On-chain DNSSEC proof</b><span>Replaces the trusted DNS checker.</span></li>
+          </ul>
+          <p class="rm-note">Planned, not built. Depends on the steps before it.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="faq" class="band faq" aria-labelledby="faq-h">
+      <div class="faq-grid">
+        <div class="faq-intro">
+          <h2 id="faq-h" class="section-title" data-reveal>Questions, answered plainly</h2>
+          <p class="faq-lede" data-reveal>Where something is not built or not proven, we say so.</p>
+          <p class="faq-more" data-reveal><a href="#roadmap">What is not built yet</a><a href="#verify">Check the contract</a></p>
+        </div>
+        <div class="faq-list">
+          <details class="faq-item" data-reveal open>
+            <summary><span>What is Sitebound?</span><i class="faq-i" aria-hidden="true"></i></summary>
+            <p>Checkout for USDT with no payout address on the page. The buyer confirms the site and the amount with Touch ID, like 3-D Secure for cards, and a contract pays the wallet registered for that site.</p>
+          </details>
+          <details class="faq-item" data-reveal>
+            <summary><span>Do I need a crypto wallet, or to know crypto?</span><i class="faq-i" aria-hidden="true"></i></summary>
+            <p>Site owners: no. Setup creates the payout wallet in your browser, so back it up, because it lives only there. Buyers link a wallet that holds USDT once, then pay with Touch ID.</p>
+          </details>
+          <details class="faq-item" data-reveal>
+            <summary><span>Do my buyers need gas?</span><i class="faq-i" aria-hidden="true"></i></summary>
+            <p>No. Buyers pay in USDT only, never WBT for gas. A relayer pays the gas and takes a 0.01 USDT fee.</p>
+          </details>
+          <details class="faq-item" data-reveal>
+            <summary><span>Who gets the money?</span><i class="faq-i" aria-hidden="true"></i></summary>
+            <p>Only the wallet, or the split of wallets, registered on-chain for that site's domain. The <code>pay()</code> call has no payee field, so a page cannot name another wallet.</p>
+          </details>
+          <details class="faq-item" data-reveal>
+            <summary><span>Can a hacked page steal the payment?</span><i class="faq-i" aria-hidden="true"></i></summary>
+            <p>It cannot redirect the money. It can still show a wrong amount, and a fake lookalike site can fool a buyer, so check the site and the amount in the confirmation. A site that signs quotes closes the amount gap.</p>
+          </details>
+          <details class="faq-item" data-reveal>
+            <summary><span>What stops someone registering my domain?</span><i class="faq-i" aria-hidden="true"></i></summary>
+            <p>A DNS TXT record that only the domain's owner can add. One trusted checker, our relayer, reads it today, and that is a real trust assumption. A change to an existing site's payout waits 1 hour, and its owner can freeze it.</p>
+          </details>
+          <details class="faq-item" data-reveal>
+            <summary><span>Is it real money?</span><i class="faq-i" aria-hidden="true"></i></summary>
+            <p>No. It runs on Whitechain Sepolia testnet with test USDT that has no value. It is not audited, so do not use it for real funds.</p>
+          </details>
+          <details class="faq-item" data-reveal>
+            <summary><span>Why Whitechain?</span><i class="faq-i" aria-hidden="true"></i></summary>
+            <p>Stablecoin payments settle in one transaction, and its USDT supports permit, which lets a relayer pay the gas. The chain's P-256 precompile also lets the contract verify Touch ID signatures itself.</p>
+          </details>
+          <details class="faq-item" data-reveal>
+            <summary><span>Is it open source?</span><i class="faq-i" aria-hidden="true"></i></summary>
+            <p>The contract's source is verified on Sourcify and the Whitechain explorer, so you can read exactly what runs. <a href="#verify">Verify us</a> checks the live code in your browser.</p>
+          </details>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -550,8 +618,11 @@
       <nav aria-label="Footer">
         <a href="#verify">Rules you can check</a>
         <a href="#try">Try it</a>
+        <a href="#roadmap">Roadmap</a>
+        <a href="#faq">FAQ</a>
       </nav>
     </div>
+    <p class="foot-limit">Testnet only, not audited. Known limits are in the docs.</p>
     <p class="foot-credit">Built at ETHGlobal Mumbai 2026 with love by <a href="https://github.com/mujahid002" target="_blank" rel="noopener">mujahid002</a> and <a href="https://github.com/sowjanyalakshmi001" target="_blank" rel="noopener">sowjanyalakshmi001</a></p>
   </footer>
 
