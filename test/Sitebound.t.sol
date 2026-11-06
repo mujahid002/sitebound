@@ -404,6 +404,28 @@ contract SiteboundTest is Test {
         sb.bind(cred, px, py, 5e6, 5e6, expiry, wallet, v, r, s);
     }
 
+    function test_same_passkey_cannot_be_bound_to_a_second_wallet() public {
+        uint256 otherKey = 0x0711;
+        address other = vm.addr(otherKey);
+        bytes32 cred2 = keccak256("another-credential-id");
+        uint64 expiry = uint64(block.timestamp + 1 days);
+        bytes32 sh = keccak256(
+            abi.encode(
+                keccak256(
+                    "Bind(bytes32 credentialHash,uint256 pubX,uint256 pubY,uint256 perPayCap,uint256 totalCap,uint64 expiry,uint256 nonce)"
+                ),
+                cred2, px, py, uint256(5e6), uint256(5e6), expiry, sb.bindNonce(other)
+            )
+        );
+        (uint8 v, bytes32 r, bytes32 s) = _sign(otherKey, sh);
+        vm.expectRevert("pubkey taken");
+        sb.bind(cred2, px, py, 5e6, 5e6, expiry, other, v, r, s);
+
+        vm.prank(wallet);
+        sb.unbind(cred);
+        sb.bind(cred2, px, py, 5e6, 5e6, expiry, other, v, r, s);
+    }
+
     function test_only_wallet_can_unbind() public {
         vm.expectRevert("not wallet");
         sb.unbind(cred);

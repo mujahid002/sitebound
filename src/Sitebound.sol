@@ -68,6 +68,8 @@ contract Sitebound {
     mapping(bytes32 => Site) public sites;
     mapping(bytes32 => Buyer) public buyers;
     mapping(address => uint256) public bindNonce;
+    /// One wallet per passkey: the challenge does not name the payer, so a key bound twice could be charged on the wrong wallet.
+    mapping(bytes32 => bytes32) public pubKeyOwner;
     mapping(bytes32 => mapping(bytes32 => bool)) public orderUsed;
     mapping(bytes32 => Payment) public payments;
 
@@ -167,6 +169,8 @@ contract Sitebound {
         require(expiry > block.timestamp, "expired");
         Buyer storage b = buyers[credentialHash];
         require(b.wallet == address(0) || b.wallet == wallet, "credential taken");
+        bytes32 pk = keccak256(abi.encode(pubX, pubY));
+        require(pubKeyOwner[pk] == bytes32(0) || pubKeyOwner[pk] == credentialHash, "pubkey taken");
         bytes32 digest = _digest(
             keccak256(
                 abi.encode(BIND_TYPEHASH, credentialHash, pubX, pubY, perPayCap, totalCap, expiry, bindNonce[wallet])
@@ -174,6 +178,8 @@ contract Sitebound {
         );
         require(_recover(digest, v, r, s) == wallet, "bad binding signature");
         bindNonce[wallet]++;
+        if (b.wallet != address(0)) delete pubKeyOwner[keccak256(abi.encode(b.pubX, b.pubY))];
+        pubKeyOwner[pk] = credentialHash;
         buyers[credentialHash] = Buyer(wallet, pubX, pubY, perPayCap, totalCap, 0, expiry);
         emit Bound(credentialHash, wallet, perPayCap, totalCap, expiry);
     }
@@ -182,6 +188,7 @@ contract Sitebound {
         Buyer storage b = buyers[credentialHash];
         require(b.wallet == msg.sender, "not wallet");
         bindNonce[msg.sender]++;
+        delete pubKeyOwner[keccak256(abi.encode(b.pubX, b.pubY))];
         delete buyers[credentialHash];
         emit Unbound(credentialHash, msg.sender);
     }
