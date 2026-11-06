@@ -48,11 +48,14 @@ body {
   .top nav a { padding: 8px 7px; font-size: 0.85rem; }
 }
 
-/* Background: a dot lattice (lit under the pointer by field.js, which draws on this canvas). */
-.field {
-  position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;
+/* Hero background: a dot lattice (lit under the pointer by field.js, which draws on this canvas). It lives inside the
+   hero only and fades out at its bottom edge. Not `.field`: that class is the form row in onboard/common.css. */
+.hero-field {
+  position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;
   background-image: radial-gradient(circle, rgba(255, 255, 255, 0.075) 1px, transparent 1.5px);
   background-size: 28px 28px;
+  -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent);
+  mask-image: linear-gradient(180deg, #000 55%, transparent);
 }
 main, .foot { position: relative; z-index: 1; }
 
@@ -159,7 +162,7 @@ main, .foot { position: relative; z-index: 1; }
 }
 .live-chip:hover { color: var(--ink); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
 
-/* The inline shop kit */
+/* The inline setup kit */
 .kit { scroll-margin-top: 12px; padding: clamp(24px, 6vw, 56px) var(--pad) clamp(40px, 8vw, 88px); }
 .kit-root {
   width: min(760px, 100%); margin: 0 auto; display: grid; gap: 0;
