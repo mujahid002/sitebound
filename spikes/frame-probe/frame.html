@@ -1,0 +1,19 @@
+<!doctype html><meta charset=utf-8><title>PayeeLock frame probe</title>
+<body style="font:15px system-ui;padding:12px">
+<b>PayeeLock frame</b> (origin <span id=o></span>)<br>
+Site: <b id=site></b> · Amount: <b id=amt></b> USDT<br><br>
+<button id=c>1. Create passkey</button> <button id=g>2. Pay with Touch ID</button>
+<p id=topnote style="color:#a60"></p>
+<pre id=out style="white-space:pre-wrap;font-size:12px"></pre>
+<script>
+const $=id=>document.getElementById(id), out=t=>$('out').textContent=t;
+$('o').textContent=location.origin;
+$('site').textContent=document.referrer?new URL(document.referrer).origin:'(top-level)';
+$('amt').textContent=new URLSearchParams(location.search).get('amount')||'—';
+const inFrame=window.top!==window.self;
+if(!inFrame)$('topnote').textContent='Top-level mode: create the passkey here if it failed inside the iframe.';
+const rnd=n=>crypto.getRandomValues(new Uint8Array(n));
+const log=o=>fetch('/log',{method:'POST',body:JSON.stringify({...o,inFrame,ua:navigator.userAgent,t:new Date().toISOString()})});
+$('c').onclick=async()=>{try{await navigator.credentials.create({publicKey:{rp:{id:'localhost',name:'PayeeLock probe'},user:{id:rnd(16),name:'probe',displayName:'probe'},challenge:rnd(32),pubKeyCredParams:[{type:'public-key',alg:-7}],authenticatorSelection:{residentKey:'required',userVerification:'required'}}});out('create OK');log({step:'create',ok:true})}catch(e){out('create FAILED: '+e.name+' '+e.message);log({step:'create',ok:false,err:e.name+': '+e.message})}};
+$('g').onclick=async()=>{try{const a=await navigator.credentials.get({publicKey:{rpId:'localhost',challenge:rnd(32),userVerification:'required',allowCredentials:[]}});const cd=new TextDecoder().decode(a.response.clientDataJSON);out(cd);log({step:'get',ok:true,clientDataJSON:cd})}catch(e){out('get FAILED: '+e.name+' '+e.message);log({step:'get',ok:false,err:e.name+': '+e.message})}};
+</script>
