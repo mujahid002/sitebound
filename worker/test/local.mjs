@@ -10,7 +10,7 @@ import { handle, SITEBOUND_ABI } from "../src/index.js";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const PORT = Number(process.env.ANVIL_PORT || 8545);
 const RPC = `http://127.0.0.1:${PORT}`;
-const FIX = JSON.parse(readFileSync(join(ROOT, "test/fixtures/frame_assertion.json"), "utf8"));
+const FIX = JSON.parse(readFileSync(join(ROOT, "test/fixtures/frame_assertion_v2.json"), "utf8"));
 const SB = FIX.contract; // the fixture's challenge commits to this address and chain 1874
 // anvil's public default dev keys (test only)
 const KEYS = [
@@ -81,7 +81,9 @@ const sbAbi = new Interface([
   "function rpIdHash() view returns (bytes32)",
   "function delay() view returns (uint64)",
   "function isAttestor(address) view returns (bool)",
-  "function register(string site, address payout, uint64 deadline, address attestor, uint8 v, bytes32 r, bytes32 s)",
+  "function quorum() view returns (uint256 setId, uint256 threshold)",
+  "function configVersion(bytes32) view returns (uint256)",
+  "function register(string site, address[] to, uint16[] bps, (uint64 deadline, uint8 v, bytes32 r, bytes32 s)[] sigs)",
 ]);
 const tokenAbi = ["function mint(address,uint256)", "function approve(address,uint256) returns (bool)", "function balanceOf(address) view returns (uint256)"];
 
@@ -102,11 +104,14 @@ async function main() {
 async function run(stop) {
   console.log("deploy");
   const tokenAddr = forgeCreate("test/utils/MockToken.sol:MockToken");
-  const proto = forgeCreate("src/Sitebound.sol:Sitebound", [tokenAddr, FIX.frameOrigin, sha256(toUtf8Bytes(FIX.rpId)), `[${relayer.address}]`, "60"]);
-  // Place the contract at the fixture address: immutables ride in the code; copy the two constructor-written slots.
-  const attSlot = keccak256(AbiCoder.defaultAbiCoder().encode(["address", "uint256"], [relayer.address, 1]));
+  const proto = forgeCreate("src/SiteboundV2.sol:SiteboundV2", [tokenAddr, FIX.frameOrigin, sha256(toUtf8Bytes(FIX.rpId)), `[${relayer.address}]`, "1", "60", "0x0000000000000000000000000000000000000000"]);
+  // Place the contract at the fixture address: immutables ride in the code; copy the constructor-written slots
+  // (forge inspect SiteboundV2 storageLayout): 0 frameOrigin, 2 inSet[1][relayer], 3 setCount, 4 activeSet,
+  // 5 activeThreshold, 10 _lock.
+  const abiC = AbiCoder.defaultAbiCoder();
+  const attSlot = keccak256(abiC.encode(["address", "bytes32"], [relayer.address, keccak256(abiC.encode(["uint256", "uint256"], [1, 2]))]));
   await provider.send("anvil_setCode", [SB, await provider.getCode(proto)]);
-  for (const slot of [zeroPadValue("0x00", 32), attSlot]) {
+  for (const slot of [0, 3, 4, 5, 10].map((n) => zeroPadValue(`0x${n.toString(16).padStart(2, "0")}`, 32)).concat(attSlot)) {
     await provider.send("anvil_setStorageAt", [SB, slot, await provider.getStorage(proto, slot)]);
   }
   const sb = new Contract(SB, sbAbi, deployer);
@@ -114,10 +119,12 @@ async function run(stop) {
   check("contract at fixture address: rpIdHash", (await sb.rpIdHash()) === sha256(toUtf8Bytes("localhost")));
   check("contract at fixture address: delay 60", (await sb.delay()) === 60n);
   check("contract at fixture address: relayer is attestor", await sb.isAttestor(relayer.address));
+  const [setId0, k0] = await sb.quorum();
+  check("contract at fixture address: quorum is set 1, 1-of-1", setId0 === 1n && k0 === 1n);
 
-  const real = new Interface(JSON.parse(readFileSync(join(ROOT, "out/Sitebound.sol/Sitebound.json"), "utf8")).abi);
+  const real = new Interface(JSON.parse(readFileSync(join(ROOT, "out/SiteboundV2.sol/SiteboundV2.json"), "utf8")).abi);
   const mine = new Interface(SITEBOUND_ABI);
-  for (const fn of ["sites", "register", "bind", "pay"]) {
+  for (const fn of ["sites", "register", "quorum", "bind", "pay", "payWithQuote"]) {
     check(`worker ABI ${fn} selector matches forge ABI`, mine.getFunction(fn).selector === real.getFunction(fn).selector);
   }
   for (const ev of ["PayoutProposed", "Paid"]) check(`worker ABI ${ev} topic matches`, mine.getEvent(ev).topicHash === real.getEvent(ev).topicHash);
@@ -214,9 +221,10 @@ async function run(stop) {
   const deadline = Math.floor(Date.now() / 1000) + 3600;
   const domain = { name: "Sitebound", version: "1", chainId: 1874, verifyingContract: SB };
   const att = Signature.from(await relayer.signTypedData(domain,
-    { Attest: [{ name: "siteHash", type: "bytes32" }, { name: "payout", type: "address" }, { name: "nonce", type: "uint256" }, { name: "deadline", type: "uint64" }] },
-    { siteHash: fxHash, payout: fixtureShop.address, nonce: 0, deadline }));
-  await (await sb.register(FIX.topOrigin, fixtureShop.address, deadline, relayer.address, att.v, att.r, att.s)).wait();
+    { Attest: [{ name: "siteHash", type: "bytes32" }, { name: "to", type: "address[]" }, { name: "bps", type: "uint16[]" }, { name: "nonce", type: "uint256" }, { name: "setId", type: "uint256" }, { name: "deadline", type: "uint64" }] },
+    { siteHash: fxHash, to: [fixtureShop.address], bps: [10000], nonce: 0, setId: 1, deadline }));
+  await (await sb.register(FIX.topOrigin, [fixtureShop.address], [10000], [[deadline, att.v, att.r, att.s]])).wait();
+  check("fixture site registered once: configVersion is the fixture's", (await sb.configVersion(fxHash)) === BigInt(FIX.configVersion));
   r = await call(env(), "/register", { site: FIX.topOrigin, payout: fixtureShop.address });
   check("register refuses the http fixture site", r.status === 400, r.json);
 
@@ -262,6 +270,10 @@ async function run(stop) {
   check("pay: simulation revert reason returned", r.status === 400 && r.json.error === "bad challenge", r.json);
   r = await call(env({ MIN_FEE: "0" }), "/pay", { ...input, amount: String(FIX.amount + 1) });
   check("pay: tampered amount -> bad challenge", r.json?.error === "bad challenge", r.json);
+  r = await call(env({ MIN_FEE: "0" }), "/pay", { ...input, quoteExpiry: "1900000000", quoteSig: "nothex" });
+  check("pay: malformed quote rejected before simulation", r.status === 400 && r.json.error === "bad quote format", r.json);
+  r = await call(env({ MIN_FEE: "0" }), "/pay", { ...input, quoteExpiry: "1900000000", quoteSig: "0x" + "11".repeat(65) });
+  check("pay: quote for a site without a quote signer -> payWithQuote reverts", r.status === 400 && r.json.error === "no quote signer", r.json);
   const full = env({ MIN_FEE: "0", PAY_DAILY_CAP: "1" });
   const today = Math.floor(Date.now() / 86400000);
   full.CAPS.m.set(`pay:${cred}:${today}`, "1");

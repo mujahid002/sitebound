@@ -2,9 +2,11 @@ import { Contract, JsonRpcProvider, formatEther, Signature, Wallet, getAddress, 
 
 export const SITEBOUND_ABI = [
   "function sites(bytes32) view returns (address payout, address pendingPayout, uint64 activeAt, bool frozen, uint256 nonce)",
-  "function register(string site, address payout, uint64 deadline, address attestor, uint8 v, bytes32 r, bytes32 s)",
+  "function register(string site, address[] to, uint16[] bps, (uint64 deadline, uint8 v, bytes32 r, bytes32 s)[] sigs)",
+  "function quorum() view returns (uint256 setId, uint256 threshold)",
   "function bind(bytes32 credentialHash, uint256 pubX, uint256 pubY, uint256 perPayCap, uint256 totalCap, uint64 expiry, address wallet, uint8 v, bytes32 r, bytes32 s)",
   "function pay((bytes32 credentialHash, bytes authenticatorData, string clientDataJSON, uint256 typeIdx, uint256 challengeIdx, uint256 originIdx, uint256 crossOriginIdx, uint256 topOriginIdx, uint256 r, uint256 s, bytes32 orderId, uint256 amount, uint256 relayerFee, uint256 deadline) p) returns (bytes32)",
+  "function payWithQuote((bytes32 credentialHash, bytes authenticatorData, string clientDataJSON, uint256 typeIdx, uint256 challengeIdx, uint256 originIdx, uint256 crossOriginIdx, uint256 topOriginIdx, uint256 r, uint256 s, bytes32 orderId, uint256 amount, uint256 relayerFee, uint256 deadline) p, uint64 quoteExpiry, bytes quoteSig) returns (bytes32)",
   "event PayoutProposed(bytes32 indexed siteHash, address pendingPayout, uint64 activeAt)",
   "event Paid(bytes32 indexed paymentId, bytes32 indexed siteHash, string site, bytes32 orderId, address indexed wallet, address payout, uint256 amount)",
 ];
@@ -12,11 +14,15 @@ const TOKEN_ABI = [
   "function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)",
   "function allowance(address owner, address spender) view returns (uint256)",
 ];
+// SiteboundV2: the attestation names the payout split and the attestor set it is for. This relayer attests a
+// single wallet (the DNS TXT record names one), so to = [payout], bps = [10000].
 const ATTEST_TYPES = {
   Attest: [
     { name: "siteHash", type: "bytes32" },
-    { name: "payout", type: "address" },
+    { name: "to", type: "address[]" },
+    { name: "bps", type: "uint16[]" },
     { name: "nonce", type: "uint256" },
+    { name: "setId", type: "uint256" },
     { name: "deadline", type: "uint64" },
   ],
 };
@@ -157,10 +163,13 @@ async function register(body, env) {
   if (st.pendingPayout === payout) return { ok: true, pending: true, activeAt: Number(st.activeAt), already: true };
   const deadline = Math.floor(Date.now() / 1000) + 3600;
   const domain = { name: "Sitebound", version: "1", chainId, verifyingContract: env.SITEBOUND_ADDRESS };
+  const [setId, threshold] = await sb.quorum();
+  if (threshold !== 1n) bad(`the contract needs ${threshold} attestations; this relayer signs one`);
+  const split = { to: [payout], bps: [10000] };
   const sig = Signature.from(
-    await wallet.signTypedData(domain, ATTEST_TYPES, { siteHash, payout, nonce: st.nonce, deadline }),
+    await wallet.signTypedData(domain, ATTEST_TYPES, { siteHash, ...split, nonce: st.nonce, setId, deadline }),
   );
-  const args = [site, payout, deadline, wallet.address, sig.v, sig.r, sig.s];
+  const args = [site, split.to, split.bps, [[deadline, sig.v, sig.r, sig.s]]];
   const gas = await simulate(sb.register, args);
   await takeDaily(env, `reg:${siteHash}`, Number(env.REGISTER_DAILY_CAP || 3));
   const receipt = await send(sb.register, args, gas);
@@ -199,9 +208,14 @@ async function pay(body, env) {
   if (BigInt(input.relayerFee) < minFee) bad(`relayerFee must be at least ${minFee}`);
 
   const { sb } = chain(env);
-  const gas = await simulate(sb.pay, [input]);
+  // A site with a quote signer needs the merchant's quote: "<expiry>" and "<0x signature>", passed through.
+  const quoted = body.quoteSig != null;
+  if (quoted && !(/^\d{1,12}$/.test(String(body.quoteExpiry)) && /^0x(?:[0-9a-fA-F]{2}){1,1024}$/.test(body.quoteSig))) bad("bad quote format");
+  const fn = quoted ? sb.payWithQuote : sb.pay;
+  const args = quoted ? [input, body.quoteExpiry, body.quoteSig] : [input];
+  const gas = await simulate(fn, args);
   await takeDaily(env, `pay:${input.credentialHash}`, Number(env.PAY_DAILY_CAP || 20));
-  const receipt = await send(sb.pay, [input], gas);
+  const receipt = await send(fn, args, gas);
   const paid = event(sb, receipt, "Paid");
   const paymentId = paid
     ? paid.args.paymentId
