@@ -30,11 +30,19 @@ const problem =
   : !topOrigin ? 'Your browser does not say which site opened this checkout.'
   : notDeployed();
 
-let pending = null, sendWin = null, setupWin = null;
+let pending = null, sendWin = null, setupWin = null, notSetUp = false;
 // The site's config version is part of what the passkey signs. Read it ahead of the click, so nothing slow sits
 // between the click and the passkey prompt; read it again after each attempt in case the site changed.
 const readVersion = () => (siteHash && !problem ? new ethers.Contract(C.address, SITEBOUND_ABI, rpc).configVersion(siteHash) : Promise.resolve(null));
 let versionP = readVersion().catch(() => null);
+// A site with no payout in the registry can only fail after Touch ID ("site not registered"), so look first.
+// Any failure or a slow RPC lets the checkout carry on as before: the contract still refuses an unregistered site.
+const registryP = siteHash && !problem
+  ? Promise.race([
+      new ethers.Contract(C.address, SITEBOUND_ABI, rpc).sites(siteHash).then((st) => st.payout === ethers.ZeroAddress),
+      new Promise((done) => setTimeout(done, 5000, false)),
+    ]).catch(() => false)
+  : Promise.resolve(false);
 
 $('amount').textContent = $('line-amount').textContent = validAmount ? amountText : '—';
 $('site').textContent = site;
@@ -54,7 +62,7 @@ function say(text, { err = false, tx = null, busy = false } = {}) {
   if (tx) m.append(' ', Object.assign(document.createElement('a'), { className: 'link', href: `${C.explorer}/tx/${tx}`, target: '_blank', rel: 'noopener', textContent: 'View transaction' }));
 }
 function lock(on) {
-  for (const id of ['pay', 'pay-wallet', 'continue']) $(id).disabled = on || !!problem;
+  for (const id of ['pay', 'pay-wallet', 'continue']) $(id).disabled = on || !!problem || notSetUp;
 }
 const busy = (text) => (lock(true), say(text, { busy: true }));
 const fail = (text, opts) => (lock(false), say(text, { err: true, ...opts }));
@@ -165,7 +173,7 @@ addEventListener('message', (e) => {
   if (e.source === setupWin && d.type === 'sitebound:setup-done') {
     $('pay').textContent = 'Pay with Touch ID';
     lock(false);
-    say('Setup complete. Pay with Touch ID.');
+    if (!notSetUp) say('Setup complete. Pay with Touch ID.');
   }
   if (e.source !== sendWin) return;
   if (d.type === 'sitebound:send-ready') sendWin.postMessage({ type: 'sitebound:send', input: jsonOf(pending), quote: quote && { expiry: String(quote.expiry), sig: quote.sig }, site, amount: amountText }, location.origin);
@@ -177,5 +185,15 @@ addEventListener('message', (e) => {
   if (d.type === 'sitebound:send-error') fail(d.error);
 });
 
-lock(false);
-if (problem) say(problem, { err: true });
+if (problem) {
+  lock(false);
+  say(problem, { err: true });
+} else {
+  busy('Checking this website…');
+  registryP.then((none) => {
+    notSetUp = none;
+    lock(false);
+    if (none) say('This site is not set up for Sitebound payments yet, so nothing was charged.', { err: true });
+    else say('');
+  });
+}

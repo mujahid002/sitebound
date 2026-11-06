@@ -7,6 +7,7 @@ export const SITEBOUND_ABI = [
   'function pay((bytes32 credentialHash,bytes authenticatorData,string clientDataJSON,uint256 typeIdx,uint256 challengeIdx,uint256 originIdx,uint256 crossOriginIdx,uint256 topOriginIdx,uint256 r,uint256 s,bytes32 orderId,uint256 amount,uint256 relayerFee,uint256 deadline) p) returns (bytes32)',
   'function payWithQuote((bytes32 credentialHash,bytes authenticatorData,string clientDataJSON,uint256 typeIdx,uint256 challengeIdx,uint256 originIdx,uint256 crossOriginIdx,uint256 topOriginIdx,uint256 r,uint256 s,bytes32 orderId,uint256 amount,uint256 relayerFee,uint256 deadline) p,uint64 quoteExpiry,bytes quoteSig) returns (bytes32)',
   'function configVersion(bytes32) view returns (uint256)',
+  'function sites(bytes32) view returns (address payout,address pendingPayout,uint64 activeAt,bool frozen,uint256 nonce)',
   'function bind(bytes32 credentialHash,uint256 pubX,uint256 pubY,uint256 perPayCap,uint256 totalCap,uint64 expiry,address wallet,uint8 v,bytes32 r,bytes32 s)',
   'function bindNonce(address) view returns (uint256)',
   'function buyers(bytes32) view returns (address wallet,uint256 pubX,uint256 pubY,uint256 perPayCap,uint256 totalCap,uint256 spent,uint64 expiry)',
