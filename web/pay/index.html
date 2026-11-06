@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Pay link maker | Sitebound</title>
+  <meta name="description" content="Make a payment page for your own website. Enter your site, an amount and an order id; get a snippet and a ready-to-host pay.html.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fafaf7">
+  <script>
+    try {
+      var t = localStorage.getItem('sitebound.theme');
+      if (t !== 'light' && t !== 'dark') t = 'light';
+      document.documentElement.dataset.theme = t;
+    } catch (e) { document.documentElement.dataset.theme = 'light'; }
+  </script>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css">
+  <script src="../config.js"></script>
+  <script src="main.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#form">Skip to the form</a>
+  <header class="top">
+    <a class="brand" href="../landing/" aria-label="Sitebound home">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="3" y="3" width="26" height="26" rx="8" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="16" cy="16" r="5" fill="currentColor"/></svg>
+      <span>Sitebound</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="../landing/">Register a site</a>
+      <a href="https://github.com/mujahid002/sitebound">GitHub</a>
+      <button id="theme" class="theme" type="button" aria-label="Switch to dark theme">
+        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="intro">
+      <h1>Take a payment on your own site</h1>
+      <p class="lede">Enter your registered site, an amount and an order id. You get a snippet to paste and a pay page to host.</p>
+      <p class="why" id="why">Sitebound pays the site your buyer's browser reports as the top-level page, and the passkey signs that origin, so a page on our domain can only ever pay our domain. That is the security property: a payment can only go to the site the buyer is actually on, so the pay page has to live on your domain.</p>
+    </section>
+
+    <form id="form" class="card" novalidate autocomplete="off">
+      <div class="row">
+        <label for="site">Your site</label>
+        <input id="site" name="site" type="text" inputmode="url" placeholder="https://your.site" spellcheck="false" autocapitalize="off" aria-describedby="site-msg">
+        <p id="site-msg" class="msg" role="status"></p>
+      </div>
+      <div class="pair">
+        <div class="row">
+          <label for="amount">Amount (USDT)</label>
+          <input id="amount" name="amount" type="text" inputmode="decimal" placeholder="12.00" spellcheck="false" aria-describedby="amount-msg">
+          <p id="amount-msg" class="msg" role="status"></p>
+        </div>
+        <div class="row">
+          <label for="order">Order id</label>
+          <input id="order" name="order" type="text" placeholder="INV-1001" spellcheck="false" autocapitalize="off" aria-describedby="order-msg">
+          <p id="order-msg" class="msg" role="status"></p>
+        </div>
+      </div>
+      <label class="check"><input id="dyn" type="checkbox"> <span>Let the pay page read the amount and order id from its link (<code>?amount=&amp;order=</code>)</span></label>
+      <p id="dyn-note" class="note" hidden>One page then serves every invoice, but anyone can edit the link. Check the amount in your dashboard before you fulfil an order.</p>
+    </form>
+
+    <section id="out" class="out" hidden aria-live="polite">
+      <div class="block">
+        <div class="block-h">
+          <h2><span class="n">1</span> Snippet for a page you already have</h2>
+          <button class="btn quiet" type="button" data-copy="snippet">Copy</button>
+        </div>
+        <p class="note">Paste this where the button should appear. It works only on a page served from your site.</p>
+        <pre><code id="snippet" tabindex="0"></code></pre>
+      </div>
+
+      <div class="block">
+        <div class="block-h">
+          <h2><span class="n">2</span> A pay.html to host on your domain</h2>
+          <div class="acts">
+            <button class="btn quiet" type="button" data-copy="page">Copy</button>
+            <button class="btn" type="button" id="dl">Download pay.html</button>
+          </div>
+        </div>
+        <p class="note">One file, no build step. Upload it to your site so it is served at <b id="where"></b>.</p>
+        <pre><code id="page" tabindex="0"></code></pre>
+      </div>
+
+      <div class="block">
+        <div class="block-h"><h2>Preview</h2></div>
+        <p class="note">This shows how the button looks. It is switched off here: a payment started from this page would be for our domain, not yours.</p>
+        <iframe id="preview" class="preview" title="Button preview" sandbox="allow-scripts" loading="lazy"></iframe>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>Your site must be registered with Sitebound before it can be paid. The payout wallet is read from the registry, never from a link.</p>
+  </footer>
+</body>
+</html>
