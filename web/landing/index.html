@@ -32,6 +32,7 @@
   <link rel="stylesheet" href="../dashboard/style.css">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="why.css">
+  <link rel="stylesheet" href="how.css">
   <link rel="stylesheet" href="proof.css">
   <link rel="stylesheet" href="roadmap.css">
   <link rel="stylesheet" href="faq.css">
@@ -47,6 +48,7 @@
   <script src="../config.js"></script>
   <script type="module" src="main.js"></script>
   <script type="module" src="why.js"></script>
+  <script type="module" src="how.js"></script>
   <script type="module" src="proof.js"></script>
 </head>
 <body>
@@ -373,28 +375,106 @@
       </div>
     </section>
 
-    <section id="how" class="band how" aria-labelledby="how-h" data-flow>
+    <section id="how" class="band how" aria-labelledby="how-h">
+      <!-- Line icons for this section only (own ids, so it does not depend on the sprite in #why). -->
+      <svg class="hw-sprite" width="0" height="0" aria-hidden="true" focusable="false">
+        <defs>
+          <symbol id="hw-site" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M3 9.5h18"/></symbol>
+          <symbol id="hw-reg" viewBox="0 0 24 24"><path d="M6 3.5h8l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 5 19V5A1.5 1.5 0 0 1 6 3.5Z"/><path d="M14 3.5V8h4M8.5 12.5h7M8.5 16h4.5"/></symbol>
+          <symbol id="hw-fp" viewBox="0 0 24 24"><path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/><path d="M14 13.12c0 2.38 0 6.38-1 8.88"/><path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/><path d="M2 12a10 10 0 0 1 18-6"/><path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/><path d="M8.65 22c.21-.66.45-1.32.57-2"/><path d="M9 6.8a6 6 0 0 1 9 5.2v2"/><path d="M21.8 16c.2-2 .131-5.354 0-6"/></symbol>
+          <symbol id="hw-wallet" viewBox="0 0 24 24"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3"/><rect x="3.5" y="8" width="17" height="11.5" rx="3"/><path d="M20.5 12.5h-3.2a1.75 1.75 0 0 0 0 3.5h3.2"/></symbol>
+          <symbol id="hw-ck" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+          <symbol id="hw-play" viewBox="0 0 24 24"><path d="M8 5.5v13a.8.8 0 0 0 1.2.7l10.4-6.5a.8.8 0 0 0 0-1.4L9.2 4.8A.8.8 0 0 0 8 5.5Z"/></symbol>
+          <symbol id="hw-pause" viewBox="0 0 24 24"><rect x="6" y="5" width="4.2" height="14" rx="1.2"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.2"/></symbol>
+        </defs>
+      </svg>
       <h2 id="how-h" class="section-title" data-copy="how-title" data-reveal>How it works</h2>
-      <ol class="hf">
-        <li class="hf-i" data-reveal>
-          <span class="hf-n" aria-hidden="true">01</span>
-          <span class="hf-ico" aria-hidden="true"><svg class="gi" focusable="false"><use href="#wi-globe"/></svg></span>
-          <div><h3>Register</h3><p>Add your domain and one DNS record.</p></div>
-          <span class="hf-wire" aria-hidden="true"></span>
-        </li>
-        <li class="hf-i" data-reveal>
-          <span class="hf-n" aria-hidden="true">02</span>
-          <span class="hf-ico" aria-hidden="true"><svg class="gi" focusable="false"><use href="#wi-finger"/></svg></span>
-          <div><h3>Confirm</h3><p>Like 3-D Secure, Touch ID signs the site and amount.</p></div>
-          <span class="hf-wire" aria-hidden="true"></span>
-        </li>
-        <li class="hf-i" data-reveal>
-          <span class="hf-n" aria-hidden="true">03</span>
-          <span class="hf-ico" aria-hidden="true"><svg class="gi" focusable="false"><use href="#wi-wallet"/></svg></span>
-          <div><h3>Get paid</h3><p>No "pay to" field: USDT goes only to your site's wallet. Buyers pay a 0.01 USDT fee, no gas.</p></div>
-        </li>
-      </ol>
-      <p class="hf-note" data-reveal><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-shield"/></svg>A hacked page cannot redirect the money.</p>
+      <p class="hw-lede" data-reveal>Register your site once, paste one tag, and every payment goes to the wallet your site registered.</p>
+
+      <div id="hw" class="hw" data-reveal>
+        <ol class="hw-steps">
+          <li><button class="hw-step" type="button" data-s="0"><span class="hw-sn" aria-hidden="true">01</span><b>Register the site</b><span>Add one DNS record. The relayer registers the site to your wallet.</span></button></li>
+          <li><button class="hw-step" type="button" data-s="1"><span class="hw-sn" aria-hidden="true">02</span><b>Paste one tag</b><span>One element on your page. No address in it.</span></button></li>
+          <li><button class="hw-step" type="button" data-s="2"><span class="hw-sn" aria-hidden="true">03</span><b>Buyer pays with Touch ID</b><span>The contract checks the signature and pays only the registered wallet.</span></button></li>
+        </ol>
+
+        <div class="hw-view">
+          <p class="sr-only">In order: your browser creates a wallet. You add a TXT record named _sitebound.0xmujahid.xyz with the value sitebound= followed by your wallet, and the relayer checks it and registers 0xmujahid.xyz to that wallet on Whitechain. You paste the tag &lt;sitebound-pay amount="12.00" order="A123"&gt;, which holds no address. When a buyer pays, a frame on another origin shows the site name the browser reports. Touch ID signs the payment with a passkey, the contract checks that signature on chain and pays only the wallet registered for that site. The buyer has no gas to pay, only a 0.01 USDT fee, and the relayer pays the gas.</p>
+          <div class="hw-bar">
+            <p class="hw-cap" aria-hidden="true"><span class="hw-cap-t">Paid. No gas for the buyer</span></p>
+            <button class="hw-play" type="button" aria-label="Pause animation">
+              <svg class="hw-i hw-i-pause" focusable="false" aria-hidden="true"><use href="#hw-pause"/></svg>
+              <svg class="hw-i hw-i-play" focusable="false" aria-hidden="true"><use href="#hw-play"/></svg>
+            </button>
+          </div>
+
+          <div class="hw-flow" aria-hidden="true">
+            <div class="hw-rail">
+              <span class="hw-seg" style="--a:0;--w:.5"><i></i></span>
+              <span class="hw-seg is-rev" style="--a:.5;--w:.25"><i></i></span>
+              <span class="hw-seg" style="--a:.75;--w:.25"><i></i></span>
+              <span class="hw-pk"></span>
+              <span class="hw-pk is-sig"></span>
+              <span class="hw-pk"></span>
+            </div>
+            <ol class="hw-nodes">
+              <li class="hw-node"><span class="hw-ic"><svg class="hw-i" focusable="false"><use href="#hw-site"/></svg><i class="hw-bd"><svg class="hw-i" focusable="false"><use href="#hw-ck"/></svg></i></span><b>Your site</b><small>0xmujahid.xyz</small></li>
+              <li class="hw-node"><span class="hw-ic"><span class="hw-txt">TXT</span><i class="hw-bd"><svg class="hw-i" focusable="false"><use href="#hw-ck"/></svg></i></span><b>DNS</b><small>one record</small></li>
+              <li class="hw-node"><span class="hw-ic"><svg class="hw-i" focusable="false"><use href="#hw-reg"/></svg><i class="hw-bd"><svg class="hw-i" focusable="false"><use href="#hw-ck"/></svg></i></span><b>Registry</b><small>Whitechain</small></li>
+              <li class="hw-node"><span class="hw-ic"><svg class="hw-i" focusable="false"><use href="#hw-fp"/></svg><i class="hw-bd"><svg class="hw-i" focusable="false"><use href="#hw-ck"/></svg></i></span><b>Buyer</b><small>Touch ID</small></li>
+              <li class="hw-node is-act"><span class="hw-ic"><svg class="hw-i" focusable="false"><use href="#hw-wallet"/></svg><i class="hw-bd"><svg class="hw-i" focusable="false"><use href="#hw-ck"/></svg></i></span><b>Wallet</b><small>your payout</small></li>
+            </ol>
+          </div>
+
+          <div class="hw-panes" aria-hidden="true">
+            <div class="hw-pane" data-p="0">
+              <div class="hw-ln" data-t="0" data-d="500"><i class="hw-tk"><svg class="hw-i" focusable="false"><use href="#hw-ck"/></svg></i><p><b>Wallet created in your browser</b></p></div>
+              <dl class="hw-rec">
+                <div><dt>Type</dt><dd>TXT</dd></div>
+                <div><dt>Name</dt><dd>_sitebound.0xmujahid.xyz</dd></div>
+                <div><dt>Value</dt><dd><span class="ty" data-t="600" data-full="sitebound=&lt;wallet&gt;">sitebound=&lt;wallet&gt;</span></dd></div>
+              </dl>
+              <div class="hw-ln" data-t="2600" data-d="3500"><i class="hw-tk"><svg class="hw-i" focusable="false"><use href="#hw-ck"/></svg></i><p><b>Relayer finds the record</b><span>It checks DNS, not the page.</span></p></div>
+              <div class="hw-ln" data-t="3700" data-d="4800"><i class="hw-tk"><svg class="hw-i" focusable="false"><use href="#hw-ck"/></svg></i><p><b>Registered on Whitechain</b><span>Payments to 0xmujahid.xyz go to your wallet.</span></p></div>
+            </div>
+
+            <div class="hw-pane hw-p2" data-p="1">
+              <div class="hw-col">
+                <p class="hw-lb">Your tag</p>
+                <div class="hw-code"><span class="ty" data-t="400" data-full="&lt;sitebound-pay">&lt;sitebound-pay</span><span class="ty" data-t="950" data-full='  amount="12.00"'>  amount="12.00"</span><span class="ty" data-t="1560" data-full='  order="A123"&gt;'>  order="A123"&gt;</span><span class="ty" data-t="2150" data-full="&lt;/sitebound-pay&gt;">&lt;/sitebound-pay&gt;</span></div>
+              </div>
+              <div class="hw-col">
+                <p class="hw-lb">What buyers see</p>
+                <div class="hw-pg">
+                  <p class="hw-pg-bar"><svg class="hw-i" focusable="false"><use href="#hw-site"/></svg>0xmujahid.xyz</p>
+                  <div class="hw-pg-body">
+                    <p class="hw-pg-top"><span>Order A123</span><b>12.00 USDT</b></p>
+                    <span class="hw-btn" data-t="3000"><svg class="hw-i" viewBox="0 0 32 32" focusable="false"><rect x="4" y="4" width="24" height="24" rx="7" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="16" cy="16" r="4.5" fill="currentColor" stroke="none"/></svg>Pay 12.00 USDT</span>
+                    <span class="hw-chip" data-t="3700"><s>0x&hellip;</s> No address in the tag</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="hw-pane hw-p3" data-p="2">
+              <div class="hw-fr">
+                <p class="hw-fr-top"><svg class="hw-i" viewBox="0 0 32 32" focusable="false"><rect x="4" y="4" width="24" height="24" rx="7" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="16" cy="16" r="4.5" fill="currentColor" stroke="none"/></svg>Sitebound <span>on another origin</span></p>
+                <p class="hw-fr-k">You are paying this website</p>
+                <p class="hw-fr-site">0xmujahid.xyz</p>
+                <p class="hw-fr-amt">12.00 <small>USDT</small></p>
+                <span class="hw-go" data-t="1200" data-d="2400" data-e="5600"><svg class="hw-i" focusable="false"><use href="#hw-fp"/></svg><span class="hw-go-a">Pay with Touch ID</span><span class="hw-go-b">Paid</span></span>
+                <p class="hw-fr-fee">No gas for you: a 0.01 USDT fee, the relayer pays gas. First time: one-time setup.</p>
+              </div>
+              <div class="hw-lg">
+                <p class="hw-lg-h"><svg class="hw-i" focusable="false"><use href="#hw-reg"/></svg>Contract on Whitechain</p>
+                <div class="hw-ln" data-t="2400" data-d="3300"><i class="hw-tk"><svg class="hw-i" focusable="false"><use href="#hw-ck"/></svg></i><p><b>Passkey signature is valid</b><span>Signed for this site and amount.</span></p></div>
+                <div class="hw-ln" data-t="3300" data-d="4100"><i class="hw-tk"><svg class="hw-i" focusable="false"><use href="#hw-ck"/></svg></i><p><b>Site is the one the browser reports</b><span>No payee in the call.</span></p></div>
+                <div class="hw-ln" data-t="4300" data-d="5500"><i class="hw-tk"><svg class="hw-i" focusable="false"><use href="#hw-ck"/></svg></i><p><b>USDT goes to its registered wallet</b><span>Straight from the buyer.</span></p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section id="verify" class="band verify" aria-labelledby="verify-h">
