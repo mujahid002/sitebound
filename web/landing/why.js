@@ -61,7 +61,8 @@ if (!reduced && 'IntersectionObserver' in window) {
     const label = () => {
       const still = cx.classList.contains('is-still');
       pause.setAttribute('aria-pressed', String(still));
-      pause.textContent = still ? 'Play animation' : 'Pause animation';
+      pause.setAttribute('aria-label', still ? 'Play animation' : 'Pause animation');
+      pause.querySelector('use')?.setAttribute('href', still ? '#wi-play' : '#wi-pause');
     };
     pause?.addEventListener('click', () => { cx.classList.toggle('is-still'); label(); });
     document.querySelector('[data-cx-replay]')?.addEventListener('click', () => {

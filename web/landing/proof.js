@@ -48,6 +48,7 @@ if (mock && pause) {
   pause.addEventListener('click', () => {
     const still = mock.classList.toggle('is-still');
     pause.setAttribute('aria-pressed', String(still));
-    pause.textContent = still ? 'Play animation' : 'Pause animation';
+    pause.setAttribute('aria-label', still ? 'Play animation' : 'Pause animation');
+    pause.querySelector('use')?.setAttribute('href', still ? '#wi-play' : '#wi-pause');
   });
 }

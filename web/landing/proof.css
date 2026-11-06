@@ -210,10 +210,12 @@
 
 .t-cap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px; color: var(--muted); font-size: var(--fs-sm); }
 .t-pause {
-  padding: 8px 4px; border: 0; background: none; cursor: pointer; color: var(--muted); font-size: var(--fs-sm);
-  text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 4px; transition: color 0.2s;
+  display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; cursor: pointer;
+  border: 1px solid var(--line-2); border-radius: 50%; background: transparent; color: var(--muted);
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
 }
-.t-pause:hover { color: var(--ink); text-decoration-color: currentColor; }
+.t-pause .gi { width: 15px; height: 15px; }
+.t-pause:hover { color: var(--ink); border-color: var(--hover-line, var(--muted)); }
 @media (prefers-reduced-motion: reduce) { .t-pause { display: none; } }
 
 /* One 9 s loop: tap Pay 3 USDT, the Sitebound window rises, tap Pay with Touch ID, it reads Paid, it clears.
