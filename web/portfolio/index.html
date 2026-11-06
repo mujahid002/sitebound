@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>0xmujahid</title>
+<meta name="description" content="0xmujahid: smart contract and web3 developer building payments, wallets and on-chain verification. Fund open-source work in USDT.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="bar">
+  <a class="mark" href="#top" aria-label="0xmujahid.xyz, top of page">0xmujahid<span>.xyz</span></a>
+  <nav aria-label="Sections">
+    <a href="#work">Work</a>
+    <a href="#fund">Fund</a>
+    <a href="#elsewhere">Elsewhere</a>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="hero" id="top" aria-labelledby="name">
+    <p class="role">Smart contract and web3 developer</p>
+    <h1 id="name"><span class="x">0x</span>mujahid</h1>
+    <p class="lede">I build payment flows and wallets, and the on-chain checks that let a service prove what was paid, by whom, and for what.</p>
+    <p class="lede">Most of it is open source.</p>
+  </section>
+
+  <section class="row" id="work" aria-labelledby="work-h">
+    <h2 id="work-h" class="label">Work</h2>
+    <div class="body">
+      <h3 class="item"><a href="https://sitebound-pay.pages.dev" rel="noopener">Sitebound</a></h3>
+      <p>Addressless stablecoin checkout: every payment is bound to the site.</p>
+    </div>
+  </section>
+
+  <section class="row" id="fund" aria-labelledby="fund-h">
+    <h2 id="fund-h" class="label">Fund my open-source work</h2>
+    <div class="body">
+      <ul class="tiers" id="tiers">
+        <li class="tier"><span class="amt">5 <small>USDT</small></span><div class="slot" data-amount="5"></div></li>
+        <li class="tier"><span class="amt">25 <small>USDT</small></span><div class="slot" data-amount="25"></div></li>
+        <li class="tier"><span class="amt">100 <small>USDT</small></span><div class="slot" data-amount="100"></div></li>
+      </ul>
+
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+      <noscript><p class="status-static">Payments need JavaScript, which is switched off here.</p></noscript>
+
+      <p class="fine">Test network: these payments use Whitechain Sepolia test USDT.</p>
+      <p class="fine">This page holds no wallet address. The payout wallet is registered for 0xmujahid.xyz on-chain, so a hacked page cannot redirect the money.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="row" id="elsewhere">
+  <h2 class="label">Elsewhere</h2>
+  <div class="body">
+    <ul class="links">
+      <li><a href="https://github.com/0xkeccak" rel="noopener">GitHub, 0xkeccak</a></li>
+      <li><a href="https://github.com/mujahid002" rel="noopener">GitHub, mujahid002</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://sitebound-pay.pages.dev/button/sitebound.js" defer id="sb-script"></script>
+<script>
+(() => {
+  const status = document.getElementById('status');
+  const HASH = /^0x[0-9a-fA-F]{64}$/;
+  const EXPLORER = 'https://explorer.testnet.whitechain.io/tx/';
+
+  // The contract rejects a reused order id, so every attempt gets its own.
+  const orderId = () => {
+    const r = crypto.getRandomValues(new Uint32Array(1))[0].toString(36).toUpperCase().padStart(4, '0');
+    return 'DON-' + Date.now().toString(36).toUpperCase() + '-' + r;
+  };
+
+  const say = (...nodes) => status.replaceChildren(...nodes);
+
+  document.querySelectorAll('.slot').forEach((slot) => {
+    const el = document.createElement('sitebound-pay');
+    el.setAttribute('amount', slot.dataset.amount);
+    el.setAttribute('order', orderId());
+    el.addEventListener('sitebound:paid', (e) => {
+      const { txHash } = e.detail || {};
+      // Same element stays mounted so the open receipt is not torn down; only the order id is renewed.
+      el.setAttribute('order', orderId());
+      const msg = document.createElement('span');
+      msg.textContent = 'Thank you. Payment confirmed on Whitechain.';
+      const nodes = [msg];
+      if (typeof txHash === 'string' && HASH.test(txHash)) {
+        const a = document.createElement('a');
+        a.href = EXPLORER + txHash;
+        a.rel = 'noopener';
+        a.textContent = 'View the transaction';
+        nodes.push(document.createTextNode(' '), a);
+      }
+      say(...nodes);
+    });
+    slot.append(el);
+  });
+
+  const failed = () => {
+    if (customElements.get('sitebound-pay')) return;
+    document.documentElement.classList.add('no-pay');
+    say(document.createTextNode('The payment buttons did not load. Reload the page to try again.'));
+  };
+  document.getElementById('sb-script').addEventListener('error', failed);
+  addEventListener('load', () => setTimeout(failed, 1500));
+})();
+</script>
+</body>
+</html>
