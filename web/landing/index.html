@@ -112,36 +112,168 @@
     </section>
 
     <section class="band why" aria-labelledby="why-h">
-      <h2 id="why-h" class="section-title" data-copy="why-title" data-reveal>Why we are building it</h2>
-      <ol class="rows reasons">
-        <li data-reveal><b>Copying an address.</b><p>One wrong paste is final. <a href="https://protonvpn.com/support/vpn-bitcoin-payments" target="_blank" rel="noopener noreferrer">Source</a></p></li>
-        <li data-reveal><b>Injected code.</b><p>A bad Ledger library update cost users ~$600k (2023). <a href="https://forklog.com/en/ledger-puts-estimated-user-losses-from-recent-breach-at-about-600000/" target="_blank" rel="noopener noreferrer">Source</a></p></li>
-        <li data-reveal><b>No 3-D Secure.</b><p>Nothing trusted shows the real site and amount. <span class="view">Our view</span></p></li>
-        <li data-reveal><b>Hard for web2.</b><p>Starting needs a crypto team. <span class="view">Our view</span></p></li>
-        <li data-reveal><b>Gas.</b><p>Paying USDT also costs the chain's coin. <a href="https://ethereum.org/developers/docs/gas/" target="_blank" rel="noopener noreferrer">Source</a></p></li>
-      </ol>
+      <!-- Line icons for this section and the next. Drawn as outlines, coloured by the text colour around them. -->
+      <svg class="wi-sprite" width="0" height="0" aria-hidden="true" focusable="false">
+        <defs>
+          <symbol id="wi-browser" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M3 9.5h18"/></symbol>
+          <symbol id="wi-shield" viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.5 3.2 8.2 7.5 9.5 4.3-1.3 7.5-5 7.5-9.5V6L12 3Z"/><path d="m9 12 2 2 4-4"/></symbol>
+          <symbol id="wi-contract" viewBox="0 0 24 24"><path d="M6 3.5h8l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 5 19V5A1.5 1.5 0 0 1 6 3.5Z"/><path d="M14 3.5V8h4M8.5 12.5h7M8.5 16h4.5"/></symbol>
+          <symbol id="wi-wallet" viewBox="0 0 24 24"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3"/><rect x="3.5" y="8" width="17" height="11.5" rx="3"/><path d="M20.5 12.5h-3.2a1.75 1.75 0 0 0 0 3.5h3.2"/></symbol>
+          <symbol id="wi-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.4 3.9 5.4 3.9 9s-1.3 6.6-3.9 9c-2.6-2.4-3.9-5.4-3.9-9S9.4 5.4 12 3Z"/></symbol>
+          <symbol id="wi-finger" viewBox="0 0 24 24"><path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/><path d="M14 13.12c0 2.38 0 6.38-1 8.88"/><path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/><path d="M2 12a10 10 0 0 1 18-6"/><path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/><path d="M8.65 22c.21-.66.45-1.32.57-2"/><path d="M9 6.8a6 6 0 0 1 9 5.2v2"/><path d="M21.8 16c.2-2 .131-5.354 0-6"/></symbol>
+          <symbol id="wi-code" viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 6l-3 12"/></symbol>
+          <symbol id="wi-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></symbol>
+          <symbol id="wi-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+          <symbol id="wi-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+          <symbol id="wi-alert" viewBox="0 0 24 24"><path d="M12 4 2.8 19.5h18.4L12 4Z"/><path d="M12 10v4.5M12 17.2v.01"/></symbol>
+          <symbol id="wi-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></symbol>
+          <symbol id="wi-field" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="3"/><path d="M7 12h6"/></symbol>
+          <symbol id="wi-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></symbol>
+          <symbol id="wi-team" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M15.5 5.2a3 3 0 0 1 0 5.6M17.5 14.2a5.5 5.5 0 0 1 3 4.8"/></symbol>
+          <symbol id="wi-fuel" viewBox="0 0 24 24"><path d="M3 22h12M4 9h10"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2 2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/></symbol>
+          <symbol id="wi-replay" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4.5v4.2h4.2"/></symbol>
+        </defs>
+      </svg>
+
+      <div class="why-head">
+        <div>
+          <h2 id="why-h" class="section-title" data-copy="why-title" data-reveal>Why we are building it</h2>
+          <p class="why-lede" data-reveal>On a classic checkout the page tells the buyer where to send the money. With Sitebound the page holds no address.</p>
+        </div>
+        <button class="ba-replay" type="button" data-replay aria-label="Replay the animation"><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-replay"/></svg>Replay</button>
+      </div>
+
+      <div class="ba">
+        <!-- Before: a classic checkout, and the swap. -->
+        <article class="ba-side ba-before">
+          <h3 class="ba-h"><span class="ba-dot" aria-hidden="true"></span>A classic crypto checkout</h3>
+          <div class="mock bw" role="img" aria-label="A classic checkout page in a browser. The Pay to field shows the address 0x71C7…a8e3 with a copy button. An injected script changes the field to 0xD3f0…9b41. The field turns red and says it was swapped by hacked code.">
+            <div class="bw-bar">
+              <i></i><i></i><i></i>
+              <span class="bw-url"><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-lock"/></svg>0xmujahid.xyz/checkout</span>
+            </div>
+            <div class="bw-body">
+              <div class="atk">
+                <span class="xchip an" style="--k:a-chip;--at:.3s"><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-code"/></svg>Injected script</span>
+                <span class="atk-line bad"><i class="an" style="--k:a-grow;--at:.6s"></i></span>
+              </div>
+              <div class="bw-row"><span>Total</span><b>3 USDT</b></div>
+              <div class="bw-label">Pay to</div>
+              <div class="addr an" style="--k:a-unflag;--at:1s">
+                <span class="addr-t">
+                  <span class="a-old an" style="--k:a-out;--at:1s">0x71C7…a8e3</span>
+                  <span class="a-new an" style="--k:a-in;--at:1s">0xD3f0…9b41</span>
+                </span>
+                <span class="copy">
+                  <span class="c-old an" style="--k:a-out;--at:1.7s;--dur:.2s"><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-copy"/></svg>Copy</span>
+                  <span class="c-new an" style="--k:a-in;--at:1.7s;--dur:.2s"><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-check"/></svg>Copied</span>
+                </span>
+              </div>
+              <p class="swap-tag an" style="--k:a-rise;--at:1.2s"><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-alert"/></svg>Swapped by hacked code</p>
+            </div>
+          </div>
+          <div class="route" role="img" aria-label="Where the money goes on a classic checkout: the buyer, the address shown on the page, then the wallet at that address. After the swap, that wallet is the attacker's.">
+            <span class="rn"><span class="rn-i"><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-user"/></svg></span><b>Buyer</b></span>
+            <span class="rw"></span>
+            <span class="rn"><span class="rn-i"><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-field"/></svg></span><b>Address on the page</b></span>
+            <span class="rw bad"><i class="an" style="--k:a-grow;--at:2s"></i></span>
+            <span class="rn bad"><span class="rn-i an" style="--k:a-unlit;--at:2.25s"><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-wallet"/></svg></span><b>Wallet at that address</b></span>
+          </div>
+          <p class="res bad an" style="--k:a-rise;--at:2s"><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-alert"/></svg><span>Buyer copies it. 3 USDT lands at the attacker.</span></p>
+          <p class="ba-foot">One wrong paste is final. <a href="https://protonvpn.com/support/vpn-bitcoin-payments" target="_blank" rel="noopener noreferrer">Source</a></p>
+        </article>
+
+        <!-- After: the same site on Sitebound. -->
+        <article class="ba-side ba-after">
+          <h3 class="ba-h"><span class="ba-dot good" aria-hidden="true"></span>With Sitebound</h3>
+          <div class="mock fr" role="img" aria-label="The Sitebound confirmation frame: Paying 0xmujahid.xyz, 3 USDT, Touch ID. An attacker script tries to change the payment and is stopped, because there is no address on the page to swap.">
+            <div class="fr-sheet">
+              <div class="fr-top"><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-shield"/></svg><span>Confirm payment</span><em>Drawn by the browser</em></div>
+              <p class="fr-line">Paying <b>0xmujahid.xyz</b></p>
+              <p class="fr-amt">3 USDT</p>
+              <div class="fr-id"><span class="fr-fp an" style="--k:a-ring;--at:2.3s;--dur:.6s"><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-finger"/></svg></span>Touch ID</div>
+            </div>
+            <div class="atk">
+              <span class="xchip an" style="--k:a-chip;--at:.3s"><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-code"/></svg>Injected script</span>
+              <span class="atk-line bad"><i class="an" style="--k:a-grow;--at:.7s"></i></span>
+              <span class="atk-end an" style="--k:a-pop;--at:1.1s"><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-x"/></svg>No address to swap</span>
+            </div>
+          </div>
+          <div class="route" role="img" aria-label="Where the money goes with Sitebound: the browser, the confirmation frame, the contract, then the wallet registered for that site. The page cannot change the last step.">
+            <span class="rn"><span class="rn-i"><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-browser"/></svg></span><b>Browser</b></span>
+            <span class="rw good"><i class="an" style="--k:a-grow;--at:1.5s"></i></span>
+            <span class="rn good"><span class="rn-i an" style="--k:a-unlit;--at:1.75s"><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-shield"/></svg></span><b>Confirm frame</b></span>
+            <span class="rw good"><i class="an" style="--k:a-grow;--at:1.9s"></i></span>
+            <span class="rn good"><span class="rn-i an" style="--k:a-unlit;--at:2.15s"><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-contract"/></svg></span><b>Contract</b></span>
+            <span class="rw good"><i class="an" style="--k:a-grow;--at:2.3s"></i></span>
+            <span class="rn good"><span class="rn-i an" style="--k:a-unlit;--at:2.55s"><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-wallet"/></svg></span><b>Wallet registered for the site</b></span>
+          </div>
+          <p class="res good an" style="--k:a-rise;--at:2.6s"><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-check"/></svg><span>Only the registered wallet is paid</span></p>
+          <p class="ba-foot">The browser names the site, not your page.</p>
+        </article>
+      </div>
+
+      <h3 class="why-sub" data-reveal>What it has cost</h3>
+      <ul class="pt">
+        <li data-reveal>
+          <p class="pt-n"><span aria-hidden="true"><span class="pt-c">~$</span><span class="pt-v" data-to="1.5" data-dec="1">1.5</span>B</span><span class="sr-only">About 1.5 billion dollars</span></p>
+          <h4 class="pt-w">Bybit <span>Feb 2025</span></h4>
+          <p class="pt-d">Hackers got in through a breached Safe wallet developer machine. The FBI says North Korea did it.</p>
+          <p class="pt-s"><a href="https://www.bleepingcomputer.com/news/security/lazarus-hacked-bybit-via-breached-safe-wallet-developer-machine/" target="_blank" rel="noopener noreferrer">BleepingComputer</a><a href="https://www.ic3.gov/PSA/2025/PSA250226" target="_blank" rel="noopener noreferrer">FBI</a></p>
+        </li>
+        <li data-reveal>
+          <p class="pt-n"><span aria-hidden="true"><span class="pt-c">~$</span><span class="pt-v" data-to="600" data-dec="0">600</span>k</span><span class="sr-only">About 600 thousand dollars</span></p>
+          <h4 class="pt-w">Ledger Connect Kit <span>Dec 2023</span></h4>
+          <p class="pt-d">A bad update to Ledger's Connect Kit library cost users.</p>
+          <p class="pt-s"><a href="https://www.ledger.com/blog/security-incident-report" target="_blank" rel="noopener noreferrer">Ledger report</a><a href="https://forklog.com/en/ledger-puts-estimated-user-losses-from-recent-breach-at-about-600000/" target="_blank" rel="noopener noreferrer">Forklog</a></p>
+        </li>
+        <li data-reveal>
+          <p class="pt-n"><span aria-hidden="true"><span class="pt-c">~$</span><span class="pt-v" data-to="120" data-dec="0">120</span>M</span><span class="sr-only">About 120 million dollars</span></p>
+          <h4 class="pt-w">BadgerDAO <span>Dec 2021</span></h4>
+          <p class="pt-d">A tampered front end took funds from its users.</p>
+          <p class="pt-s"><a href="https://rekt.news/badger-rekt" target="_blank" rel="noopener noreferrer">Rekt</a></p>
+        </li>
+      </ul>
+
+      <h3 class="why-sub" data-reveal>Three more problems</h3>
+      <ul class="oc">
+        <li data-reveal>
+          <span class="oc-i" aria-hidden="true"><svg class="gi" focusable="false"><use href="#wi-shield"/></svg></span>
+          <p>Nothing like 3-D Secure confirms the site and amount. <span class="view">Our view</span></p>
+        </li>
+        <li data-reveal>
+          <span class="oc-i" aria-hidden="true"><svg class="gi" focusable="false"><use href="#wi-team"/></svg></span>
+          <p>Starting needs a crypto team. <span class="view">Our view</span></p>
+        </li>
+        <li data-reveal>
+          <span class="oc-i" aria-hidden="true"><svg class="gi" focusable="false"><use href="#wi-fuel"/></svg></span>
+          <p>Paying costs the chain's own coin. <a href="https://ethereum.org/developers/docs/gas/" target="_blank" rel="noopener noreferrer">Source</a></p>
+        </li>
+      </ul>
     </section>
 
     <section id="how" class="band how" aria-labelledby="how-h" data-flow>
       <h2 id="how-h" class="section-title" data-copy="how-title" data-reveal>How it works</h2>
-      <ol class="route-flow">
-        <li data-reveal>
-          <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M3 9.5h18"/><path d="M8 14.5l2.2 2.2L15.5 12"/></svg></span>
-          <h3>Register</h3>
-          <p>Add your domain and one DNS record.</p>
+      <ol class="hf">
+        <li class="hf-i" data-reveal>
+          <span class="hf-n" aria-hidden="true">01</span>
+          <span class="hf-ico" aria-hidden="true"><svg class="gi" focusable="false"><use href="#wi-globe"/></svg></span>
+          <div><h3>Register</h3><p>Add your domain and one DNS record.</p></div>
+          <span class="hf-wire" aria-hidden="true"></span>
         </li>
-        <li data-reveal>
-          <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M6 3.5h8l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 5 19V5A1.5 1.5 0 0 1 6 3.5Z"/><path d="M14 3.5V8h4M8.5 12.5h7M8.5 16h4.5"/></svg></span>
-          <h3>Confirm</h3>
-          <p>Like 3-D Secure, Touch ID signs the site and amount. The browser names the site, not your page.</p>
+        <li class="hf-i" data-reveal>
+          <span class="hf-n" aria-hidden="true">02</span>
+          <span class="hf-ico" aria-hidden="true"><svg class="gi" focusable="false"><use href="#wi-finger"/></svg></span>
+          <div><h3>Confirm</h3><p>Like 3-D Secure, Touch ID signs the site and amount.</p></div>
+          <span class="hf-wire" aria-hidden="true"></span>
         </li>
-        <li data-reveal>
-          <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3"/><rect x="3.5" y="8" width="17" height="11.5" rx="3"/><path d="M20.5 12.5h-3.2a1.75 1.75 0 0 0 0 3.5h3.2"/></svg></span>
-          <h3>Get paid</h3>
-          <p>No "pay to" field: USDT goes only to your site's wallet. Buyers pay a 0.01 USDT fee, no gas.</p>
+        <li class="hf-i" data-reveal>
+          <span class="hf-n" aria-hidden="true">03</span>
+          <span class="hf-ico" aria-hidden="true"><svg class="gi" focusable="false"><use href="#wi-wallet"/></svg></span>
+          <div><h3>Get paid</h3><p>No "pay to" field: USDT goes only to your site's wallet. Buyers pay a 0.01 USDT fee, no gas.</p></div>
         </li>
       </ol>
-      <p class="foot-note strong" data-reveal>A hacked page cannot redirect the money.</p>
+      <p class="hf-note" data-reveal><svg class="gi" aria-hidden="true" focusable="false"><use href="#wi-shield"/></svg>A hacked page cannot redirect the money.</p>
     </section>
 
     <section id="verify" class="band verify" aria-labelledby="verify-h">

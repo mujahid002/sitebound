@@ -1,1 +1,233 @@
-/* Sections: Why we are building it, How it works. Owned by the "why" designer. */
+/* Sections: Why we are building it, How it works. Owned by the "why" designer.
+   Colours come only from the tokens in style.css, so the theme toggle needs nothing here.
+   The finished state is the default. why.js adds .why-ready to <html> (holds each scene at its start) and .is-play to a
+   scene when it is on screen; with reduced motion neither is added and the page shows the finished state. */
+
+.gi { display: block; flex: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.wi-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+.why { padding-bottom: clamp(32px, 5vw, 48px); }
+.how { padding-top: clamp(24px, 4vw, 40px); padding-bottom: clamp(16px, 3vw, 24px); }
+
+.why-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s2) var(--s4); }
+.why-lede { margin-top: var(--s2); max-width: 54ch; color: var(--muted); font-size: var(--fs-lg); line-height: 1.5; text-wrap: pretty; }
+.ba-replay {
+  display: none; align-items: center; gap: 6px; height: 32px; padding: 0 14px 0 10px; border: 1px solid var(--line-2); border-radius: 999px;
+  background: var(--surface); color: var(--muted); font: 500 var(--fs-sm) var(--font); cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+.ba-replay .gi { width: 15px; height: 15px; }
+.ba-replay:hover { color: var(--ink); border-color: var(--hover-line); }
+.why-ready .ba-replay { display: inline-flex; }
+
+.why-sub {
+  margin-top: var(--s8); font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+}
+
+/* ------------------------------------------------------------------ before / after */
+.ba { margin-top: var(--s5); display: grid; gap: var(--s2); }
+.ba-side {
+  container-type: inline-size; min-width: 0; display: flex; flex-direction: column; gap: var(--s2); padding: var(--s3);
+  border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow);
+}
+.ba-h { display: flex; align-items: center; gap: 10px; font-size: var(--fs-md); font-weight: 600; letter-spacing: -0.01em; }
+.ba-dot { width: 10px; height: 10px; flex: none; border-radius: 50%; border: 2px solid var(--line-2); }
+.ba-dot.good { border-color: var(--accent); background: var(--accent); }
+
+.mock { flex: 1 1 auto; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--field); overflow: hidden; }
+
+/* the page that gets hacked */
+.bw-bar { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--sunk); }
+.bw-bar > i { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--line-2); }
+.bw-url {
+  display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; height: 26px; margin-left: 8px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--field); color: var(--muted); font-size: 12px; white-space: nowrap;
+}
+.bw-url .gi { width: 13px; height: 13px; }
+.bw-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 10px; padding: var(--s2); }
+.bw-row { display: flex; align-items: baseline; justify-content: space-between; color: var(--muted); font-size: var(--fs-sm); }
+.bw-row b { color: var(--ink); font-size: var(--fs-lg); font-weight: 600; letter-spacing: -0.02em; }
+.bw-label { margin-bottom: -4px; color: var(--muted); font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+
+.addr {
+  display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 14px; border: 1px solid var(--err); border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--err) 7%, var(--field));
+}
+.addr-t { position: relative; flex: 1; min-width: 0; height: 28px; font: 600 15px/28px var(--mono); }
+.a-old, .a-new { position: absolute; inset: 0; white-space: nowrap; }
+.a-old { opacity: 0; }
+.a-new { color: var(--err); }
+.copy { position: relative; display: inline-grid; flex: none; height: 32px; padding: 0 12px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--field); color: var(--ink); font-size: 13px; font-weight: 600; }
+.c-old, .c-new { grid-area: 1 / 1; display: inline-flex; align-items: center; gap: 6px; }
+.c-old { opacity: 0; }
+.c-new { color: var(--muted); }
+.copy .gi { width: 14px; height: 14px; }
+.swap-tag { display: flex; align-items: center; gap: 8px; color: var(--err); font-size: var(--fs-sm); font-weight: 600; }
+.swap-tag .gi { width: 16px; height: 16px; }
+
+/* a script chip and the line it draws */
+.atk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 28px; }
+.xchip {
+  display: inline-flex; align-items: center; gap: 6px; flex: none; height: 26px; padding: 0 10px 0 8px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--err) 45%, var(--line)); background: color-mix(in srgb, var(--err) 10%, transparent);
+  color: var(--err); font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.xchip .gi { width: 14px; height: 14px; }
+.atk-line { position: relative; flex: 1 1 24px; min-width: 24px; height: 2px; }
+.atk-line i, .rw i { position: absolute; inset: 0; transform-origin: left center; }
+.atk-line i { background: repeating-linear-gradient(90deg, var(--err) 0 6px, transparent 6px 11px); }
+.atk-end {
+  display: inline-flex; align-items: center; gap: 6px; flex: none; height: 26px; padding: 0 10px 0 6px; border: 1px solid var(--line-2); border-radius: 999px;
+  background: var(--field); color: var(--ink); font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.atk-end .gi { width: 14px; height: 14px; color: var(--err); }
+
+/* the Sitebound confirmation frame */
+.fr { justify-content: center; gap: var(--s2); padding: var(--s2); background: var(--sunk); }
+.fr-sheet { display: grid; gap: 2px; padding: var(--s2); border: 1px solid var(--line-2); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
+.fr-top { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.fr-top .gi { width: 16px; height: 16px; color: var(--accent); }
+.fr-top em { margin-left: auto; font-style: normal; font-weight: 500; }
+.fr-line { margin-top: 10px; color: var(--muted); font-size: var(--fs-sm); }
+.fr-line b { color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
+.fr-amt { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.2; }
+.fr-id { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 6px 12px 6px 6px; border: 1px solid var(--line-2); border-radius: 12px; font-size: 13px; font-weight: 600; }
+.fr-fp { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 12%, var(--field)); color: var(--accent); }
+.fr-fp .gi { width: 18px; height: 18px; }
+
+/* the path of the money */
+.route { display: flex; align-items: flex-start; padding: 4px 4px 0; }
+.rn { flex: none; width: 84px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.rn b { color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.3; }
+.rn-i { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line-2); background: var(--field); color: var(--ink); }
+.rn-i .gi { width: 18px; height: 18px; }
+.rn.good .rn-i { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, var(--line-2)); background: color-mix(in srgb, var(--accent) 10%, var(--field)); }
+.rn.bad .rn-i { color: var(--err); border-color: color-mix(in srgb, var(--err) 55%, var(--line-2)); background: color-mix(in srgb, var(--err) 9%, var(--field)); }
+.rn.good b, .rn.bad b { color: var(--ink); }
+.rw { position: relative; flex: 1 1 12px; min-width: 12px; height: 2px; margin-top: 17px; border-radius: 2px; background: var(--line-2); overflow: hidden; }
+.rw.good i { background: var(--accent); }
+.rw.bad i { background: var(--err); }
+
+.res {
+  --c: var(--muted); display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: var(--r-md);
+  border: 1px solid color-mix(in srgb, var(--c) 40%, var(--line)); background: color-mix(in srgb, var(--c) 8%, transparent);
+  color: var(--c); font-size: var(--fs-sm); font-weight: 600; line-height: 1.45;
+}
+.res .gi { width: 18px; height: 18px; margin-top: 1px; }
+.res.bad { --c: var(--err); }
+.res.good { --c: var(--accent); }
+.ba-foot { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.ba-foot a, .pt-s a { color: var(--ink); text-underline-offset: 3px; text-decoration-color: var(--line-2); }
+.ba-foot a:hover, .pt-s a:hover { text-decoration-color: currentColor; }
+.ba-foot a[target="_blank"]::after, .pt-s a[target="_blank"]::after { content: "\2197"; margin-left: 3px; font-size: 0.85em; }
+
+/* narrow cards: the path runs downwards */
+@container (max-width: 379px) {
+  .route { flex-direction: column; align-items: stretch; padding: 0; }
+  .rn { flex-direction: row; width: auto; gap: 12px; text-align: left; }
+  .rw { flex: none; width: 2px; height: 14px; min-width: 0; margin: 3px 0 3px 17px; --gx: 1; --gy: 0; }
+  .atk-line { flex: 0 0 0; min-width: 0; }
+  .fr-top em { display: none; }
+}
+
+@media (min-width: 900px) {
+  .ba { grid-template-columns: 1fr 1fr; gap: var(--s3); }
+  /* Side by side the right card waits for the left one to finish. Stacked, each plays when it is on screen. */
+  .ba-after { --d0: 2.2s; }
+}
+
+/* ------------------------------------------------------------------ proof tiles */
+.pt, .oc { display: grid; gap: var(--s2); margin-top: var(--s2); }
+.pt li {
+  position: relative; display: flex; flex-direction: column; gap: 10px; padding: var(--s3); border: 1px solid var(--line-2); border-radius: var(--r-lg);
+  background: var(--surface); overflow: hidden;
+}
+.pt li::before { content: ""; position: absolute; inset: 0 0 auto; height: 2px; background: linear-gradient(90deg, var(--err), transparent 75%); opacity: 0.75; }
+.pt-n { font-size: clamp(2.5rem, 1.6rem + 3vw, 3.5rem); font-weight: 700; letter-spacing: -0.045em; line-height: 1; font-variant-numeric: tabular-nums; }
+.pt-c { color: var(--muted); font-weight: 500; }
+.pt-w { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; font-size: var(--fs-md); font-weight: 600; letter-spacing: -0.01em; }
+.pt-w span { color: var(--muted); font: 500 12px var(--mono); }
+.pt-d { color: var(--muted); font-size: var(--fs-sm); line-height: 1.55; text-wrap: pretty; }
+.pt-s { display: flex; flex-wrap: wrap; gap: 0 16px; margin-top: auto; padding-top: 6px; font-size: 13px; }
+.pt-s a { padding: 6px 0; }
+
+/* ------------------------------------------------------------------ other problems */
+.oc li { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: color-mix(in srgb, var(--surface) 70%, transparent); }
+.oc-i { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line-2); background: var(--field); color: var(--ink); }
+.oc-i .gi { width: 18px; height: 18px; }
+.oc p { padding-top: 6px; color: var(--muted); font-size: var(--fs-sm); line-height: 1.5; }
+.oc a { color: var(--ink); text-underline-offset: 3px; text-decoration-color: var(--line-2); white-space: nowrap; }
+.oc a[target="_blank"]::after { content: "\2197"; margin-left: 3px; font-size: 0.85em; }
+.oc .view { margin-left: 2px; }
+
+@media (min-width: 760px) {
+  .pt, .oc { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ------------------------------------------------------------------ how it works */
+.hf { --gap: 36px; margin-top: var(--s5); display: grid; gap: var(--gap); }
+.hf-i {
+  position: relative; display: grid; grid-template-columns: 48px 1fr; gap: 0 var(--s2); align-items: start; padding: 20px; border: 1px solid var(--line-2); border-radius: var(--r-lg);
+  background: var(--surface); box-shadow: var(--shadow);
+}
+.hf-n { position: absolute; top: 18px; right: 20px; color: var(--muted); font: 500 var(--fs-xs) var(--mono); }
+.hf-ico {
+  display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--line-2); background: var(--field); color: var(--ink);
+  transition: color 0.3s var(--ease), border-color 0.3s var(--ease), background-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
+  transition-delay: calc(var(--i, 0) * 0.5s + 0.1s);
+}
+.hf-ico .gi { width: 22px; height: 22px; }
+.hf-i:last-child .hf-ico { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, var(--line-2)); background: color-mix(in srgb, var(--accent) 10%, var(--field)); }
+.hf-i h3 { font-size: var(--fs-lg); font-weight: 600; letter-spacing: -0.02em; line-height: 1.3; padding-top: 2px; }
+.hf-i p { margin-top: 6px; max-width: 34ch; color: var(--muted); line-height: 1.55; text-wrap: pretty; }
+
+/* the connector between two cards: a grey track, an accent fill that is drawn in, an arrowhead at the end */
+.hf-wire { position: absolute; top: 100%; left: 43px; width: 2px; height: var(--gap); background: var(--line-2); }
+.hf-wire::after { content: ""; position: absolute; inset: 0; background: var(--accent); transform-origin: top center; transition: transform 0.4s var(--ease) calc(var(--i, 0) * 0.5s + 0.2s); }
+.hf-wire::before {
+  content: ""; position: absolute; left: -3px; bottom: -1px; z-index: 1; width: 8px; height: 8px; border-top: 2px solid var(--accent); border-right: 2px solid var(--accent);
+  transform: rotate(135deg); transition: opacity 0.2s var(--ease) calc(var(--i, 0) * 0.5s + 0.5s);
+}
+
+.hf-note {
+  display: flex; align-items: center; gap: 12px; width: fit-content; max-width: 100%; margin-top: var(--s5); padding: 14px 18px; border-radius: var(--r-md);
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--line)); background: color-mix(in srgb, var(--accent) 7%, transparent); font-weight: 600; line-height: 1.4;
+}
+.hf-note .gi { color: var(--accent); }
+
+@media (min-width: 760px) {
+  .hf { --gap: 56px; grid-template-columns: repeat(3, 1fr); }
+  .hf-i { display: block; padding: var(--s3); }
+  .hf-ico { margin-bottom: var(--s2); }
+  .hf-n { top: 22px; right: 24px; }
+  .hf-wire { top: 47px; left: 100%; width: calc(var(--gap) + 2px); height: 2px; margin-left: -1px; }
+  .hf-wire::after { transform-origin: left center; }
+  .hf-wire::before { left: auto; right: -1px; bottom: auto; top: -3px; transform: rotate(45deg); }
+}
+
+/* ------------------------------------------------------------------ motion */
+/* Each scene is held at its start until .is-play, then plays once. 200 to 600 ms steps, ease-out, no loops. */
+@keyframes a-chip { from { opacity: 0; transform: translateY(-6px); } }
+@keyframes a-grow { from { transform: scale(var(--gx, 0), var(--gy, 1)); } }
+@keyframes a-rise { from { opacity: 0; transform: translateY(6px); } }
+@keyframes a-in { from { opacity: 0; transform: translateY(5px); } }
+@keyframes a-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-5px); } }
+@keyframes a-pop { from { opacity: 0; transform: scale(0.8); } }
+@keyframes a-unflag { from { border-color: var(--line-2); background: var(--sunk); } }
+@keyframes a-unlit { from { color: var(--muted); border-color: var(--line-2); background: var(--field); } }
+@keyframes a-ring { from { box-shadow: 0 0 0 0 rgba(var(--spot), 0.5); } to { box-shadow: 0 0 0 12px rgba(var(--spot), 0); } }
+
+.why-ready .ba-side .an { animation: var(--k) var(--dur, 0.35s) var(--ease) calc(var(--d0, 0s) + var(--at, 0s)) both paused; }
+.why-ready .ba-side.is-play .an { animation-play-state: running; }
+.why-ready .ba.is-reset .an { animation: none; }
+
+.why-ready .hf:not(.is-play) .hf-wire::before { opacity: 0; }
+.why-ready .hf:not(.is-play) .hf-i:nth-child(n+2) .hf-ico { color: var(--muted); border-color: var(--line-2); background: var(--field); }
+.why-ready .hf:not(.is-play) .hf-wire::after { transform: scaleY(0); }
+@media (min-width: 760px) {
+  .why-ready .hf:not(.is-play) .hf-wire::after { transform: scaleX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hf-wire::after, .hf-wire::before, .hf-ico { transition: none; }
+}
