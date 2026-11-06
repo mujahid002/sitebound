@@ -1,4 +1,4 @@
-/* Trust band, Try it, Honest limits, footer, and the Whitechain lockup in the nav and hero. Owned by the "proof" designer.
+/* Trust band, Try it, footer, and the Whitechain lockup in the nav and hero. Owned by the "proof" designer.
    Loaded after style.css. The band is dark in both themes, so it sets its own colour tokens (the page's light-theme
    accent would be too dark on navy). The browser mock in Try it stays dark too: the portfolio it copies is dark. */
 
@@ -260,35 +260,6 @@
   @keyframes mk-l2 { 0%, 60% { opacity: 0; } 66%, 90% { opacity: 1; } 94%, 100% { opacity: 0; } }
 }
 
-/* ================================================================ HONEST LIMITS */
-.limits { padding-top: clamp(40px, 6vw, 72px); }
-.lim-grid { display: grid; gap: var(--s2); margin-top: var(--s4); }
-@media (min-width: 760px) { .lim-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s3); } }
-.lim {
-  display: grid; align-content: start; gap: 6px; padding: clamp(20px, 3vw, 28px); min-width: 0;
-  border: 1px solid var(--line-2); border-radius: var(--r-lg);
-  background: linear-gradient(var(--warn), var(--warn)) top / 100% 3px no-repeat, var(--surface);
-  box-shadow: var(--shadow);
-}
-.lim b { font-size: var(--fs-lg); font-weight: 650; letter-spacing: -0.02em; line-height: 1.3; }
-.lim p { color: var(--muted); max-width: 34ch; }
-.lim-ico {
-  display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 8px; border-radius: 12px;
-  background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--warn);
-}
-.lim-ico svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-@media (max-width: 759px) {
-  .lim { grid-template-columns: 44px minmax(0, 1fr); column-gap: var(--s2); row-gap: 2px; }
-  .lim-ico { grid-row: 1 / span 2; margin: 0; }
-  .lim p { max-width: none; }
-}
-.lim-foot {
-  display: flex; align-items: center; gap: 12px; margin-top: var(--s3); padding: 16px 20px;
-  border: 1px solid color-mix(in srgb, var(--warn) 42%, var(--line)); border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--warn) 9%, transparent); font-weight: 600;
-}
-.lim-foot svg { width: 22px; height: 22px; flex: none; fill: none; stroke: var(--warn); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-
 /* ================================================================ FOOTER */
 .foot { position: relative; z-index: 1; border-top: 1px solid var(--line); }
 .foot-in { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2) var(--s4); max-width: 1040px; margin-inline: auto; padding: var(--s4) var(--pad); }
@@ -299,6 +270,9 @@
 .foot nav a { padding: 8px 12px; border-radius: 999px; color: var(--muted); font-size: var(--fs-sm); text-decoration: none; transition: color 0.2s, background-color 0.2s; }
 .foot nav a:hover { color: var(--ink); background: rgba(var(--rl), 0.06); }
 @media (max-width: 560px) { .foot .top-brand span { display: inline; } .foot-in { flex-direction: column; align-items: flex-start; } .foot nav { margin-left: -12px; } }
+
+/* The one honest line: testnet only, not audited. The long list of limits lives in the docs. */
+.foot-limit { max-width: 1040px; margin-inline: auto; padding: 0 var(--pad) var(--s1); color: var(--ink); font-size: var(--fs-sm); font-weight: 550; text-align: center; text-wrap: balance; }
 
 /* One quiet credit line at the very bottom of the page. */
 .foot-credit { max-width: 1040px; margin-inline: auto; padding: 0 var(--pad) var(--s4); color: var(--muted); font-size: var(--fs-xs); line-height: 1.6; text-align: center; text-wrap: balance; }
