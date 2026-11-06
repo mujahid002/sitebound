@@ -1,0 +1,21 @@
+{
+  "source": "Chrome for Testing 1223 (Chromium), CDP virtual authenticator (ctap2, internal, UV), cross-origin iframe",
+  "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/148.0.0.0 Safari/537.36",
+  "topOrigin": "http://127.0.0.1:8001",
+  "frameOrigin": "http://localhost:8002",
+  "rpId": "localhost",
+  "credId": "0x53d9a2bd8087b3690707ee74572905240505073f83fb8d78a3a25617d70e09ef",
+  "pubX": "0x14730be92f0d1c205c0d574c52e7543d4e9703255ebf4f58eee5649f989b0b27",
+  "pubY": "0x64c36703882614701d8129fe0908560ec552c7805f98cec87a190789749bb317",
+  "authenticatorData": "0x49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97630500000002",
+  "clientDataJSON": "{\"type\":\"webauthn.get\",\"challenge\":\"r8KtEgSu1v9XGDPUhemskkoNC0CVUOQdLLIRLZjpErc\",\"origin\":\"http://localhost:8002\",\"crossOrigin\":true,\"topOrigin\":\"http://127.0.0.1:8001\"}",
+  "r": "0x96affd97740b6068bc8d3ac6d41e82370d69691d32286606843ddb5f5da1573b",
+  "s": "0xed3da0aa789787c1609e75efa7f4f4a48486d62dfb2d2b07163e364c2a3e820b",
+  "chainId": 1874,
+  "contract": "0x51b0b00000000000000000000000000000000001",
+  "orderId": "0x666978747572652d310000000000000000000000000000000000000000000000",
+  "amount": 12000000,
+  "relayerFee": 0,
+  "deadline": 4102444800,
+  "challenge": "0xafc2ad1204aed6ff571833d485e9ac924a0d0b409550e41d2cb2112d98e912b7"
+}

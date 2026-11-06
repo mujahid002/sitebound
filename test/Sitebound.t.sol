@@ -181,6 +181,59 @@ contract SiteboundTest is Test {
         return sb.pay(_input(o));
     }
 
+    // ------------------------------------------- real browser assertion
+
+    /// Replays an assertion captured from Chromium inside a cross-origin iframe (test/fixtures).
+    function test_replays_real_browser_assertion() public {
+        string memory j = vm.readFile("test/fixtures/frame_assertion.json");
+        address at = vm.parseJsonAddress(j, ".contract");
+        vm.chainId(vm.parseJsonUint(j, ".chainId"));
+        address[] memory att = new address[](1);
+        att[0] = vm.addr(attestorKey);
+        deployCodeTo(
+            "Sitebound.sol:Sitebound",
+            abi.encode(address(usdt), vm.parseJsonString(j, ".frameOrigin"), sha256(bytes(vm.parseJsonString(j, ".rpId"))), att, DELAY),
+            at
+        );
+        sb = Sitebound(at);
+        vm.prank(wallet);
+        usdt.approve(at, type(uint256).max);
+
+        string memory top = vm.parseJsonString(j, ".topOrigin");
+        _register(top, shopWallet);
+        cred = keccak256(vm.parseJsonBytes(j, ".credId"));
+        px = vm.parseJsonUint(j, ".pubX");
+        py = vm.parseJsonUint(j, ".pubY");
+        _bind(walletKey, 50e6, 100e6, uint64(block.timestamp + 30 days));
+
+        string memory cd = vm.parseJsonString(j, ".clientDataJSON");
+        bytes memory jb = bytes(cd);
+        Sitebound.PayInput memory p;
+        p.credentialHash = cred;
+        p.authenticatorData = vm.parseJsonBytes(j, ".authenticatorData");
+        p.clientDataJSON = cd;
+        p.typeIdx = _find(jb, '"type":');
+        p.challengeIdx = _find(jb, '"challenge":');
+        p.originIdx = _find(jb, '"origin":');
+        p.crossOriginIdx = _find(jb, '"crossOrigin":');
+        p.topOriginIdx = _find(jb, '"topOrigin":');
+        p.r = vm.parseJsonUint(j, ".r");
+        p.s = vm.parseJsonUint(j, ".s");
+        p.orderId = vm.parseJsonBytes32(j, ".orderId");
+        p.amount = vm.parseJsonUint(j, ".amount");
+        p.relayerFee = vm.parseJsonUint(j, ".relayerFee");
+        p.deadline = vm.parseJsonUint(j, ".deadline");
+        sb.pay(p);
+        assertEq(usdt.balanceOf(shopWallet), 12e6);
+
+        // the same assertion cannot pay twice, and changing one signed field breaks it
+        vm.expectRevert("order used");
+        sb.pay(p);
+        p.orderId = bytes32(uint256(p.orderId) + 1);
+        vm.expectRevert("bad challenge");
+        sb.pay(p);
+    }
+
     // --------------------------------------------------------------- pay
 
     function test_pay_reaches_registry_payout() public {
