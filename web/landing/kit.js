@@ -1,4 +1,4 @@
-// The shop kit on the landing page: setup (onboarding's Shop), a live button preview and a mini dashboard.
+// The setup kit on the landing page: setup (onboarding's Shop), a live button preview and a mini dashboard.
 // Everything that touches the chain or the relayer comes from web/onboard and web/dashboard, unforked.
 import { render } from 'preact';
 import { useState, useEffect, useMemo } from 'preact/hooks';
@@ -20,13 +20,13 @@ function Kit({ origin, config, onChange }) {
   useEffect(() => { config.then(setBoot); }, [config]);
   const site = parseSite(origin);
 
-  if (!boot) return html`<p class="lede kit-loading" role="status">Loading your shop setup…</p>`;
+  if (!boot) return html`<p class="lede kit-loading" role="status">Loading your site setup…</p>`;
   if (boot.error) {
     return html`<${Notice} kind="error" title="Setup is not configured on this host">
       The page needs its <span class="mono">config.js</span> (chain, RPC, relayer and contract address).<//>`;
   }
   if (site.error) {
-    return html`<${Notice} kind="warn" title="Sitebound needs an https site">Type a site like shop.com.
+    return html`<${Notice} kind="warn" title="Sitebound needs an https site">Type a site like example.com.
       <div class="row"><button class="link-btn" onClick=${onChange}>Change the site</button></div><//>`;
   }
   const cfg = boot.cfg;
@@ -52,7 +52,7 @@ function SiteBadge({ cfg, site, info, status }) {
 }
 
 // Test checkout: the real button and frame, with an amount the owner picks. The frame always names the site
-// the buyer is actually on (the browser reports it), so on this page it names this page's host, not the shop.
+// the buyer is actually on (the browser reports it), so on this page it names this page's host, not the owner's site.
 function TestCheckout({ cfg, site }) {
   const [ready, setReady] = useState(() => !!customElements.get('sitebound-pay'));
   const [failed, setFailed] = useState(false);
@@ -85,7 +85,7 @@ function TestCheckout({ cfg, site }) {
     </div>
     <p class="hint">Opens the real Sitebound frame: "Pay ${ok ? amount : '…'} USDT to" the site in the buyer's address bar, with no wallet address anywhere.
       On this page that is <strong>${location.host}</strong>, which is not registered, so nothing can be paid here.
-      Pasted on your shop, the same button says <strong>Pay ${ok ? amount : '…'} USDT to ${site.host}</strong>.</p>
+      Pasted on your site, the same button says <strong>Pay ${ok ? amount : '…'} USDT to ${site.host}</strong>.</p>
   </div>`;
 }
 

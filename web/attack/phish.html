@@ -17,7 +17,7 @@
   <script src="attack.js" defer></script>
 </head>
 <body>
-  <p class="demo-banner demo-ui">Attack demo 3 of 3. A copy of the shop on another origin, embedding the real Sitebound frame. <a href="./">All demos</a></p>
+  <p class="demo-banner demo-ui">Attack demo 3 of 3. A copy of the demo site on another origin, embedding the real Sitebound frame. <a href="./">All demos</a></p>
 
   <header class="bar">
     <span class="logo">Halden <span>Coffee Supply</span></span>
@@ -37,7 +37,7 @@
       <div id="fake" class="fake" popover="manual" aria-hidden="true">
         <p>Checkout</p>
         <p class="big">16.50 <small>USDT</small></p>
-        <p>Pay 16.50 USDT to <b id="real-shop">the real shop</b></p>
+        <p>Pay 16.50 USDT to <b id="real-shop">the real site</b></p>
       </div>
     </section>
 
@@ -48,7 +48,7 @@
 
       <div class="limit">
         <b>Known limit: overlay (UI redressing)</b>
-        <p>The fake site can draw over the frame and cover the domain it shows. Turn the overlay on, then press Pay: the frame's site line is covered with the real shop's name. The signature still carries this page's origin, so the payee does not change. But if the attacker registered their own domain, a buyer fooled by the overlay pays the attacker. Sitebound shows the real site; it does not vouch for it. Detecting overlays from inside the frame is not checked.</p>
+        <p>The fake site can draw over the frame and cover the domain it shows. Turn the overlay on, then press Pay: the frame's site line is covered with the real site's name. The signature still carries this page's origin, so the payee does not change. But if the attacker registered their own domain, a buyer fooled by the overlay pays the attacker. Sitebound shows the real site; it does not vouch for it. Detecting overlays from inside the frame is not checked.</p>
         <button id="overlay-toggle" class="btn ghost" type="button">Draw the overlay</button>
       </div>
 

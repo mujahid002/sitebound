@@ -1,4 +1,4 @@
-// Shop dashboard: payments to one site, read from chain events. Refunds, CSV, webhook test.
+// Website dashboard: payments to one site, read from chain events. Refunds, CSV, webhook test.
 import { render } from 'preact';
 import { useState, useEffect, useRef, useCallback } from 'preact/hooks';
 import { html, Brand, Icon, Spinner, Notice, TxLink, AddrLink, Empty, useTick } from '../onboard/ui.js';
@@ -104,8 +104,8 @@ function App() {
 
   let body;
   if (site.error) {
-    body = html`<${Empty} title="Which shop?" action=${html`<a class="btn" href="../landing/index.html#site">Type your website</a>`}>
-      Open the dashboard with <span class="mono">?site=https://your-shop.com</span>, with the exact site you registered.<//>`;
+    body = html`<${Empty} title="Which website?" action=${html`<a class="btn" href="../landing/index.html#site">Type your website</a>`}>
+      Open the dashboard with <span class="mono">?site=https://your-site.com</span>, with the exact site you registered.<//>`;
   } else if (boot.status === 'loading') {
     body = html`<p class="lede" role="status">Loading your orders…</p>`;
   } else if (boot.status === 'error') {
@@ -168,7 +168,7 @@ function Dashboard({ cfg, site }) {
 
   let content;
   if (chain.status === 'none') {
-    content = html`<${Empty} title="Not deployed yet" action=${html`<a class="btn ghost" href=${'../onboard/index.html?site=' + encodeURIComponent(site.origin)}>Set up your shop</a>`}>
+    content = html`<${Empty} title="Not deployed yet" action=${html`<a class="btn ghost" href=${'../onboard/index.html?site=' + encodeURIComponent(site.origin)}>Set up your site</a>`}>
       The Sitebound contract has no address on ${cfg.chainName} yet, so there are no payments to show. This page fills in once it is live.<//>`;
   } else if (chain.status === 'error') {
     content = html`<${Notice} kind="error" title="Could not read the chain">${chain.message}
@@ -176,7 +176,7 @@ function Dashboard({ cfg, site }) {
   } else {
     content = html`
       ${info && !info.registered && html`<${Notice} kind="warn" title="This site is not registered yet">
-        Payments only reach you after you register it. <a href=${'../onboard/index.html?site=' + encodeURIComponent(site.origin)}>Set up your shop</a>.<//>`}
+        Payments only reach you after you register it. <a href=${'../onboard/index.html?site=' + encodeURIComponent(site.origin)}>Set up your site</a>.<//>`}
       <${Totals} feed=${feed} />
       <${Orders} cfg=${cfg} site=${site} feed=${feed} load=${load} onRefund=${setRefund} />
       <${Webhook} site=${site} />`;
@@ -429,7 +429,7 @@ function Webhook({ site }) {
     <p class="hint">Real webhooks need the Sitebound relayer to watch for payments and post them to your server. That part is not built, so nothing is sent for real orders. This box saves the address in this browser only and lets you check that your endpoint accepts the format.</p>
     <div class="field">
       <label for="wh">Webhook URL</label>
-      <input id="wh" class="input" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://shop.com/webhook"
+      <input id="wh" class="input" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://example.com/webhook"
         value=${url} aria-invalid=${bad ? 'true' : 'false'} aria-describedby="wh-msg" onInput=${(e) => { setUrl(e.target.value.trim()); setRes(null); }} />
       <p id="wh-msg" class=${'hint' + (bad ? ' err' : '')}>${bad}</p>
     </div>

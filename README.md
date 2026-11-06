@@ -83,7 +83,7 @@ python3 web/dev/serve.py
 Paying on the local shop needs `http://127.0.0.1:8001` registered on the deployed contract. The relayer only attests
 `https://` origins, so that registration needs a separately signed attestation: not checked.
 
-### Demo shop
+### Demo site
 
 The demo shop is static and can be its own Cloudflare Pages project. A real shop loads the button from the
 Sitebound frame host, because the button opens the frame next to its own script URL. Before deploying, point the

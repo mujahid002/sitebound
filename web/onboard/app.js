@@ -1,4 +1,4 @@
-// Shop onboarding: wallet -> DNS proof -> register -> snippet.
+// Website onboarding: wallet -> DNS proof -> register -> snippet.
 import { render } from 'preact';
 import { useState, useEffect, useRef, useCallback } from 'preact/hooks';
 import { html, Brand, Icon, Spinner, Notice, CopyButton, TxLink, AddrLink, useTick, Empty } from './ui.js';
@@ -52,7 +52,7 @@ function App() {
   const site = parseSite(new URLSearchParams(location.search).get('site'));
   let body;
   if (site.error) body = html`<${BadSite} site=${site} />`;
-  else if (boot.status === 'loading') body = html`<p class="lede" role="status">Loading your shop setup…</p>`;
+  else if (boot.status === 'loading') body = html`<p class="lede" role="status">Loading your site setup…</p>`;
   else if (boot.status === 'error') {
     body = html`<${Empty} title=${boot.error === 'missing' ? 'Setup is not configured yet' : 'Setup config is incomplete'}>
       The site needs its <span class="mono">config.js</span> (chain, RPC, relayer and contract address). Come back once it has been deployed.<//>`;
@@ -69,8 +69,8 @@ function App() {
 
 function BadSite({ site }) {
   const msg = {
-    none: 'Open this page from the Sitebound home page, or add ?site=https://your-shop.com to the address.',
-    bad: 'That does not look like a web address. It needs to be the exact origin, like https://shop.com.',
+    none: 'Open this page from the Sitebound home page, or add ?site=https://your-site.com to the address.',
+    bad: 'That does not look like a web address. It needs to be the exact origin, like https://example.com.',
     notorigin: `The site must be just the origin, with no path, slash or capitals${site.hint ? `. Try ${site.hint}` : ''}.`,
     https: 'Sitebound only works with https sites.',
   }[site.error];
@@ -168,7 +168,7 @@ export function Shop({ cfg, site, onChangeSite, onInfo, snippetExtra }) {
 
   return html`
     <div class="head">
-      <p class="eyebrow">Connect your shop</p>
+      <p class="eyebrow">Connect your website</p>
       <h1 class="h1">${site.host}</h1>
       <p class="lede">Four short steps. Your checkout code never holds a payment address.</p>
       ${onChangeSite
@@ -194,7 +194,7 @@ export function Shop({ cfg, site, onChangeSite, onInfo, snippetExtra }) {
         <${DnsStep} cfg=${cfg} site=${site} account=${account} dns=${dns} dnsOk=${dnsOk} nextAt=${nextAt}
           onCheck=${manualCheck} onStop=${() => setNextAt(0)} attempts=${attempts.current} />
       <//>
-      <${Step} n=${3} state=${state(3)} title=${info?.registered && !mine ? 'Change your payout wallet' : 'Register your shop'}
+      <${Step} n=${3} state=${state(3)} title=${info?.registered && !mine ? 'Change your payout wallet' : 'Register your site'}
         summary=${regDone && (info.pending && sameAddr(info.pending, account) ? 'Payout change scheduled' : 'Registered')}
         hint="Saves your payout wallet on chain.">
         <${RegisterStep} cfg=${cfg} chain=${chain} reg=${reg} account=${account} onRegister=${register} />
@@ -298,7 +298,7 @@ function RegisterStep({ cfg, chain, reg, account, onRegister }) {
     ${!cfg.relayerUrl && html`<${Notice} kind="error" title="No relayer configured">Registration is not available in this build.<//>`}
     <div class="row">
       <button class="btn" onClick=${onRegister} disabled=${blocked || busy}>
-        ${busy ? html`<${Spinner} />` : null}${busy ? 'Waiting for the chain…' : change ? 'Request payout change' : 'Register shop'}
+        ${busy ? html`<${Spinner} />` : null}${busy ? 'Waiting for the chain…' : change ? 'Request payout change' : 'Register site'}
       </button>
     </div>
     <div aria-live="polite">
