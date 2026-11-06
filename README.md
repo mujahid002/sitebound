@@ -110,15 +110,33 @@ Token: Whitechain Sepolia USDT `0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7` (6 d
 
 - Sitebound contract: [`0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73`](https://explorer.testnet.whitechain.io/address/0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73)
   (token: Whitechain USDT, `DELAY` 1 hour, frame origin `https://sitebound-pay.pages.dev`)
-- Verified source on Blockscout: not yet. Blockscout answered "Fail - Unable to verify" on every try, although the
-  local build output equals the deployed creation bytecode byte for byte (measured). Its verification config lists
-  no compiler versions (checked 6 Nov), so the verifier service looks unavailable. Reported in
-  WHITECHAIN_FEEDBACK.md. Standard-JSON input: `forge verify-contract --show-standard-json-input`.
+- Verified source: Sourcify exact match. Blockscout: failing on the explorer's side, see "Verify it yourself" below.
 - Frame, landing, onboarding, dashboard: https://sitebound-pay.pages.dev
 - Demo shop: https://sitebound-demo.pages.dev
 - Relayer Worker: https://sitebound-relayer.sitebound-relayer.workers.dev (`/health`)
 - First USDT payment: TBD
 - Explorer: https://explorer.testnet.whitechain.io
+
+## Verify it yourself
+
+Three independent ways to check that the contract above is the code in this repo (the commit is in
+`web/verify/expected.json`; solc 0.8.28, via-IR, optimizer 200 runs, EVM cancun):
+
+- **Sourcify: exact match** for both the creation and the runtime code:
+  https://repo.sourcify.dev/1874/0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73
+- **From source, on your machine:** `sh scripts/verify.sh`. It rebuilds with `forge`, reads the deployed code with
+  `cast`, zeroes the immutables (token, rpIdHash, delay) in both, and compares. It prints
+  `MATCH 0xaa7fc4f738a41cc4ff55b7dfc84353a4ee48244e2074ddbdeecab73c19633f1f` (measured 6 Nov). Needs only
+  Foundry; the public RPC is the default.
+- **In your browser:** "Verify us" on https://sitebound-pay.pages.dev/landing/#verify reads the code with
+  `eth_getCode`, applies the same masking, and compares the hash with `web/verify/expected.json`. It also checks that
+  the token, RP ID hash and delay baked into the code are the values that file lists.
+
+Blockscout verification is currently failing on Whitechain's side. Our submissions end in "Fail - Unable to
+verify", although the local build output equals the deployed creation bytecode byte for byte. The explorer
+verified 40 contracts between 12:09 and 15:03 IST on 6 Nov and none after that, and its verification config lists
+no compiler versions (both checked 17:10 IST). Details in WHITECHAIN_FEEDBACK.md. Standard-JSON input:
+`forge verify-contract --show-standard-json-input`.
 
 ## Threat model and limits
 
