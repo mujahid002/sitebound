@@ -8,8 +8,8 @@ import {
 } from './lib.js';
 
 const { ethers } = window;
-const POLL_MS = 15000;
-const POLL_MAX = 20;
+const POLL_MS = 5000;
+const POLL_MAX = 36; // 36 tries every 5 s, about 3 minutes
 
 // ---------------------------------------------------------------- relayer
 
@@ -42,6 +42,24 @@ const snippetFor = (origin) => `<script src="${origin}/button/sitebound.js"></sc
     console.log('paid', e.detail);
   });
 </script>`;
+
+// Plain-language fixes for what the relayer says. The raw text stays available under "Details".
+const recordFix = (name, value) => `We could not find the TXT record yet. DNS can take a few minutes. Name: ${name}, value: ${value}. Check it is added at your DNS provider, then press Check now.`;
+function dnsFix(detail, name, value) {
+  const low = (detail || '').toLowerCase();
+  if (low.includes('more than one')) return `There is more than one sitebound TXT record at ${name}. Delete all but the one with value ${value}, then press Check now.`;
+  return recordFix(name, value);
+}
+function registerFix(message, name, value) {
+  const low = (message || '').toLowerCase();
+  if (low.includes('does not match')) return `The DNS record names a different wallet than the one you connected. Set the TXT value at ${name} to ${value}, wait a few minutes, then press Register site again.`;
+  if (low.includes('no txt record') || low.includes('no sitebound=')) return recordFix(name, value);
+  if (low.includes('daily limit')) return 'Sitebound has reached its registration limit for today. Try again tomorrow.';
+  if (low.includes('too long')) return 'Sitebound did not answer in time. Wait a minute, reload this page to see whether the site registered, then press Register site again if it did not.';
+  if (low.includes('cancelled')) return message;
+  return 'The registration did not complete. Wait a minute, then press Register site again.';
+}
+const Details = ({ text }) => text ? html`<details class="more"><summary>Details</summary><p class="mono">${text}</p></details>` : null;
 
 // ---------------------------------------------------------------- page
 
@@ -197,7 +215,7 @@ export function Shop({ cfg, site, onChangeSite, onInfo, snippetExtra }) {
       <${Step} n=${3} state=${state(3)} title=${info?.registered && !mine ? 'Change your payout wallet' : 'Register your site'}
         summary=${regDone && (info.pending && sameAddr(info.pending, account) ? 'Payout change scheduled' : 'Registered')}
         hint="Saves your payout wallet on chain.">
-        <${RegisterStep} cfg=${cfg} chain=${chain} reg=${reg} account=${account} onRegister=${register} />
+        <${RegisterStep} cfg=${cfg} site=${site} chain=${chain} reg=${reg} account=${account} onRegister=${register} />
       <//>
       <${Step} n=${4} state=${state(4)} title="Paste the snippet" hint="Three lines on your checkout page.">
         <${SnippetStep} cfg=${cfg} site=${site} extra=${snippetExtra} />
@@ -267,13 +285,12 @@ function DnsStep({ cfg, site, account, dns, dnsOk, nextAt, onCheck, onStop, atte
 
     <div class="live" aria-live="polite">
       ${dns.state === 'fail' && html`<${Notice} kind="warn" title="We cannot see the record yet">
-        ${dns.detail ? html`<p>${dns.detail}</p>` : null}
-        <p>New DNS records can take a few minutes to spread, sometimes longer. Check the name and value for typos.</p><//>`}
-      ${dns.state === 'unreachable' && html`<${Notice} kind="error" title="Could not reach the Sitebound relayer">
-        Check your connection, then try again. Nothing was changed.<//>`}
+        <p>${dnsFix(dns.detail, name, value)}</p><${Details} text=${dns.detail} /><//>`}
+      ${dns.state === 'unreachable' && html`<${Notice} kind="error" title="We could not reach the Sitebound server">
+        Check your internet connection, then press Check now. Nothing was changed.<//>`}
       ${found && html`<${Notice} kind="error" title="The record names a different wallet">
         <p>Your DNS says <span class="mono">${short(dns.payout)}</span> but you connected <span class="mono">${short(account)}</span>.
-        Change the record value to the one above, or switch wallets.</p><//>`}
+        Change the record value to <span class="mono">${value}</span>, or switch to the wallet the record names.</p><//>`}
       ${waiting && !checking && html`<p class="hint">Checking again in ${wait} s (try ${attempts} of ${POLL_MAX}).</p>`}
       ${!waiting && !checking && attempts >= POLL_MAX && !dnsOk && html`<p class="hint">We stopped checking automatically. Press Check now when the record is in place.</p>`}
     </div>`;
@@ -281,7 +298,7 @@ function DnsStep({ cfg, site, account, dns, dnsOk, nextAt, onCheck, onStop, atte
 
 // ---------------------------------------------------------------- 3 register
 
-function RegisterStep({ cfg, chain, reg, account, onRegister }) {
+function RegisterStep({ cfg, site, chain, reg, account, onRegister }) {
   const info = chain.status === 'ok' ? chain.info : null;
   const change = info?.registered && !sameAddr(info.payout, account);
   const frozen = info?.frozen && change;
@@ -302,7 +319,8 @@ function RegisterStep({ cfg, chain, reg, account, onRegister }) {
       </button>
     </div>
     <div aria-live="polite">
-      ${reg.state === 'error' && html`<${Notice} kind="error" title="Registration did not go through">${reg.message}<//>`}
+      ${reg.state === 'error' && html`<${Notice} kind="error" title="Registration did not go through">
+        <p>${registerFix(reg.message, '_sitebound.' + site.hostname, 'sitebound=' + account)}</p><${Details} text=${reg.message} /><//>`}
       ${reg.state === 'done' && reg.hash && html`<p class="hint">Transaction sent: <${TxLink} cfg=${cfg} hash=${reg.hash} /></p>`}
       ${reg.state === 'done' && !reg.hash && html`<p class="hint">Transaction sent. Waiting for it to show on chain.</p>`}
     </div>`;
