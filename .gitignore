@@ -9,3 +9,8 @@ broadcast/*/31337/
 .DS_Store
 *.log
 log.jsonl
+
+# local build notes for Claude sessions; never commit
+CLAUDE.md
+CLAUDE.local.md
+build-notes/
