@@ -204,15 +204,20 @@ footer{margin-top:72px;padding-top:28px;border-top:1px solid var(--line);text-al
   .item{grid-template-columns:minmax(0,1fr)}
 }
 
-/* Buy me a coffee: a Sitebound checkout, laid out like the Education rows. */
-.coffee{list-style:none;margin:18px 0 0;padding:0}
-.coffee li{display:grid;grid-template-columns:1fr auto;align-items:center;gap:16px;padding:12px 0;border-top:1px solid var(--line)}
-.coffee li:last-child{border-bottom:1px solid var(--line)}
-.coffee b{font-weight:600;color:var(--fg);font-size:15px}
-.coffee sitebound-pay::part(button){padding:7px 14px;font:500 14px var(--sans);border-radius:8px;background:transparent;color:var(--fg);border:1px solid var(--line-2);box-shadow:none;transform:none}
-.coffee sitebound-pay::part(button):hover{background:var(--card-2);border-color:#3c3c3c;box-shadow:none;transform:none}
-.coffee-status{min-height:1.4em;margin:14px 0 0;font-size:14px;color:var(--t-green)}
-.coffee-fine{font-size:13px;color:var(--mute);margin:10px 0 0}
+/* Buy me a coffee: three small buttons in the page's own control style (.ibtn). */
+.coffee-line{margin:0 0 14px;font-size:14px;color:var(--soft)}
+.tiers{display:flex;flex-wrap:wrap;gap:8px}
+/* The component draws its own 48px pill with a logo; only ::part(button) is reachable, so the
+   logo is parked in a zero-width grid column and clipped, and the rest is reset to the .ibtn look. */
+.tiers sitebound-pay::part(button){display:grid;grid-template-columns:0 auto;justify-items:end;column-gap:10px;overflow:hidden;height:34px;padding:0 10px 0 0;border:1px solid var(--line-2);border-radius:8px;background:transparent;color:var(--fg);font:500 14px/1 var(--sans);box-shadow:none;transform:none;transition:background .15s,border-color .15s}
+.tiers sitebound-pay::part(button):hover{background:var(--card-2);border-color:#3c3c3c;box-shadow:none;transform:none}
+.tiers sitebound-pay::part(button):focus-visible{outline:2px solid var(--link);outline-offset:2px}
+.coffee-status{margin:12px 0 0;font-size:14px;color:var(--t-green)}
+.coffee-status:empty{display:none}
+.coffee-note{margin:12px 0 0;font-size:13px;color:var(--mute)}
+.coffee-note code{font:12.5px var(--mono);color:var(--soft)}
+.coffee-note a{color:var(--soft);text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:2px}
+.coffee-note a:hover{color:var(--fg)}
 </style>
 </head>
 <body>
@@ -279,17 +284,17 @@ footer{margin-top:72px;padding-top:28px;border-top:1px solid var(--line);text-al
     <div class="list rv" id="edu"></div>
   </section>
 
-  <section class="prose rv" id="coffee">
+  <section class="rv" id="coffee">
     <h2>Buy me a coffee</h2>
-    <p>If something I built or wrote helped you, you can send a few USDT. The checkout is <a href="https://sitebound-pay.pages.dev" target="_blank" rel="noopener">Sitebound</a>: this page holds no wallet address, and the wallet that gets paid is registered on-chain for <b>0xmujahid.xyz</b>, so a hacked page cannot redirect the money.</p>
-    <ul class="coffee" id="coffee-tiers">
-      <li><b>A coffee</b><div class="slot" data-amount="3"></div></li>
-      <li><b>Coffee and a snack</b><div class="slot" data-amount="5"></div></li>
-      <li><b>A round for the team</b><div class="slot" data-amount="10"></div></li>
-    </ul>
+    <p class="coffee-line">If something here helped you, send a few USDT.</p>
+    <div class="tiers" id="coffee-tiers">
+      <div class="slot" data-amount="3"></div>
+      <div class="slot" data-amount="5"></div>
+      <div class="slot" data-amount="10"></div>
+    </div>
     <div class="coffee-status" id="coffee-status" role="status" aria-live="polite"></div>
-    <noscript><p class="coffee-fine">Payments need JavaScript, which is switched off here.</p></noscript>
-    <p class="coffee-fine">Test network: these payments use Whitechain Sepolia test USDT, which has no real value.</p>
+    <p class="coffee-note">Test USDT on Whitechain Sepolia, no real value. Paid via <a href="https://sitebound-pay.pages.dev" target="_blank" rel="noopener">Sitebound</a> to the wallet registered on-chain for <code>0xmujahid.xyz</code>.</p>
+    <noscript><p class="coffee-note">Payments need JavaScript, which is switched off here.</p></noscript>
   </section>
 
   <footer>
