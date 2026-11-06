@@ -263,7 +263,7 @@
 }
 
 /* ================================================================ FOOTER */
-.foot { position: relative; z-index: 1; border-top: 1px solid var(--line); }
+.foot { position: relative; z-index: 1; width: 100%; border-top: 1px solid var(--line); }
 .foot-in { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2) var(--s4); max-width: 1040px; margin-inline: auto; padding: var(--s4) var(--pad); }
 .foot .top-brand { margin-left: -6px; }
 .foot-built { display: inline-flex; align-items: center; gap: 10px; color: var(--muted); font-size: var(--fs-sm); }
@@ -274,10 +274,10 @@
 @media (max-width: 560px) { .foot .top-brand span { display: inline; } .foot-in { flex-direction: column; align-items: flex-start; } .foot nav { margin-left: -12px; } }
 
 /* The one honest line: testnet only, not audited. The long list of limits lives in the docs. */
-.foot-limit { max-width: 1040px; margin-inline: auto; padding: 0 var(--pad) var(--s1); color: var(--ink); font-size: var(--fs-sm); font-weight: 550; text-align: center; text-wrap: balance; }
+.foot-limit { max-width: 1040px; margin-inline: auto; padding: 0 var(--pad) var(--s1); color: var(--ink); font-size: var(--fs-sm); font-weight: 550; text-wrap: balance; }
 
 /* One quiet credit line at the very bottom of the page. */
-.foot-credit { max-width: 1040px; margin-inline: auto; padding: 0 var(--pad) var(--s4); color: var(--muted); font-size: var(--fs-xs); line-height: 1.6; text-align: center; text-wrap: balance; }
+.foot-credit { max-width: 1040px; margin-inline: auto; padding: 0 var(--pad) var(--s4); color: var(--muted); font-size: var(--fs-xs); line-height: 1.6; text-wrap: balance; }
 .foot-credit a { color: inherit; text-underline-offset: 3px; text-decoration-color: var(--line-2); transition: color 0.2s, text-decoration-color 0.2s; }
 .foot-credit a:hover { color: var(--ink); text-decoration-color: currentColor; }
 
