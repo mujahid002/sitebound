@@ -2,95 +2,579 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>0xmujahid</title>
-<meta name="description" content="0xmujahid: smart contract and web3 developer building payments, wallets and on-chain verification. Fund open-source work in USDT.">
-<meta name="color-scheme" content="light dark">
-<link rel="stylesheet" href="style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mujahid Shaik · Core Backend &amp; Protocol Engineer · Stablecoin Payments</title>
+<meta name="description" content="Mujahid Shaik, core backend and protocol engineer in Hyderabad (IST): the services, keepers, Chainlink CRE pricing, Solidity contracts and infra behind a live stablecoin payments network on Base. Open to stablecoin payments roles.">
+<meta name="theme-color" content="#111111">
+<link rel="canonical" href="https://0xmujahid.xyz/">
+<meta property="og:type" content="profile">
+<meta property="og:url" content="https://0xmujahid.xyz/">
+<meta property="og:site_name" content="mujahid.eth">
+<meta property="og:title" content="Mujahid Shaik · Core Backend & Protocol Engineer">
+<meta property="og:description" content="Core backend engineer behind a live stablecoin payments network on Base: services, keepers, pricing, Solidity contracts, infra and automation. Open to stablecoin payments roles, remote from Hyderabad (IST).">
+<meta property="profile:first_name" content="Mujahid">
+<meta property="profile:last_name" content="Shaik">
+<meta property="og:image" content="https://mujahid.eth.limo/avatar.jpg">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:creator" content="@muja002">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111'/%3E%3Cpath d='M16 5 9 16.4 16 20.6l7-4.2L16 5Z' fill='none' stroke='%2334d399' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M9 18.2 16 27l7-8.8-7 4.2-7-4.2Z' fill='none' stroke='%2334d399' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#111111;--card:#151515;--card-2:#1a1a1a;--line:#262626;--line-2:#303030;
+  --fg:#fafafa;--fg-2:#eeeeee;--soft:#b4b4b8;--mute:#8a8a90;--faint:#5c5c62;
+  --link:#60a5fa;--brand:#a78bfa;--clock:#34d399;
+  --t-green:#34d399;--t-green-bg:rgba(52,211,153,.12);
+  --t-blue:#7aa7ff;--t-blue-bg:rgba(122,167,255,.12);
+  --t-violet:#b69cff;--t-violet-bg:rgba(182,156,255,.12);
+  --t-amber:#f5b94a;--t-amber-bg:rgba(245,185,74,.12);
+  --t-pink:#f472b6;--t-pink-bg:rgba(244,114,182,.12);
+  --t-bronze:#e39a6b;--t-bronze-bg:rgba(227,154,107,.13);
+  --t-grey:#a1a1aa;--t-grey-bg:rgba(161,161,170,.10);
+  --sans:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto 0;height:72px;background:linear-gradient(var(--bg),transparent);pointer-events:none;z-index:5}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:96px 160px}
+.clock{position:fixed;top:calc(env(safe-area-inset-top,0px) + 16px);right:20px;font:500 14px var(--sans);color:var(--clock);font-variant-numeric:tabular-nums;z-index:6}
+.clock small{color:var(--faint);font-size:11px;margin-left:4px;letter-spacing:.04em}
+
+/* profile card */
+.profile{display:grid;grid-template-columns:auto 1fr auto;gap:20px;padding:24px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.avatar{width:148px;height:148px;border-radius:14px;overflow:hidden;border:1px solid var(--line-2);background:var(--card-2)}
+.avatar canvas,.avatar img{display:block;width:100%;height:100%;object-fit:cover}
+.avatar canvas{image-rendering:pixelated}
+.who{min-width:0}
+.who h1{margin:0;font-size:18px;font-weight:600;line-height:1.3;color:#f4f4f5}
+.who .role{margin:2px 0 14px;color:var(--soft);font-size:14px}
+.facts{display:grid;gap:6px;margin:0;padding:0;list-style:none;font-size:14px;color:var(--soft)}
+.facts li{display:flex;align-items:center;gap:10px;min-width:0}
+.facts li span,.facts li a{overflow-wrap:anywhere}
+.facts a:hover{color:var(--fg)}
+.facts svg{flex:none;width:16px;height:16px;color:var(--mute)}
+.tagline{grid-column:2/-1;margin:-4px 0 0;font-size:14px;color:var(--fg-2)}
+.side{grid-row:span 2;display:flex;flex-direction:column;align-items:center;gap:12px}
+.open{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:500;color:var(--t-green);background:var(--t-green-bg);border:1px solid color-mix(in srgb,var(--t-green) 30%,transparent);text-decoration:none}
+.open i{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 0 0 currentColor;animation:ping 2s infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(52,211,153,.55)}70%,100%{box-shadow:0 0 0 7px rgba(52,211,153,0)}}
+.corner{display:flex;gap:8px;align-self:start}
+.ibtn{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line-2);border-radius:8px;color:var(--fg);transition:background .15s,border-color .15s}
+.ibtn:hover{background:var(--card-2);border-color:#3c3c3c}
+.ibtn svg{width:18px;height:18px}
+.copy{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:left}
+.copy:hover{color:var(--fg)}
+.copy[data-done]::after{content:" copied";color:var(--clock);font-size:12px}
+
+/* sections */
+section{margin-top:56px}
+h2{margin:0 0 10px;font-size:16px;font-weight:600;color:var(--fg-2);text-wrap:balance}
+.lede{margin:0 0 24px;color:var(--soft)}
+.prose p{margin:0 0 20px;color:var(--soft);max-width:68ch}
+.prose p:last-child{margin-bottom:0}
+.prose a{color:var(--link)}
+.prose a:hover{text-decoration:underline}
+.prose a.brand{color:var(--brand);font-weight:600}
+
+/* experience */
+.co{margin-top:28px}
+.co-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.logo{flex:none;display:grid;place-items:center;width:32px;height:32px;border:1px solid var(--line-2);border-radius:7px;background:var(--card-2);font:600 12px var(--sans);color:var(--fg-2);letter-spacing:.02em}
+.co-head h3{margin:0;font-size:18px;font-weight:500;color:var(--fg);min-width:0}
+.co-head .now{font:500 11px var(--sans);color:var(--t-green);background:var(--t-green-bg);border-radius:999px;padding:2px 8px;letter-spacing:.02em;white-space:nowrap}
+.pos{position:relative;padding-left:0;margin-bottom:10px}
+.pos::before{content:"";position:absolute;left:15.5px;top:36px;bottom:0;width:1px;background:var(--line-2)}
+.pos-btn{display:flex;align-items:center;gap:12px;width:100%;padding:0;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.ico{flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:7px;background:var(--card-2);border:1px solid var(--line);color:var(--mute)}
+.ico svg{width:15px;height:15px}
+.pos-btn .title{flex:1;font-weight:600;font-size:16px;color:var(--fg);min-width:0}
+.pos-btn .chev{flex:none;width:16px;height:16px;color:var(--mute);transition:transform .2s}
+.pos-btn:hover .chev{color:var(--fg)}
+.pos-btn[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.meta{margin:4px 0 0 44px;font-size:14px;color:var(--mute);display:flex;flex-wrap:wrap;gap:0 10px}
+.meta span+span{padding-left:10px;border-left:1px solid var(--line-2)}
+.body{margin-left:44px;padding-top:12px}
+.body[hidden]{display:none}
+.bul{margin:0;padding:0;list-style:none;font:14.5px/1.6 var(--sans);color:var(--soft)}
+.bul li{position:relative;padding-left:16px;margin-bottom:8px}
+.bul b{font-weight:600;color:var(--fg)}
+.bul li::before{content:"\2022";position:absolute;left:2px;color:var(--mute)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.tag{font:12px var(--mono);color:var(--soft);background:var(--card-2);border:1px solid var(--line);border-radius:6px;padding:2px 8px}
+
+/* projects (blog-style cards) */
+.cards{display:grid;gap:12px}
+.card{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--card);transition:background .15s,border-color .15s}
+a.card:hover{background:var(--card-2);border-color:var(--line-2)}
+.card .badge{display:grid;place-items:center;width:44px;height:44px;border-radius:10px}
+.card .badge svg{width:20px;height:20px}
+.card .txt{min-width:0}
+.card .nm{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-weight:600;font-size:15.5px;color:var(--fg)}
+.card .ds{margin:0;font-size:13.5px;color:var(--soft);line-height:1.5}
+.card .dt{margin:2px 0 0;font-size:12.5px;color:var(--mute);font-style:italic}
+.card .go{width:16px;height:16px;color:var(--mute)}
+.card{align-items:start}
+.card .badge{margin-top:2px}
+.card .go{align-self:center}
+.card .dt{margin:0 0 6px}
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+.pill.prize{display:inline-flex;align-items:center;gap:5px;white-space:normal;max-width:100%;min-width:0}
+.pill.prize svg{width:12px;height:12px;flex:none}
+.card .tags{margin-top:10px}
+.card .go.off{visibility:hidden}
+.pill{font:500 11.5px var(--sans);border-radius:6px;padding:1px 7px;white-space:nowrap}
+.c-green{color:var(--t-green);background:var(--t-green-bg)}
+.c-blue{color:var(--t-blue);background:var(--t-blue-bg)}
+.c-violet{color:var(--t-violet);background:var(--t-violet-bg)}
+.c-amber{color:var(--t-amber);background:var(--t-amber-bg)}
+.c-bronze{color:var(--t-bronze);background:var(--t-bronze-bg)}
+.c-grey{color:var(--t-grey);background:var(--t-grey-bg)}
+/* tech chips: network = blue, protocol = violet, standard = pink, tooling = neutral */
+.tag.k-net{color:var(--t-blue);border-color:color-mix(in srgb,var(--t-blue) 28%,var(--line))}
+.tag.k-proto{color:var(--t-violet);border-color:color-mix(in srgb,var(--t-violet) 28%,var(--line))}
+.tag.k-std{color:var(--t-pink);border-color:color-mix(in srgb,var(--t-pink) 28%,var(--line))}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin:-12px 0 20px;font-size:12.5px;color:var(--mute)}
+.legend span{display:inline-flex;align-items:center;gap:6px;background:none}
+.legend b{font-weight:500;color:var(--faint)}
+.legend i{width:8px;height:8px;border-radius:50%;background:currentColor}
+.c-pink{color:var(--t-pink);background:var(--t-pink-bg)}
+
+/* skills, education */
+.stack{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.sk{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:14px 16px;display:grid;gap:6px;align-content:start;min-width:0}
+.sk h3{margin:0;font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+.sk .core{margin:0;font-size:14.5px;font-weight:500;color:var(--fg);line-height:1.55}
+.sk .more{margin:0;font-size:13.5px;color:var(--soft);line-height:1.55}
+.sk p span{white-space:nowrap}
+.sk i{font-style:normal;color:var(--faint);padding-left:6px}
+.list{display:grid;gap:0}
+.item{display:grid;grid-template-columns:1fr auto;gap:2px 16px;padding:14px 0;border-top:1px solid var(--line)}
+.item:first-child{border-top:0;padding-top:0}
+.item b{font-weight:600;color:var(--fg);font-size:15px}
+.item .yr{font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums;white-space:nowrap}
+.item p{grid-column:1/-1;margin:0;font-size:14px;color:var(--soft)}
+
+
+/* footer + dock */
+footer{margin-top:72px;padding-top:28px;border-top:1px solid var(--line);text-align:center}
+.flinks{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 22px;font-size:14px;color:var(--soft)}
+.flinks a{display:inline-flex;align-items:center;gap:6px}
+.flinks a:hover{color:var(--fg)}
+.flinks svg{width:14px;height:14px}
+.copyline{margin:16px 0 0;font-size:13.5px;color:var(--mute)}
+.copyline code{font:12.5px var(--mono);color:var(--soft)}
+.dock{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);transform:translateX(-50%);display:flex;gap:4px;padding:6px;border:1px solid var(--line-2);border-radius:14px;background:rgba(17,17,17,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:10}
+.dock a{position:relative;display:grid;place-items:center;width:40px;height:40px;border-radius:10px;color:var(--fg);transition:background .15s,transform .15s}
+.dock a:hover{background:#222;transform:translateY(-2px)}
+.dock svg{width:18px;height:18px}
+.dock a::after{content:attr(aria-label);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);font:12px var(--sans);white-space:nowrap;background:#222;border:1px solid var(--line-2);color:var(--fg);padding:3px 8px;border-radius:6px;opacity:0;pointer-events:none;transition:opacity .15s}
+.dock a:hover::after,.dock a:focus-visible::after{opacity:1}
+:focus-visible{outline:2px solid var(--link);outline-offset:2px;border-radius:6px}
+
+/* reveal */
+.js .rv{opacity:0;transform:translateY(10px);filter:blur(4px);transition:opacity .6s ease,transform .6s ease,filter .6s ease}
+.js .rv.in{opacity:1;transform:none;filter:none}
+@media print{.js .rv{opacity:1;transform:none;filter:none}.body[hidden]{display:block!important}.dock,.clock,body::before{display:none}}
+@media (prefers-reduced-motion:reduce){.js .rv{opacity:1;transform:none;filter:none;transition:none}html{scroll-behavior:auto}.open i{animation:none}}
+
+@media (max-width:640px){
+  .wrap{padding-block:72px 140px}
+  .profile{grid-template-columns:auto 1fr;padding:18px;gap:16px}
+  .avatar{width:96px;height:96px;border-radius:12px}
+  .side{grid-row:1;align-items:flex-start}
+  .corner{grid-column:2;grid-row:1;justify-self:end;align-self:start}
+  .who{grid-column:1/-1;grid-row:2}
+  .tagline{grid-column:1/-1}
+  .meta,.body{margin-left:0}
+  .pos::before{display:none}
+  .stack{grid-template-columns:minmax(0,1fr)}
+  .card{grid-template-columns:auto 1fr;gap:12px}
+  .card .go{display:none}
+  .clock{right:16px}
+}
+@media (max-width:360px){
+  .sk p span{white-space:normal}
+  .corner{flex-direction:column}
+  .item{grid-template-columns:minmax(0,1fr)}
+}
+
+/* Buy me a coffee: a Sitebound checkout. Uses the page's own tokens. */
+.coffee{list-style:none;margin:18px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.coffee li{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.coffee .amt{font-size:1.5rem;font-weight:600;letter-spacing:-.01em;color:var(--fg)}
+.coffee .amt small{font-size:.8rem;font-weight:500;color:var(--mute);margin-left:4px}
+.coffee .what{font-size:.86rem;color:var(--soft);margin:-6px 0 0}
+.coffee-status{min-height:1.4em;margin:14px 0 0;font-size:.92rem;color:var(--t-green)}
+.coffee-fine{font-size:.82rem;color:var(--mute);margin:10px 0 0}
+@media (max-width:640px){.coffee{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
+<div class="clock" id="clock" title="Time in Hyderabad (IST)" aria-hidden="true"></div>
 
-<header class="bar">
-  <a class="mark" href="#top" aria-label="0xmujahid.xyz, top of page">0xmujahid<span>.xyz</span></a>
-  <nav aria-label="Sections">
-    <a href="#work">Work</a>
-    <a href="#fund">Fund</a>
-    <a href="#elsewhere">Elsewhere</a>
-  </nav>
-</header>
-
-<main id="main">
-  <section class="hero" id="top" aria-labelledby="name">
-    <p class="role">Smart contract and web3 developer</p>
-    <h1 id="name"><span class="x">0x</span>mujahid</h1>
-    <p class="lede">I build payment flows and wallets, and the on-chain checks that let a service prove what was paid, by whom, and for what.</p>
-    <p class="lede">Most of it is open source.</p>
-  </section>
-
-  <section class="row" id="work" aria-labelledby="work-h">
-    <h2 id="work-h" class="label">Work</h2>
-    <div class="body">
-      <h3 class="item"><a href="https://sitebound-pay.pages.dev" rel="noopener">Sitebound</a></h3>
-      <p>Addressless stablecoin checkout: every payment is bound to the site.</p>
+<main class="wrap">
+  <header class="profile rv">
+    <div class="side">
+      <div class="avatar" id="avatar" role="img" aria-label="Blockie of mujahid.eth"></div>
+      <a class="open" href="#contact"><i></i>Open to work · Remote</a>
     </div>
-  </section>
-
-  <section class="row" id="fund" aria-labelledby="fund-h">
-    <h2 id="fund-h" class="label">Fund my open-source work</h2>
-    <div class="body">
-      <ul class="tiers" id="tiers">
-        <li class="tier"><span class="amt">5 <small>USDT</small></span><div class="slot" data-amount="5"></div></li>
-        <li class="tier"><span class="amt">25 <small>USDT</small></span><div class="slot" data-amount="25"></div></li>
-        <li class="tier"><span class="amt">100 <small>USDT</small></span><div class="slot" data-amount="100"></div></li>
+    <div class="who">
+      <h1>Mujahid Shaik</h1>
+      <p class="role">Core Backend &amp; Protocol Engineer · Stablecoin Payments</p>
+      <ul class="facts">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span>Hyderabad, India</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg><a href="mailto:0xmujahid@gmail.com">0xmujahid@gmail.com</a></li>
+        <li><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28ZM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13ZM7.12 20.45H3.56V9h3.56v11.45ZM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0Z"/></svg><a href="https://linkedin.com/in/mujahidshaik" target="_blank" rel="noopener">mujahidshaik</a></li>
+        <li><svg viewBox="0 0 24 24" fill="currentColor"><use href="#i-gh"/></svg><span><a href="https://github.com/mujahid002" target="_blank" rel="noopener">mujahid002</a></span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 2 5 12.2 12 16l7-3.8L12 2Z"/><path d="M5 13.6 12 22l7-8.4L12 17.4 5 13.6Z"/></svg><button class="copy" type="button" data-copy="mujahid.eth" title="Copy ENS name">mujahid.eth</button></li>
       </ul>
-
-      <div class="status" id="status" role="status" aria-live="polite"></div>
-      <noscript><p class="status-static">Payments need JavaScript, which is switched off here.</p></noscript>
-
-      <p class="fine">Test network: these payments use Whitechain Sepolia test USDT.</p>
-      <p class="fine">This page holds no wallet address. The payout wallet is registered for 0xmujahid.xyz on-chain, so a hacked page cannot redirect the money.</p>
     </div>
+    <div class="corner">
+      <a class="ibtn" href="https://github.com/mujahid002" target="_blank" rel="noopener" aria-label="GitHub (mujahid002)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.57L9 21.07c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.08-.74.09-.73.09-.73 1.2.09 1.83 1.24 1.83 1.24 1.07 1.83 2.81 1.3 3.5 1 .1-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.24 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.8 5.63-5.48 5.92.42.36.81 1.1.81 2.22l-.01 3.29c0 .31.2.69.82.57A12 12 0 0 0 12 .3Z"/></svg></a>
+      <a class="ibtn" href="https://x.com/muja002" target="_blank" rel="noopener" aria-label="X"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 1.15h3.68l-8.04 9.19L24 22.85h-7.4l-5.8-7.58-6.63 7.58H.48l8.6-9.83L0 1.15h7.59l5.24 6.93 6.07-6.93Zm-1.29 19.5h2.04L6.48 3.24H4.3l13.31 17.41Z"/></svg></a>
+    </div>
+    <p class="tagline">Core backend engineer behind a live stablecoin payments network on Base since Mar 2025: the services, keepers, pricing, infra and automation that keep everyday USDC payments settling.</p>
+  </header>
+
+  <section class="prose rv" id="about">
+    <h2>About Me</h2>
+    <p>Backend and smart-contract engineer, 3+ years in blockchain. Since Mar 2025 I’ve been a core engineer at a VC-backed stablecoin payments network on Base, live in 15+ markets, that lets people pay and get paid in USDC every day. I own its pricing (Chainlink CRE, prices on-chain every minute), the keeper service, the payment-proof service, the alerting pipeline, the support AI and much of the infrastructure they run on, and I’m one of the core Solidity engineers on its contracts: matching, disputes, limits, pricing and insurance.</p>
+    <p>I sit closest to production: when a payment stalls or an event goes missing, I trace it on-chain to the root cause and ship the fix.</p>
+    <p>Before that I wrote Solidity for the Knowledge Protocol at GetBoarded and an ERC-20 checkout gateway at Hooman Digital, and won prizes at ETHGlobal, PermaHacks and Base hackathons.</p>
   </section>
+
+  <section class="prose rv" id="contact">
+    <h2>Reach out to me</h2>
+    <p>I’m looking for my next role at a <b>stablecoin payments</b> company or project: backend, smart-contract or on-chain infra work on settlement, oracles, keepers and payment rails. Remote, working from Hyderabad (IST).</p>
+    <p>You can find me on <a href="https://x.com/muja002" target="_blank" rel="noopener">X</a> and <a href="https://linkedin.com/in/mujahidshaik" target="_blank" rel="noopener">LinkedIn</a>, and I’m best reached by email at <a href="mailto:0xmujahid@gmail.com">0xmujahid@gmail.com</a>.</p>
+  </section>
+
+  <section id="experience">
+    <h2 class="rv">Experience</h2>
+    <p class="lede rv">Where I have worked and where I am working now.</p>
+    <div id="exp"></div>
+  </section>
+
+  <section id="projects">
+    <h2 class="rv">Hackathons &amp; Projects</h2>
+    <p class="lede rv">9 prizes across 7 hackathon projects, including two 1st places at ETHGlobal events.</p>
+    <div class="legend rv"><span class="c-amber"><i></i>1st place</span><span class="c-green"><i></i>Winner</span><span class="c-bronze"><i></i>3rd place</span><span class="c-blue"><i></i>Pool prize</span><span class="c-violet"><i></i>In development</span><b>·</b><span style="color:var(--t-blue)"><i></i>Network</span><span style="color:var(--t-violet)"><i></i>Protocol</span><span style="color:var(--t-pink)"><i></i>Standard</span></div>
+    <div class="cards" id="proj"></div>
+  </section>
+
+  <section id="stack">
+    <h2 class="rv">Stack</h2>
+    <p class="lede rv">What I ship production payments with in my current role, and what I have used in client work and hackathons.</p>
+    <div class="stack rv" id="skills"></div>
+  </section>
+
+  <section id="education">
+    <h2 class="rv">Education &amp; Community</h2>
+    <div class="list rv" id="edu"></div>
+  </section>
+
+  <section class="prose rv" id="coffee">
+    <h2>Buy me a coffee</h2>
+    <p>If something I built or wrote helped you, you can send a few USDT. The checkout is <a href="https://sitebound-pay.pages.dev" target="_blank" rel="noopener">Sitebound</a>: this page holds no wallet address, and the wallet that gets paid is registered on-chain for <b>0xmujahid.xyz</b>, so a hacked page cannot redirect the money.</p>
+    <ul class="coffee" id="coffee-tiers">
+      <li><span class="amt">3 <small>USDT</small></span><p class="what">A coffee</p><div class="slot" data-amount="3"></div></li>
+      <li><span class="amt">5 <small>USDT</small></span><p class="what">Coffee and a snack</p><div class="slot" data-amount="5"></div></li>
+      <li><span class="amt">10 <small>USDT</small></span><p class="what">A round for the team</p><div class="slot" data-amount="10"></div></li>
+    </ul>
+    <div class="coffee-status" id="coffee-status" role="status" aria-live="polite"></div>
+    <noscript><p class="coffee-fine">Payments need JavaScript, which is switched off here.</p></noscript>
+    <p class="coffee-fine">Test network: these payments use Whitechain Sepolia test USDT, which has no real value.</p>
+  </section>
+
+  <footer>
+    <nav class="flinks" aria-label="Links">
+      <a href="https://github.com/mujahid002" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><use href="#i-gh"/></svg>mujahid002</a>
+      <a href="https://linkedin.com/in/mujahidshaik" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><use href="#i-li"/></svg>LinkedIn</a>
+      <a href="https://x.com/muja002" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><use href="#i-x"/></svg>X</a>
+      <a href="mailto:0xmujahid@gmail.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#i-mail"/></svg>Email</a>
+      <a href="https://app.ens.domains/mujahid.eth" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><use href="#i-eth"/></svg>ENS</a>
+    </nav>
+    <p class="copyline">© <span id="yr">2026</span> Mujahid Shaik · served from <code>0xmujahid.xyz</code> · also at <a href="https://mujahid.eth.limo" target="_blank" rel="noopener">mujahid.eth.limo</a></p>
+  </footer>
 </main>
 
-<footer class="row" id="elsewhere">
-  <h2 class="label">Elsewhere</h2>
-  <div class="body">
-    <ul class="links">
-      <li><a href="https://github.com/0xkeccak" rel="noopener">GitHub, 0xkeccak</a></li>
-      <li><a href="https://github.com/mujahid002" rel="noopener">GitHub, mujahid002</a></li>
-      <li><a href="https://mujahid.eth.limo" rel="noopener">More about my work, mujahid.eth.limo</a></li>
-    </ul>
-  </div>
-</footer>
+<nav class="dock" aria-label="Quick links">
+  <a href="https://linkedin.com/in/mujahidshaik" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><use href="#i-li"/></svg></a>
+  <a href="https://x.com/muja002" target="_blank" rel="noopener" aria-label="X"><svg viewBox="0 0 24 24" fill="currentColor"><use href="#i-x"/></svg></a>
+  <a href="mailto:0xmujahid@gmail.com" aria-label="Email"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#i-mail"/></svg></a>
+  <a href="https://github.com/mujahid002" target="_blank" rel="noopener" aria-label="GitHub · mujahid002"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-code"/></svg></a>
+  <a href="https://app.ens.domains/mujahid.eth" target="_blank" rel="noopener" aria-label="mujahid.eth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><use href="#i-eth"/></svg></a>
+</nav>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-gh" viewBox="0 0 24 24"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.57L9 21.07c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.08-.74.09-.73.09-.73 1.2.09 1.83 1.24 1.83 1.24 1.07 1.83 2.81 1.3 3.5 1 .1-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.24 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.8 5.63-5.48 5.92.42.36.81 1.1.81 2.22l-.01 3.29c0 .31.2.69.82.57A12 12 0 0 0 12 .3Z"/></symbol>
+  <symbol id="i-li" viewBox="0 0 24 24"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28ZM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13ZM7.12 20.45H3.56V9h3.56v11.45ZM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0Z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18.9 1.15h3.68l-8.04 9.19L24 22.85h-7.4l-5.8-7.58-6.63 7.58H.48l8.6-9.83L0 1.15h7.59l5.24 6.93 6.07-6.93Zm-1.29 19.5h2.04L6.48 3.24H4.3l13.31 17.41Z"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2" stroke-linecap="round" stroke-linejoin="round"/><path d="m22 7-10 6L2 7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-eth" viewBox="0 0 24 24"><path d="M12 2 5 12.2 12 16l7-3.8L12 2Z" stroke-linejoin="round"/><path d="M5 13.6 12 22l7-8.4L12 17.4 5 13.6Z" stroke-linejoin="round"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></symbol>
+</svg>
+
+<script>
+/* ---------- content: edit here ---------- */
+const ADDRESS = "0x222E2F199659061816Ee9fCaE919d3BDc749E222"; // mujahid.eth, drives the blockie avatar
+const PHOTO = "data:image/webp;base64,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"; // Ghibli-style portrait (240px webp, inlined so the page stays one file); "" falls back to the blockie
+
+// Sorted automatically: newest end date first (Present on top), then newest start.
+const EXPERIENCE = [
+  { company: "Stablecoin payments network (stealth)", mono: "SP", roles: [{
+    title: "Core Backend & Protocol Engineer", type: "Remote · VC-backed", from: "2025-03", to: null,
+    bullets: [
+      "Core backend engineer on a live stablecoin payments network on Base. Sole author of six production services (pricing, reference oracle, payment proofs, support AI, treasury monitor, identity verification) and a core Solidity contributor (155 commits, 32 PRs, 469 tests).",
+      "Order-flow contracts (Solidity): replaced heap-based liquidity-provider matching with a circular linked list; built dispute settlement that reverses completed orders, admin stake recovery, per-market expiry, daily/monthly/yearly volume limits and permissionless keeper entry points (one co-built); fixed audit finding H-02.",
+      "Pricing and account contracts: co-built the on-chain receiver for Chainlink CRE price reports; added a max-price-shift guard with three liquidity bands, a fallback keeper price writer, permissionless insurance-claim settlement, a small-order fixed fee and ERC-1271/4337/7702/6492 smart-account signature support.",
+      "Keepers: built the keeper service (TypeScript, BullMQ, Redis) that assigns payments to liquidity providers, takes idle providers offline, expires stale payments and batch-approves unstakes from gas-only wallets. Fixed credits silently missed after a WebSocket outage with idempotent backfill-on-reconnect, so none is issued twice.",
+      "Pricing: a Chainlink CRE workflow publishes DON-signed prices for 15+ markets every minute, each write gated by a no-liquidity skip, a 50% circuit breaker and a 5-bps change threshold. Fed by my median-of-medians oracle across six exchanges, with a rate-limited public API. Took 7 markets live.",
+      "Payment proofs: designed and built the proof service (Fastify, Postgres, viem). Every read is authorized by live on-chain role checks; images are built reproducibly, signed keylessly (cosign, SLSA provenance) and deployed by immutable digest. Shipped its SDK into all three client apps.",
+      "Infra and security: operate 35 production services across 5 Railway projects. Built chain-event alerting (Telegram/Discord), a Multicall3 treasury monitor on Base and Polygon and an hourly bot that bans staff impersonators; moved the support desk to Railway; closed a signing-oracle vulnerability in a smart-account backend.",
+      "Support AI: built a 5-language RAG support agent (hybrid retrieval, reranking, live on-chain lookups of limits, prices and orders) with smart-account sign-in and a majority-vote A/B eval harness; it answers support tickets left waiting 30 minutes, then hands off to humans."
+    ],
+    tags: ["Solidity","Hardhat","Chainlink CRE","TypeScript","Bun","viem","BullMQ / Redis","PostgreSQL","The Graph","Railway","Base"]
+  }]},
+  { company: "GetBoarded", mono: "GB", roles: [{
+    title: "Junior Blockchain Developer (QA Analyst)", type: "Remote · Aveiro, Portugal", from: "2023-09", to: "2025-01",
+    bullets: [
+      "Wrote a five-contract Solidity suite for the Knowledge Protocol with the team lead: an ERC-20 token, a core engine, on-chain governance, an ERC-721-collateralized vault and a price module reading Chainlink EUR/USD and OP/USD feeds. Deployed to Arbitrum and Optimism Sepolia.",
+      "Built the Knowledge Protocol dashboard (Next.js, TypeScript, Tailwind): wallet connect, mint and redeem, a knowledge graph and analytics charts, wired to all five contracts with ethers.js.",
+      "Built an ERC-1155 NFT-gating contract with soul-bound tokens for event access in the Decast app, and a TokenDrop contract that holds per-event native and ERC-20 deposits (only the event's manager, checked against the gating contract, can deposit or withdraw) and batch-transfers tokens to listed addresses, with ReentrancyGuard and custom errors.",
+      "Implemented programmatic Filecoin storage for Decast: aggregator deals through Lighthouse’s RaaS starter kit and direct deals through the FVM starter kit and FVM Data Depot. Also a Node/Express + MongoDB backend serving token-price APIs via ethers.js."
+    ],
+    tags: ["Solidity","Chainlink","Arbitrum","Optimism","Filecoin","Node.js","MongoDB","Next.js","TypeScript"]
+  }]},
+  { company: "Contract blockchain work", mono: "CW", roles: [{
+    title: "Blockchain Developer · Hooman Digital", type: "Contract · Remote", from: "2024-03", to: "2024-07",
+    bullets: [
+      "Built an ERC-20 checkout gateway on Polygon: a Solidity checkout contract (OpenZeppelin, ReentrancyGuard) taking native and ERC-20 payments with coupons, minting an NFT receipt per paid order, plus a Node.js order backend that decodes on-chain order events.",
+      "Built EAS multi-schema attestations on Optimism Sepolia with a custom SchemaResolver that whitelists attesters, content on IPFS and Gitcoin Passport scores to gate users."
+    ],
+    tags: ["Solidity","OpenZeppelin","Polygon","Optimism","ethers.js","Node.js","EAS"]
+  }, {
+    title: "Web3 Developer · Catax", type: "Contract · Remote", from: "2024-01", to: "2024-07",
+    bullets: [
+      "Built multi-chain pipelines that collect and normalize NFT and DEX/DeFi activity into records for crypto accounting and audits.",
+      "Built soul-bound tokens on ERC-721 and ERC-1155, with an upgradeable NFT contract behind an OpenZeppelin UUPS proxy."
+    ],
+    tags: ["Solidity","ERC-721","ERC-1155","UUPS proxy","Node.js","On-chain data"]
+  }, {
+    title: "Associate Developer · Amvotech Solutions", type: "Contract · On-site, Hyderabad", from: "2023-07", to: "2023-12",
+    bullets: [
+      "Worked on cloud services and DevOps with a backend focus, then moved into blockchain development."
+    ],
+    tags: ["Cloud","DevOps"]
+  }]}
+];
+
+// Sorted automatically: work in progress first, then newest. date = event / first-commit date (YYYY-MM-DD).
+// event: where it was built · prizes: exact prize names (verified on ETHGlobal / winner lists unless noted)
+// status: shown instead of a prize for non-hackathon work · tech: chips under the card
+const PROJECTS = [
+  { name: "cashbook.app", status: "In development", event: "Current role", date: "2026-08-11", ongoing: true, icon: "bolt",
+    desc: "A consumer app for people who have never touched crypto: add money, take simple payment tasks and earn a fee on each. Each person gets their own smart account; an integrator contract plugs into the core protocol and a keeper stakes on their behalf, so they never hold loose USDC. 62 screens, built for low-end Android phones.",
+    tech: ["Preact","Vite PWA","thirdweb","Solidity","Foundry","Bun","viem","PostgreSQL","Playwright"] },
+  { name: "NotYet", event: "ETHGlobal ETHOnline 2026", prizes: ["Bazantic · Best Recipe that uses ETHGlobal Hackathon Sponsor APIs · 1st place"], date: "2026-09-09", icon: "trophy",
+    desc: "Scheduled agent spend authority: each period's key is timelock-encrypted so it doesn't exist until its time. A Ledger co-signs large withdrawals; payments settle over x402 on Hedera.",
+    tech: ["TypeScript","drand / tlock","Ledger DMK","x402","Hedera"],
+    url: "https://ethglobal.com/showcase/notyet-hy3kh" },
+  { name: "Ancile Protocol", event: "Chainlink Convergence Hack 2026", date: "2026-03-01", icon: "bolt",
+    desc: "Private payments: a user signs an EIP-2612 permit plus a World ID proof; a Chainlink CRE workflow verifies it and an AncileRouter pulls the funds gaslessly to a one-time stealth address. Non-custodial and stateless.",
+    tech: ["Chainlink CRE","World ID","ERC-5564","EIP-2612","Solidity","Base Sepolia"],
+    url: "https://github.com/mujahid002/ancile-protocol" },
+  { name: "WeaveMint", event: "PermaHacks 2024", prizes: ["PermaHacks winner"], date: "2024-10-27", icon: "trophy",
+    desc: "An ERC-721 factory for Arweave, integrating WeaveVM precompiles into ERC-721 (team repo).",
+    tech: ["Solidity","ERC-721","WeaveVM","Arweave"],
+    url: "https://github.com/AAshu1412/WeaveMint" },
+  { name: "ZoraGift", event: "Encode Club Livepeer AI Video Hackathon", prizes: ["Livepeer · Social Media App · 3rd place"], date: "2024-09-25", icon: "trophy",
+    desc: "AI-video gifting dApp: Livepeer AI generates the artwork, minted on Zora as an NFT gift with metadata on IPFS.",
+    tech: ["Zora L2","Livepeer AI","Swarmzero.ai","Next.js","Hardhat","IPFS"],
+    url: "https://github.com/mujahid002/ZoraGift" },
+  { name: "ChilizNexus", event: "ETHGlobal ETHOnline 2024", prizes: ["Sign Protocol · Sign Everything pool prize"], date: "2024-08-23", icon: "trophy",
+    desc: "Sports-fan event platform on Chiliz: events attested with Sign Protocol, tickets issued as soul-bound tokens.",
+    tech: ["Chiliz","Sign Protocol","ERC-1155 SBT","Solidity"],
+    url: "https://ethglobal.com/showcase/chiliznexus-2fqmv" },
+  { name: "SeedSphere", event: "ETHGlobal Superhack 2024", prizes: ["Celo · Best Onchain Funding dApp · 1st place", "Blockscout · Use Blockscout Block Explorer! pool prize", "Worldcoin pool prize"], date: "2024-08-03", icon: "trophy",
+    desc: "ERC-4626 vault for on-chain funding, deployed on Celo, Optimism, Base and Mode.",
+    tech: ["Solidity","ERC-4626","Celo","Optimism","Base","Mode"],
+    url: "https://ethglobal.com/showcase/seedsphere-z85g9" },
+  { name: "NounShards", event: "Onchain Summer Buildathon by Base", prizes: ["UNPLUGGED with Nouns · Unplugged track winner"], date: "2024-06-13", icon: "trophy",
+    desc: "Tokenizes and fractionalizes Nouns NFTs for shared ownership: three contracts verified on Base Sepolia plus an attestation schema.",
+    tech: ["Solidity","Base","EAS","Nouns"],
+    url: "https://github.com/mujahid002/onchain-summer-hack-project" },
+  { name: "DeCert", event: "ETHGlobal ETHIndia 2023", prizes: ["Filecoin & IPFS · Unique Projects in Filecoin Ecosystem pool prize"], date: "2023-12-08", icon: "trophy",
+    desc: "On-chain certificate issuance and verification, with certificates stored on Filecoin. I wrote the Solidity contracts and integrated Anon Aadhaar for privacy-preserving identity checks.",
+    tech: ["Solidity","Anon Aadhaar","Filecoin","Lighthouse","IPFS"],
+    url: "https://ethglobal.com/showcase/decert-siwhs" }
+];
+
+// [area, core (daily in current role), more (also used)]
+const SKILLS = [
+  ["Payments", ["Stablecoin payments & USDC settlement on Base","Payment proofs & disputes"],
+    ["Price oracles","Keepers & automation","ERC-20 checkout"]],
+  ["Smart contracts", ["Solidity","Foundry","Hardhat","OpenZeppelin","Solady"],
+    ["Upgradeable contracts (UUPS, upgrade scripts)","ERC-20/721/1155/4626","ERC-1271/6492 signatures","ERC-4337","EIP-7702","ERC-5564 stealth addresses"]],
+  ["Backend", ["TypeScript","Node.js","Bun","PostgreSQL (pgvector)","Redis / BullMQ"],
+    ["Hono","Fastify","Express","REST APIs","JWT / JWKS (jose)","OAuth"]],
+  ["On-chain infra", ["viem","ethers.js","thirdweb","Multicall3"],
+    ["Event listeners & keepers","Subgraphs (The Graph, Matchstick, Goldsky)","Smart accounts & embedded wallets","Base","Arbitrum","Optimism","Polygon"]],
+  ["Oracles & protocols", ["Chainlink CRE","Chainlink price feeds","Gelato"],
+    ["EAS","World ID","x402","IPFS / Filecoin (Lighthouse, FVM)"]],
+  ["DevOps & operations", ["Docker","GitHub Actions CI","Railway"],
+    ["Caddy","Signed images deployed by pinned digest","On-chain tx tracing","Alerting & monitoring","Telegram / Discord bots","Chatwoot (self-hosted)","Email (Resend, SMTP)"]],
+  ["AI", ["RAG (hybrid retrieval, reranking)","Claude Agent SDK","MCP","LLM evals"],
+    ["Ollama embeddings"]],
+  ["Frontend (contributor)", ["React","Preact","Vite PWA","Tailwind"],
+    ["TanStack Query","i18next","Next.js"]]
+];
+
+const EDU = [
+  { t: "B.E., Chaitanya Bharathi Institute of Technology (CBIT), Hyderabad", y: "2019 – 2023", d: "CGPA 7.81" },
+  { t: "Freelance Web3 research · Cabal Community, MovimentumWeb3", y: "Dec 2024 – May 2025", d: "Part-time due-diligence and tokenomics reports (up to 40 pages) on 15+ Web3 projects." },
+  { t: "Community Member, Hyderabad DAO", y: "Sep 2023 – Present", d: "Active in the local Web3 community and weekly blockchain meetups." },
+  { t: "Hyderabad Ambassador, Social3.Club", y: "", d: "Ran social media and introduced college students to the platform’s on-chain recruiting." },
+  { t: "Volunteer, Babu Khan Charitable Trust", y: "", d: "Supported 10+ underprivileged students from Khammam District over 2 years." }
+];
+
+/* ---------- rendering ---------- */
+document.documentElement.classList.add("js");
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const nowIST = () => new Date(Date.now() + (330 + new Date().getTimezoneOffset()) * 60000);
+const fmt = ym => { const [y, m] = ym.split("-").map(Number); return MON[m - 1] + " " + y; };
+function span(from, to) { // LinkedIn-style: both end months count
+  const [y1, m1] = from.split("-").map(Number);
+  const n = nowIST(), [y2, m2] = to ? to.split("-").map(Number) : [n.getFullYear(), n.getMonth() + 1];
+  const t = (y2 - y1) * 12 + (m2 - m1) + 1, y = Math.floor(t / 12), m = t % 12;
+  return [y && y + (y > 1 ? " yrs" : " yr"), m && m + (m > 1 ? " mos" : " mo")].filter(Boolean).join(" ");
+}
+const CHEV = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+const CODE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg>';
+
+const endKey = c => c.roles.some(r => !r.to) ? "9999-99" : c.roles.map(r => r.to).sort().pop();
+const startKey = c => c.roles.map(r => r.from).sort().pop();
+EXPERIENCE.sort((a, b) => endKey(b).localeCompare(endKey(a)) || startKey(b).localeCompare(startKey(a)));
+$("#exp").innerHTML = EXPERIENCE.map((c, ci) => {
+  const head = `<div class="co-head"><span class="logo">${esc(c.mono)}</span><h3>${c.url ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.company)}</a>` : esc(c.company)}</h3>${c.roles.some(r => !r.to) ? '<span class="now">Current</span>' : ""}</div>`;
+  const roles = c.roles.map((r, ri) => {
+    const id = `r${ci}-${ri}`, open = ci === 0;
+    return `<div class="pos">
+      <button class="pos-btn" type="button" aria-expanded="${open}" aria-controls="${id}"><span class="ico">${CODE}</span><span class="title">${esc(r.title)}</span>${CHEV}</button>
+      <div class="meta"><span>${esc(r.type)}</span><span>${fmt(r.from)} – ${r.to ? fmt(r.to) : "Present"} · ${span(r.from, r.to)}</span></div>
+      <div class="body" id="${id}"${open ? "" : " hidden"}>
+        <ul class="bul">${r.bullets.map(b => `<li>${esc(b).replace(/^([^:]{2,50}):\s/, "<b>$1:</b> ")}</li>`).join("")}</ul>
+        <div class="tags">${r.tags.map(t => `<span class="tag">${esc(t)}</span>`).join("")}</div>
+      </div></div>`;
+  }).join("");
+  return `<div class="co rv">${head}${roles}</div>`;
+}).join("");
+document.querySelectorAll(".pos-btn").forEach(b => b.addEventListener("click", () => {
+  const open = b.getAttribute("aria-expanded") === "true";
+  b.setAttribute("aria-expanded", String(!open));
+  document.getElementById(b.getAttribute("aria-controls")).hidden = open;
+}));
+
+const ICONS = {
+  trophy: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>',
+  code: '<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
+  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/>',
+  box: '<path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="m3 8 9 5 9-5M12 13v8"/>'
+};
+const GO = '<svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
+const pkey = p => (p.ongoing ? "9" : "0") + p.date; // work in progress first, then newest
+PROJECTS.sort((a, b) => pkey(b).localeCompare(pkey(a)));
+const pdate = p => fmt(p.date.slice(0, 7)) + (p.ongoing ? " – present" : "");
+const TROPHY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + ICONS.trophy + '</svg>';
+// prize colour: 1st place gold, 3rd bronze, track/event winner green, pool prize blue (best tier also colours the card icon)
+const TIERS = ["amber", "green", "bronze", "blue"];
+const prizeTier = x => /1st place/i.test(x) ? "amber" : /3rd place/i.test(x) ? "bronze" : /pool prize/i.test(x) ? "blue" : "green";
+const NETS = /^(Base|Base Sepolia|Celo|Optimism|Mode|Hedera|Chiliz|Polygon Amoy|Zora L2|Arweave.*|WeaveVM|Filecoin)$/;
+const PROTOS = /^(Anon Aadhaar|Chainlink CRE|World ID|Sign Protocol|EAS|Lighthouse|IPFS|Livepeer AI|Swarmzero\.ai|x402|thirdweb|Ledger DMK|drand \/ tlock|Nouns)$/;
+const techKind = t => /^(ERC|EIP)-/.test(t) ? " k-std" : NETS.test(t) ? " k-net" : PROTOS.test(t) ? " k-proto" : "";
+$("#proj").innerHTML = PROJECTS.map(p => {
+  const tag = p.url ? "a" : "div";
+  const attrs = p.url ? ` href="${esc(p.url)}" target="_blank" rel="noopener"` : "";
+  const tiers = (p.prizes || []).map(prizeTier);
+  const color = p.status ? "violet" : tiers.length ? TIERS[Math.min(...tiers.map(t => TIERS.indexOf(t)))] : "grey";
+  const pills = p.status ? `<span class="pill c-violet">${esc(p.status)}</span>`
+    : (p.prizes || []).map((x, i) => `<span class="pill prize c-${tiers[i]}">${TROPHY}${esc(x)}</span>`).join("");
+  return `<${tag} class="card rv"${attrs}>
+    <span class="badge c-${color}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[p.icon]}</svg></span>
+    <span class="txt"><span class="nm">${esc(p.name)}</span>
+      <p class="dt">${esc(p.event)} · ${pdate(p)}</p>
+      ${pills ? `<span class="pills">${pills}</span>` : ""}
+      <p class="ds">${esc(p.desc)}</p>
+      <span class="tags">${p.tech.map(t => `<span class="tag${techKind(t)}">${esc(t)}</span>`).join("")}</span></span>
+    ${p.url ? GO : ""}</${tag}>`;
+}).join("");
+
+const dots = a => a.map(x => `<span>${esc(x)}</span>`).join("<i>·</i> ");
+$("#skills").innerHTML = SKILLS.map(([h, core, more]) => `<div class="sk"><h3>${esc(h)}</h3><p class="core">${dots(core)}</p>${more.length ? `<p class="more">${dots(more)}</p>` : ""}</div>`).join("");
+$("#edu").innerHTML = EDU.map(e => `<div class="item"><b>${esc(e.t)}</b><span class="yr">${e.y ? esc(e.y) : ""}</span><p>${esc(e.d)}</p></div>`).join("");
+
+/* blockie avatar (ethereum-blockies algorithm) */
+(function avatar() {
+  const box = $("#avatar");
+  if (PHOTO) { box.innerHTML = `<img src="${esc(PHOTO)}" alt="Mujahid Shaik">`; box.setAttribute("aria-label", "Mujahid Shaik"); return; }
+  const seed = ADDRESS.toLowerCase(), r = [0, 0, 0, 0];
+  for (let i = 0; i < seed.length; i++) r[i % 4] = ((r[i % 4] << 5) - r[i % 4]) + seed.charCodeAt(i);
+  const rand = () => { const t = r[0] ^ (r[0] << 11); r[0] = r[1]; r[1] = r[2]; r[2] = r[3]; r[3] = r[3] ^ (r[3] >> 19) ^ t ^ (t >> 8); return (r[3] >>> 0) / ((1 << 31) >>> 0); };
+  const col = () => `hsl(${Math.floor(rand() * 360)},${rand() * 60 + 40}%,${(rand() + rand() + rand() + rand()) * 25}%)`;
+  const fg = col(), bg = col(), spot = col(), size = 8, data = [];
+  for (let y = 0; y < size; y++) { const row = []; for (let x = 0; x < size / 2; x++) row[x] = Math.floor(rand() * 2.3); data.push(...row, ...row.slice().reverse()); }
+  const cv = document.createElement("canvas"); cv.width = cv.height = size;
+  const g = cv.getContext("2d"); g.fillStyle = bg; g.fillRect(0, 0, size, size);
+  data.forEach((v, i) => { if (v) { g.fillStyle = v === 1 ? fg : spot; g.fillRect(i % size, Math.floor(i / size), 1, 1); } });
+  box.appendChild(cv);
+})();
+
+/* copy ENS */
+document.querySelectorAll("[data-copy]").forEach(b => b.addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(b.dataset.copy); b.dataset.done = ""; setTimeout(() => delete b.dataset.done, 1400); } catch (e) {}
+}));
+
+/* clock (IST) */
+const tick = () => { const n = nowIST(); $("#clock").innerHTML = String(n.getHours()).padStart(2, "0") + ":" + String(n.getMinutes()).padStart(2, "0") + "<small>IST</small>"; };
+tick(); setInterval(tick, 15000);
+$("#yr").textContent = nowIST().getFullYear();
+
+/* reveal on scroll */
+const els = document.querySelectorAll(".rv");
+if ("IntersectionObserver" in window) {
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { rootMargin: "0px 0px -8% 0px" });
+  els.forEach(el => io.observe(el));
+} else els.forEach(el => el.classList.add("in"));
+</script>
 <script src="https://sitebound-pay.pages.dev/button/sitebound.js" defer id="sb-script"></script>
 <script>
 (() => {
-  const status = document.getElementById('status');
+  const status = document.getElementById('coffee-status');
   const HASH = /^0x[0-9a-fA-F]{64}$/;
   const EXPLORER = 'https://explorer.testnet.whitechain.io/tx/';
-
   // The contract rejects a reused order id, so every attempt gets its own.
   const orderId = () => {
     const r = crypto.getRandomValues(new Uint32Array(1))[0].toString(36).toUpperCase().padStart(4, '0');
-    return 'DON-' + Date.now().toString(36).toUpperCase() + '-' + r;
+    return 'COFFEE-' + Date.now().toString(36).toUpperCase() + '-' + r;
   };
-
   const say = (...nodes) => status.replaceChildren(...nodes);
-
-  document.querySelectorAll('.slot').forEach((slot) => {
+  document.querySelectorAll('#coffee-tiers .slot').forEach((slot) => {
     const el = document.createElement('sitebound-pay');
     el.setAttribute('amount', slot.dataset.amount);
     el.setAttribute('order', orderId());
     el.addEventListener('sitebound:paid', (e) => {
       const { txHash } = e.detail || {};
-      // Same element stays mounted so the open receipt is not torn down; only the order id is renewed.
+      // The element stays mounted so the open receipt is not torn down; only the order id is renewed.
       el.setAttribute('order', orderId());
-      const msg = document.createElement('span');
-      msg.textContent = 'Thank you. Payment confirmed on Whitechain.';
-      const nodes = [msg];
+      const nodes = [document.createTextNode('Thank you. Payment confirmed on Whitechain.')];
       if (typeof txHash === 'string' && HASH.test(txHash)) {
         const a = document.createElement('a');
         a.href = EXPLORER + txHash;
@@ -102,10 +586,8 @@
     });
     slot.append(el);
   });
-
   const failed = () => {
     if (customElements.get('sitebound-pay')) return;
-    document.documentElement.classList.add('no-pay');
     say(document.createTextNode('The payment buttons did not load. Reload the page to try again.'));
   };
   document.getElementById('sb-script').addEventListener('error', failed);
