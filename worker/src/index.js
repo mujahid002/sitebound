@@ -160,8 +160,8 @@ async function register(body, env) {
 }
 
 async function setup(body, env) {
-  const owner = getAddress(body.owner);
   const b = body.bind || bad("bind missing");
+  const owner = getAddress(body.owner ?? b.wallet ?? bad("owner missing"));
   const { sb, token } = chain(env);
   const bindArgs = [b.credentialHash, b.pubX, b.pubY, b.perPayCap, b.totalCap, b.expiry, owner, b.v, b.r, b.s];
   const bindGas = await simulate(sb.bind, bindArgs);
