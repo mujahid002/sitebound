@@ -108,8 +108,15 @@ Token: Whitechain Sepolia USDT `0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7` (6 d
 
 ## Deployments (Whitechain Sepolia, chain 1874)
 
-- Sitebound contract: TBD (not deployed yet)
-- Verified source on Blockscout: TBD
+- Sitebound contract: [`0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73`](https://explorer.testnet.whitechain.io/address/0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73)
+  (token: Whitechain USDT, `DELAY` 1 hour, frame origin `https://sitebound-pay.pages.dev`)
+- Verified source on Blockscout: not yet. Blockscout answered "Fail - Unable to verify" on every try, although the
+  local build output equals the deployed creation bytecode byte for byte (measured). Its verification config lists
+  no compiler versions (checked 6 Nov), so the verifier service looks unavailable. Reported in
+  WHITECHAIN_FEEDBACK.md. Standard-JSON input: `forge verify-contract --show-standard-json-input`.
+- Frame, landing, onboarding, dashboard: https://sitebound-pay.pages.dev
+- Demo shop: https://sitebound-demo.pages.dev
+- Relayer Worker: https://sitebound-relayer.sitebound-relayer.workers.dev (`/health`)
 - First USDT payment: TBD
 - Explorer: https://explorer.testnet.whitechain.io
 

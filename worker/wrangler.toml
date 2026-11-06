@@ -5,7 +5,7 @@ compatibility_date = "2026-10-01"
 # Secrets (wrangler secret put): RELAYER_KEY, RPC_URL
 [vars]
 CHAIN_ID = "1874"
-SITEBOUND_ADDRESS = ""
+SITEBOUND_ADDRESS = "0x43bb27f7079c76D6F0Fa4b4e6d69843e0457DF73"
 TOKEN_ADDRESS = "0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7"
 ALLOWED_ORIGINS = "https://sitebound-pay.pages.dev,http://localhost:8002"
 DEMO_SITES = ""
