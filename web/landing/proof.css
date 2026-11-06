@@ -37,18 +37,18 @@
 
 /* ================================================================ TRUST BAND */
 .band.verify {
-  --ink: #f2f4fb; --muted: #aab1cf; --line: rgba(255, 255, 255, 0.11); --line-2: rgba(255, 255, 255, 0.2);
-  --surface: #101442; --sunk: rgba(255, 255, 255, 0.04);
+  --ink: #eef0ee; --muted: #a3aaa6; --line: rgba(255, 255, 255, 0.11); --line-2: rgba(255, 255, 255, 0.2);
+  --surface: #111417; --sunk: rgba(255, 255, 255, 0.04);
   --accent: #3fd69a; --accent-ink: #04150d; --ring: rgba(63, 214, 154, 0.3);
   --warn: #f1c56b; --err: #ff9a90; --rl: 255, 255, 255;
-  --wc: #7db2ff;                      /* Whitechain blue, lifted to read on navy: structure and icons */
+  --wc: #3fd69a;                      /* the site accent: structure and icons; Whitechain keeps its own colors in the logo */
   position: relative; isolation: isolate; overflow: clip; max-width: none; margin: clamp(24px, 5vw, 64px) 0;
   padding: clamp(56px, 8vw, 104px) var(--pad);
   color: var(--ink);
   background:
-    radial-gradient(860px 460px at 92% -10%, rgba(0, 102, 255, 0.38), transparent 66%),
-    radial-gradient(640px 380px at -4% 108%, rgba(0, 102, 255, 0.18), transparent 70%),
-    #080a28;
+    radial-gradient(860px 460px at 92% -10%, rgba(63, 214, 154, 0.16), transparent 66%),
+    radial-gradient(640px 380px at -4% 108%, rgba(63, 214, 154, 0.08), transparent 70%),
+    #07080a;
 }
 .verify::before {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
@@ -63,7 +63,7 @@
 .v-chain {
   display: grid; justify-items: start; gap: var(--s2); padding: clamp(20px, 3vw, 28px);
   border: 1px solid var(--line-2); border-radius: var(--r-lg);
-  background: radial-gradient(260px 160px at 100% 0%, rgba(0, 102, 255, 0.32), transparent 70%), rgba(255, 255, 255, 0.045);
+  background: radial-gradient(260px 160px at 100% 0%, rgba(63, 214, 154, 0.12), transparent 70%), rgba(255, 255, 255, 0.045);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 .v-lock { width: auto; height: clamp(40px, 5vw, 52px); margin-block: 2px 8px; }
@@ -90,7 +90,7 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 .v-ico {
-  justify-self: start; width: 44px; height: 44px; padding: 10px; border-radius: 12px; background: rgba(125, 178, 255, 0.13);
+  justify-self: start; width: 44px; height: 44px; padding: 10px; border-radius: 12px; background: rgba(63, 214, 154, 0.12);
   fill: none; stroke: var(--wc); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
 }
 .v-ico :is(path, rect) { stroke-dasharray: 1 1; stroke-dashoffset: 0; }
@@ -115,7 +115,7 @@
   border: 1px solid var(--line-2); border-radius: var(--r-md); background: rgba(255, 255, 255, 0.04);
   color: var(--ink); text-decoration: none; transition: border-color 0.2s, background-color 0.2s;
 }
-.v-links a:hover { border-color: var(--wc); background: rgba(125, 178, 255, 0.09); }
+.v-links a:hover { border-color: var(--wc); background: rgba(63, 214, 154, 0.08); }
 .v-links b { display: block; font-weight: 600; letter-spacing: -0.01em; }
 .v-links small { display: block; margin-top: 2px; color: var(--muted); font-size: var(--fs-sm); line-height: 1.45; }
 .v-links svg { width: 20px; height: 20px; flex: none; fill: none; stroke: var(--wc); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.2s var(--ease); }
