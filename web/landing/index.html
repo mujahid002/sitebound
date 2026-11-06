@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Sitebound: kill the checkout address</title>
-  <meta name="description" content="Addressless stablecoin checkout for any website. Every payment is bound to the site the buyer is on.">
+  <title>Sitebound: addressless stablecoin checkout</title>
+  <meta name="description" content="Addressless stablecoin checkout: every payment is bound to the site.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Sitebound">
   <meta property="og:title" content="Sitebound: kill the checkout address">
-  <meta property="og:description" content="Addressless stablecoin checkout for any website. Every payment is bound to the site the buyer is on.">
+  <meta property="og:description" content="Addressless stablecoin checkout: every payment is bound to the site.">
   <meta property="og:url" content="https://sitebound-pay.pages.dev/landing/">
   <meta property="og:image" content="https://sitebound-pay.pages.dev/assets/og.png">
   <meta property="og:image:width" content="1200">
@@ -57,7 +57,6 @@
     <nav aria-label="Primary">
       <a data-demo-link href="https://sitebound-demo.pages.dev/">Live demo</a>
       <a href="#verify">Verify us</a>
-      <a href="https://github.com/mujahid002/sitebound">GitHub</a>
       <button id="theme" class="theme" type="button" aria-label="Switch to dark theme">
         <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
         <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -69,8 +68,8 @@
     <section class="hero" aria-labelledby="hero-h">
       <canvas id="field" class="hero-field" aria-hidden="true"></canvas>
       <div class="hero-inner">
-        <h1 id="hero-h" class="hero-h" data-copy="hero-h">Every payment is bound to the site.</h1>
-        <p class="tagline" data-copy="hero-sub">Addressless stablecoin checkout. The buyer confirms the site and amount with a passkey; the contract pays only that site's registered wallet.</p>
+        <h1 id="hero-h" class="hero-h" data-copy="hero-h">Addressless stablecoin checkout: every payment is bound to the site.</h1>
+        <p class="tagline" data-copy="hero-sub">Buyers pay USDT on Whitechain with Touch ID. Your page holds no address to swap.</p>
 
         <form id="site-form" class="search" novalidate>
           <label class="sr-only" for="site">Your website</label>
@@ -92,49 +91,31 @@
           </div>
           <div class="under">
             <p id="site-msg" class="msg" role="alert"></p>
-            <p class="trust" data-copy="hero-under">Type your domain. We create your payout wallet. Add one DNS record, then register.</p>
+            <p class="trust" data-copy="hero-under">Type your domain. We create your wallet. Add one DNS record.</p>
           </div>
         </form>
         <p class="hero-links">
-          <a class="live-link" href="#live"><span class="live-dot" aria-hidden="true"></span><span class="long">Live on Whitechain Sepolia</span><span class="short">Live on testnet</span></a>
           <a class="quiet" href="#how">How it works</a>
-          <button id="try" class="quiet is-try" type="button" aria-haspopup="dialog" aria-expanded="false" data-copy="hero-try">Try it</button>
+          <a class="quiet" href="#verify">Rules you can check</a>
+          <a class="quiet is-try" href="#try" data-copy="hero-try">Try it</a>
         </p>
       </div>
-      <div id="orbit" class="orbit" role="group" aria-label="Sites that take crypto today, and Sitebound examples. Pick one to see more."></div>
+      <div id="orbit" class="orbit" role="group" aria-label="Sites that show a payment address today, and Sitebound examples. Pick one to see more."></div>
     </section>
 
     <section id="kit" class="kit" aria-label="Your website on Sitebound" hidden>
       <div id="kit-root" class="kit-root"></div>
     </section>
 
-    <section class="band problem" aria-labelledby="problem-h">
-      <p class="eyebrow" data-copy="problem-eyebrow" data-reveal>The problem</p>
-      <div class="problem-grid">
-        <div>
-          <h2 id="problem-h" class="big" data-copy="problem-1" data-reveal>Checkout code holds the payment address. A hacked or injected script swaps it.</h2>
-          <p class="lede-2" data-copy="problem-2" data-reveal>The buyer copies the new address, pays, and the money is gone.</p>
-          <p class="lede-2" data-copy="problem-3" data-reveal>Even without an attack, copying 42 characters by hand goes wrong.</p>
-        </div>
-        <div class="swap" data-reveal role="img" aria-label="A checkout page shows a pay-to address, then hacked code replaces it with the attacker's address.">
-          <div class="swap-bar" aria-hidden="true"><i></i><i></i><i></i><span>yourwebsite.com/checkout</span></div>
-          <div class="swap-body" aria-hidden="true">
-            <span class="swap-k">Pay to</span>
-            <span class="swap-v"><span class="swap-a">0x71C7…a8e3</span><span class="swap-b">0xD3f0…9b41</span></span>
-            <span class="swap-flag" data-copy="swap-flag">Swapped by hacked code</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="band proof" aria-labelledby="proof-h">
-      <h2 id="proof-h" class="section-title" data-copy="proof-title" data-reveal>Real incidents</h2>
-      <ul class="incidents">
-        <li data-reveal><span class="yr" data-copy="incident-1-year">Feb 2025</span><span class="nm"><b data-copy="incident-1-name">Bybit</b><small data-copy="incident-1-text">Malicious JavaScript on the Safe{Wallet} web app showed signers a disguised transaction.</small></span><span class="fig" data-copy="incident-1-figure">~$1.5B</span><span class="src"><a href="https://www.ic3.gov/PSA/2025/PSA250226" target="_blank" rel="noopener">FBI</a><a href="https://www.bleepingcomputer.com/news/security/lazarus-hacked-bybit-via-breached-safe-wallet-developer-machine/" target="_blank" rel="noopener">BleepingComputer</a></span></li>
-        <li data-reveal><span class="yr" data-copy="incident-2-year">Dec 2023</span><span class="nm"><b data-copy="incident-2-name">Ledger Connect Kit</b><small data-copy="incident-2-text">A malicious npm release injected drainer code into apps using the kit.</small></span><span class="fig" data-copy="incident-2-figure">~$600k</span><span class="src"><a href="https://www.ledger.com/blog/security-incident-report" target="_blank" rel="noopener">Ledger</a><a href="https://forklog.com/en/ledger-puts-estimated-user-losses-from-recent-breach-at-about-600000/" target="_blank" rel="noopener">ForkLog</a></span></li>
-        <li data-reveal><span class="yr" data-copy="incident-3-year">Dec 2021</span><span class="nm"><b data-copy="incident-3-name">BadgerDAO</b><small data-copy="incident-3-text">Injected approvals sent users' tokens to the attacker.</small></span><span class="fig" data-copy="incident-3-figure">$120M</span><span class="src"><a href="https://rekt.news/badger-rekt/" target="_blank" rel="noopener">rekt.news</a></span></li>
-      </ul>
-      <p class="foot-note" data-copy="incidents-note" data-reveal>Not checkouts, same pattern: code in the page decided where the money went.</p>
+    <section class="band why" aria-labelledby="why-h">
+      <h2 id="why-h" class="section-title" data-copy="why-title" data-reveal>Why we are building it</h2>
+      <ol class="rows reasons">
+        <li data-reveal><b>Copying an address.</b><p>One wrong paste is final. <a href="https://protonvpn.com/support/vpn-bitcoin-payments" target="_blank" rel="noopener noreferrer">Source</a></p></li>
+        <li data-reveal><b>Injected code.</b><p>A bad Ledger library update cost users ~$600k (2023). <a href="https://forklog.com/en/ledger-puts-estimated-user-losses-from-recent-breach-at-about-600000/" target="_blank" rel="noopener noreferrer">Source</a></p></li>
+        <li data-reveal><b>No 3-D Secure.</b><p>Nothing trusted shows the real site and amount. <span class="view">Our view</span></p></li>
+        <li data-reveal><b>Hard for web2.</b><p>Starting needs a crypto team. <span class="view">Our view</span></p></li>
+        <li data-reveal><b>Gas.</b><p>Paying USDT also costs the chain's coin. <a href="https://ethereum.org/developers/docs/gas/" target="_blank" rel="noopener noreferrer">Source</a></p></li>
+      </ol>
     </section>
 
     <section id="how" class="band how" aria-labelledby="how-h" data-flow>
@@ -142,110 +123,70 @@
       <ol class="route-flow">
         <li data-reveal>
           <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M3 9.5h18"/><path d="M8 14.5l2.2 2.2L15.5 12"/></svg></span>
-          <h3 data-copy="how-1-title">Register once</h3>
-          <p data-copy="how-1-text">Type your domain, add one DNS record. Your site maps to your wallet on-chain.</p>
+          <h3>Register</h3>
+          <p>Add your domain and one DNS record.</p>
         </li>
         <li data-reveal>
           <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M6 3.5h8l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 5 19V5A1.5 1.5 0 0 1 6 3.5Z"/><path d="M14 3.5V8h4M8.5 12.5h7M8.5 16h4.5"/></svg></span>
-          <h3 data-copy="how-2-title">Buyer confirms</h3>
-          <p data-copy="how-2-text">Like 3-D Secure: the frame shows your site and the amount, and one passkey touch signs both. The browser writes the site, not the page.</p>
+          <h3>Confirm</h3>
+          <p>Like 3-D Secure, Touch ID signs the site and amount. The browser names the site, not your page.</p>
         </li>
         <li data-reveal>
           <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3"/><rect x="3.5" y="8" width="17" height="11.5" rx="3"/><path d="M20.5 12.5h-3.2a1.75 1.75 0 0 0 0 3.5h3.2"/></svg></span>
-          <h3 data-copy="how-3-title">Contract pays</h3>
-          <p data-copy="how-3-text"><code>pay()</code> has no payee field. USDT goes to your site's registered wallet. Buyers pay only USDT, plus a 0.01 USDT fee; the relayer pays gas.</p>
+          <h3>Get paid</h3>
+          <p>No "pay to" field: USDT goes only to your site's wallet. Buyers pay a 0.01 USDT fee, no gas.</p>
         </li>
       </ol>
-      <p class="foot-note strong" data-copy="how-end" data-reveal>A hacked page cannot redirect the money.</p>
-    </section>
-
-    <section class="band pair" aria-label="Who it is for, and why Whitechain">
-      <div data-reveal>
-        <h2 class="section-title" data-copy="who-title">Who it is for</h2>
-        <p data-copy="who-text">Web2 businesses and creators. No wallet extension, no address to publish, no gas. One script tag and a button.</p>
-        <p data-copy="who-example">Example: <a href="https://0xmujahid.xyz" target="_blank" rel="noopener">0xmujahid.xyz</a>, a portfolio with a "Buy me a coffee" button.</p>
-      </div>
-      <div data-reveal>
-        <h2 class="section-title" data-copy="why-title">Why Whitechain</h2>
-        <p data-copy="why-text">The P-256 precompile lets the contract check every passkey signature on-chain. Its USDT supports permit, so buyers approve with a signature and never need gas.</p>
-      </div>
+      <p class="foot-note strong" data-reveal>A hacked page cannot redirect the money.</p>
     </section>
 
     <section id="verify" class="band verify" aria-labelledby="verify-h">
-      <h2 id="verify-h" class="section-title" data-copy="verify-title" data-reveal>Check the contract yourself</h2>
-      <ul class="rows" aria-label="What to check, and where">
-        <li data-reveal><b data-copy="proof-1-title">Verified contract</b><p data-copy="proof-1-text"><code>0x6411…8596</code>, exact match on <a href="https://repo.sourcify.dev/1874/0x64117398C837a8708a816818b31C36Df5a968596" target="_blank" rel="noopener">Sourcify</a>.</p></li>
-        <li data-reveal><b data-copy="proof-2-title">138 tests passing</b><p data-copy="proof-2-text"><code>forge test</code>.</p></li>
-        <li data-reveal><b data-copy="proof-3-title">Real browser signature</b><p data-copy="proof-3-text">A Chrome passkey signature from a cross-origin frame, replayed against the contract in our tests.</p></li>
-        <li data-reveal><b data-copy="proof-4-title">Attack demos</b><p data-copy="proof-4-text"><a href="https://sitebound-demo.pages.dev/attack/" target="_blank" rel="noopener">Injected script</a>, <a href="https://sitebound-phish.pages.dev/attack/phish.html" target="_blank" rel="noopener">fake site</a>.</p></li>
-        <li data-reveal><b data-copy="proof-5-title">Threat model</b><p data-copy="proof-5-text"><code>docs/THREAT-MODEL.md</code> in the repo.</p></li>
-      </ul>
-      <p class="prior" data-copy="prior-art" data-reveal><b>Prior art.</b> Chrome's Secure Payment Confirmation also signs the payee origin. Ours is an on-chain origin-to-payout registry, with no payee field in <code>pay()</code>.</p>
-      <div class="verify-grid" data-reveal>
-        <div class="vcard">
-          <p class="tag">Contract</p>
-          <p class="vaddr"><code data-cfg-address>0x64117398C837a8708a816818b31C36Df5a968596</code></p>
-          <p class="vlinks"><button class="copy" type="button" data-copy-address>Copy address</button>
-          <a data-cfg-explorer href="https://explorer.testnet.whitechain.io/address/0x64117398C837a8708a816818b31C36Df5a968596" target="_blank" rel="noopener">View on the Whitechain explorer</a></p>
-          <p class="hint">Whitechain Sepolia testnet, chain 1874. Pays in USDT. A gasless payment adds a <span data-cfg-fee>0.01</span> USDT relayer fee.</p>
-        </div>
+      <div class="rules" data-reveal>
+        <h2 id="verify-h" class="section-title">Rules you can check</h2>
+        <p class="rules-lead">Nobody owns the contract or can upgrade it.</p>
+        <ul class="checks">
+          <li><a href="https://repo.sourcify.dev/1874/0x64117398C837a8708a816818b31C36Df5a968596" target="_blank" rel="noopener noreferrer">Sourcify</a> and the <a href="https://explorer.testnet.whitechain.io/address/0x64117398C837a8708a816818b31C36Df5a968596?tab=contract" target="_blank" rel="noopener noreferrer">Whitechain explorer</a> match the deployed code to its published source.</li>
+          <li><a href="#code-check">Check the code from your browser.</a></li>
+          <li><a href="https://sitebound-demo.pages.dev/attack/" target="_blank" rel="noopener noreferrer">Run one injected script on a classic checkout and on Sitebound.</a></li>
+          <li><a href="https://sitebound-phish.pages.dev/attack/phish" target="_blank" rel="noopener noreferrer">See a fake site embed the real Sitebound window.</a></li>
+        </ul>
         <div class="vcard vcheck" id="code-check" aria-live="polite">
           <div class="vhead"><p class="tag">Live check, in your browser</p><span id="vc-chip" class="chip">Waiting</span></div>
           <dl class="vfacts">
             <div><dt>Code on chain, keccak256</dt><dd id="vc-live">not read yet</dd></div>
-            <div><dt>Expected, from the repo</dt><dd id="vc-exp">not read yet</dd></div>
+            <div><dt>Expected, published</dt><dd id="vc-exp">not read yet</dd></div>
             <div><dt>Runtime code length</dt><dd id="vc-len">not read yet</dd></div>
             <div><dt>Constructor values in the code</dt><dd id="vc-imm">not read yet</dd></div>
           </dl>
           <p id="vc-result" class="vresult">Waiting to run</p>
-          <p class="hint">Your browser reads the contract's code with eth_getCode from <span id="vc-rpc">the network</span>, zeroes the constructor values
-            baked into it, hashes it here, and compares it with <a href="../verify/expected.json">verify/expected.json</a>.
-            <span class="mono">scripts/verify.sh</span> in the repo rebuilds the same hash from source.</p>
-        </div>
-        <div class="vcard">
-          <p class="tag">Built from</p>
-          <dl class="vfacts">
-            <div><dt>Source</dt><dd><a href="https://github.com/mujahid002/sitebound" target="_blank" rel="noopener">github.com/mujahid002/sitebound</a></dd></div>
-            <div><dt>Commit</dt><dd id="vc-commit">see verify/expected.json</dd></div>
-            <div><dt>Compiler</dt><dd id="vc-solc">solc 0.8.28, via_ir, optimizer 200 runs, EVM cancun</dd></div>
-            <div id="vc-sourcify-row" hidden><dt>Independent match</dt><dd id="vc-sourcify"></dd></div>
-            <div><dt>Tests</dt><dd><a href="https://github.com/mujahid002/sitebound/tree/main/test" target="_blank" rel="noopener">Foundry tests</a> and an
-              <a href="https://github.com/mujahid002/sitebound/tree/main/e2e" target="_blank" rel="noopener">end-to-end browser run</a></dd></div>
-          </dl>
+          <p class="hint">Your browser reads the code from <span id="vc-rpc">the network</span>, hashes it, and compares it with <a href="../verify/expected.json">verify/expected.json</a>.</p>
         </div>
       </div>
+    </section>
+
+    <section id="try" class="band try" aria-labelledby="try-h">
+      <h2 id="try-h" class="section-title" data-copy="try-title" data-reveal>Try it on a real site</h2>
+      <p class="try-lead" data-reveal>Buy the builder a coffee for 3 test USDT on their portfolio, 0xmujahid.xyz.</p>
+      <ul class="ticks" data-reveal>
+        <li>No address on the page.</li>
+        <li>Touch ID confirms the site and amount.</li>
+        <li>Only that site's registered wallet is paid.</li>
+      </ul>
+      <p class="hint" data-reveal>First time? Link a wallet holding test USDT, once.</p>
+      <a class="btn try-go" href="https://0xmujahid.xyz/#coffee" target="_blank" rel="noopener noreferrer" data-reveal>Buy a coffee on 0xmujahid.xyz
+        <svg class="go-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
     </section>
 
     <section class="band limits" aria-labelledby="limits-h">
       <h2 id="limits-h" class="section-title" data-copy="limits-title" data-reveal>Honest limits</h2>
       <ul class="rows warn">
-        <li data-reveal><b data-copy="limit-1-title">One trusted attestor.</b><p data-copy="limit-1-text">Our relayer checks DNS and signs registrations alone.</p></li>
-        <li data-reveal><b data-copy="limit-2-title">Owners hold power.</b><p data-copy="limit-2-text">An owner can freeze payments or drop a partner's share at once.</p></li>
-        <li data-reveal><b data-copy="limit-3-title">No overlay detection.</b><p data-copy="limit-3-text">A hacked page can draw over the frame and lie. It cannot change who gets paid.</p></li>
+        <li data-reveal><b>One trusted checker.</b><p>Our relayer alone checks DNS and signs registrations.</p></li>
+        <li data-reveal><b>Site owners hold power.</b><p>They can freeze payments or cut a partner's share instantly.</p></li>
+        <li data-reveal><b>Not phishing protection.</b><p>A fake site or overlay can fool buyers, not change who a real site pays.</p></li>
       </ul>
-      <p class="foot-note strong" data-copy="limit-end" data-reveal>Testnet. Not audited.</p>
-    </section>
-
-    <section class="closing" aria-labelledby="close-h">
-      <div class="closing-card" data-reveal>
-        <div>
-          <h2 id="close-h" class="section-title">Bring your domain</h2>
-          <p data-copy="closing-text">Type your domain. We create your payout wallet. Add one DNS record, then register.</p>
-        </div>
-        <a class="btn" href="#site" data-focus-search>Bring your website</a>
-      </div>
+      <p class="foot-note strong" data-reveal>Testnet only. Not audited.</p>
     </section>
   </main>
-
-  <footer id="live" class="foot" aria-labelledby="live-h">
-    <h2 id="live-h" class="live-title"><span class="live-dot" aria-hidden="true"></span>Live on Whitechain Sepolia</h2>
-    <p class="addr"><span>Contract</span> <code data-cfg-address>0x64117398C837a8708a816818b31C36Df5a968596</code></p>
-    <p class="links">
-      <a data-cfg-explorer href="https://explorer.testnet.whitechain.io/address/0x64117398C837a8708a816818b31C36Df5a968596" target="_blank" rel="noopener">View on the explorer</a>
-      <a href="https://github.com/mujahid002/sitebound" target="_blank" rel="noopener">Source on GitHub</a>
-      <span>MIT</span>
-    </p>
-  </footer>
 
   <aside id="panel" class="panel" role="dialog" aria-modal="false" aria-labelledby="panel-title" aria-hidden="true" tabindex="-1"></aside>
 </body>

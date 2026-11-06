@@ -1,42 +1,58 @@
 // The one list the orbit and the detail panel are drawn from. Add a site here and nothing else.
 //
 //   domain  what the chip shows, and the panel title
-//   kind    'real'  a business that takes crypto today (not a Sitebound customer): its chip opens the detail panel
+//   kind    'real'  a business that shows a payment address today (not a Sitebound customer): its chip opens the panel
 //           'ours'  a Sitebound example: its chip opens the setup for that site
-//   what    five words on what the site is
-//   today   how the site takes crypto now, one or two plain sentences (the left column of the panel)
-//   proof   a link that shows it (a page or a screenshot), https only. Empty: the panel shows no link.
-//   logo    a file under web/landing/logos/, for example 'logos/bitrefill.com.svg'. Empty, or if the file is missing,
-//           the chip keeps a letter mark. Never a third-party URL: a hotlinked icon tells that host who visited.
+//   today   how the site takes crypto now, one sentence from its own page (the left column of the panel)
+//   proof   the page that says it, https only (the "Source" link)
+//   logo    a file under web/landing/logos/. If it is missing the chip keeps a letter mark. Never a third-party URL:
+//           a hotlinked icon tells that host who visited.
 //   origin  only when it is not https://<domain> (the local demo shop)
 //
-// Real sites were checked on 7 Nov 2026 to show a deposit address at checkout. `proof` links and the exact wording of
-// `today` are still to be filled from the verified notes.
+// Facts checked 7 Nov 2026 against each site's own page; quotes are the page's words.
 const demo = window.SITEBOUND?.demoShop;
 const host = (o) => { try { return new URL(o).host; } catch { return o; } };
+const real = (domain, today, proof) => ({ domain, kind: 'real', today, proof, logo: `logos/${domain}.png` });
 
 export const SITES = [
-  demo && { domain: host(demo), origin: demo, kind: 'ours', what: 'The Sitebound demo shop', today: '', proof: '', logo: '' },
-  { domain: '0xmujahid.xyz', kind: 'ours', what: 'Portfolio with a coffee button', today: '', proof: '', logo: '' },
-  { domain: 'bitrefill.com', kind: 'real', what: 'Gift cards and top-ups', today: 'Shows a deposit address to copy at checkout.', proof: '', logo: '' },
-  { domain: 'protonvpn.com', kind: 'real', what: 'Privacy VPN', today: 'Shows a deposit address to copy at checkout.', proof: '', logo: '' },
-  { domain: 'cloudzy.com', kind: 'real', what: 'Cloud servers', today: 'Shows a deposit address to copy at checkout.', proof: '', logo: '' },
-  { domain: 'surfercloud.com', kind: 'real', what: 'Cloud servers', today: 'Shows a deposit address to copy at checkout.', proof: '', logo: '' },
-  { domain: 'bitlaunch.io', kind: 'real', what: 'Cloud servers', today: 'Shows a deposit address to copy at checkout.', proof: '', logo: '' },
+  demo && { domain: host(demo), origin: demo, kind: 'ours', today: '', proof: '', logo: '' },
+  { domain: '0xmujahid.xyz', kind: 'ours', today: '', proof: '', logo: '' },
+  real('surfercloud.com', 'Its blog shows a checkout with an address and QR code that “may change after this time.”',
+    'https://surfercloud.com/blog/guide-to-acquiring-surfercloud-uhost-cloud-server-for-just-5-90-in-the-first-month'),
+  real('protonvpn.com', 'Its help page says: “Send the requested BTC payment to the BTC address shown.”',
+    'https://protonvpn.com/support/vpn-bitcoin-payments'),
+  real('cloudzy.com', 'Its page says: “Send ETH to the invoice address, get a Linux VPS.”',
+    'https://cloudzy.com/ethereum-vps/'),
+  real('bitrefill.com', 'Its help center says each purchase “generates a new payment address”.',
+    'https://help.bitrefill.com/hc/en-us/articles/4406025275666-Can-I-pay-to-the-same-address-for-different-purchases'),
+  real('bitlaunch.io', 'Its blog says checkout shows a QR code, the amount and “the address to send it to.”',
+    'https://bitlaunch.io/blog/get-a-windows-vps-with-bitcoin/'),
+  real('silent.link', 'Its FAQ says to scan the QR code or “copy the payment address or Lightning invoice”.',
+    'https://silent.link/faq'),
+  real('racknerd.com', 'Its blog says to scan the QR code or “copy the wallet address and amount”.',
+    'https://blog.racknerd.com/racknerd-expands-cryptocurrency-payment-options-with-coinify-integration/'),
+  real('servermania.com', 'Its guide says to scan the QR code or send Bitcoin “to the address below”.',
+    'https://servermania.com/kb/articles/bitcoin-payment-walk-through'),
+  real('hawkhost.com', 'Its help page says you are “presented with the wallet address and QR code to scan”.',
+    'https://www.hawkhost.com/kb/billing/how-do-i-pay-my-invoice-with-cryptocurrency/'),
+  real('underhost.com', 'Its docs say Bitcoin payment shows “A unique wallet address and the exact amount due”.',
+    'https://docs.underhost.com/article/bitcoin-payment/'),
+  real('alexhost.com', 'Its FAQ says “A payment address and QR code will be displayed” for crypto.',
+    'https://alexhost.com/faq/what-pyment-methods-do-we-accept-for-hosting-services/'),
+  real('hostsailor.com', 'Its how-to says the CoinGate page shows “A unique wallet address for your transaction”.',
+    'https://hostsailor.com/how-to-pay-with-cryptocurrencies'),
+  real('monovm.com', 'Its blog says to “send the exact invoice amount to the wallet address”.',
+    'https://monovm.com/blog/pay-vps-with-nowpayments/'),
+  real('hostzealot.com', 'Its blog says you can “copy the address and bitcoin amount to send”.',
+    'https://www.hostzealot.com/blog/news/we-accept-bitcoin'),
+  real('hostwinds.com', 'Its docs say stablecoins are paid through Stripe, which “may provide a direct deposit address or QR code”.',
+    'https://www.hostwinds.com/product-docs/billing/managing-cryptocurrency-payments'),
 ].filter(Boolean);
 
-// The right column of the panel, the same for every site: what changes with Sitebound on Whitechain.
-export const WITH_SITEBOUND = [
-  'No address on the page to swap.',
-  'One passkey touch confirms site and amount.',
-  'The contract pays only the site\u2019s wallet.',
+// The panel's second line under "Today", and its right column.
+export const CHECKED = 'Checked 7 Nov 2026. Not a Sitebound customer.';
+export const WITH_SITEBOUND = (domain) => [
+  'No address on the page.',
+  'Touch ID confirms the site and amount.',
+  `It would pay only the wallet ${domain} registers. Buyers need only USDT.`,
 ];
-
-// The "Try it" panel opened from the hero links.
-export const TRY = {
-  eyebrow: 'Try it',
-  title: 'Buy the builder a coffee',
-  text: 'Pay 3 USDT on a real site. The checkout shows the site and the amount, and one passkey touch pays. Whitechain Sepolia testnet.',
-  cta: 'Open 0xmujahid.xyz',
-  href: 'https://0xmujahid.xyz/#coffee',
-};

@@ -1,8 +1,8 @@
-// The detail panel: a small non-modal card docked at the bottom of the screen. It explains one real site (what it does
-// today and what changes with Sitebound), or the "Try it" example. It never blocks the page: the orbit keeps moving,
+// The detail panel: a small non-modal card docked at the bottom of the screen. It explains one real site (how it takes
+// crypto today and what changes with Sitebound). It never blocks the page: the orbit keeps moving,
 // the search box stays usable. Closes with Esc, the close button, a click outside it, or scrolling the hero away.
 // Focus goes into the card on open and comes back to whatever opened it.
-import { WITH_SITEBOUND } from './sites.js';
+import { WITH_SITEBOUND, CHECKED } from './sites.js';
 import { makeLogo } from './logo.js';
 
 const el = (tag, cls, text) => {
@@ -27,61 +27,46 @@ export function mountPanel(root, { hero, onToggle = () => {} }) {
     return b;
   }
 
-  function siteBody(site, WITH) {
+  // The template from the copy: {site}, then "Today" (with its source) beside "With Sitebound on Whitechain".
+  function body(site) {
     const who = el('div', 'panel-who');
-    const name = el('div', 'panel-name');
     const title = el('h2', 'panel-title', site.domain);
     title.id = 'panel-title';
-    name.append(title);
-    name.append(el('p', 'panel-what', [site.what, 'Not a Sitebound customer'].filter(Boolean).join(' \u00b7 ')));
-    who.append(makeLogo(site), name);
+    who.append(makeLogo(site), title);
     const bar = el('div', 'panel-bar');
     bar.append(who, closeBtn());
 
-    const cols = el('div', 'panel-cols');
     const now = el('section', 'panel-col');
-    now.append(el('h3', null, `Today: how ${site.domain} takes crypto`), el('p', null, site.today || 'Not checked yet.'));
+    const text = el('p', null, `${site.today} `);
     const url = safeUrl(site.proof);
     if (url) {
-      const a = el('a', 'panel-link', 'See the proof');
+      const a = el('a', 'panel-link', 'Source');
       a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
-      now.append(a);
+      text.append(a);
     }
-    const then = el('section', 'panel-col is-with');
-    const ul = el('ul');
-    for (const line of WITH) ul.append(el('li', null, line));
-    then.append(el('h3', null, 'With Sitebound on Whitechain'), ul);
-    cols.append(now, then);
+    now.append(el('h3', null, `Today: how ${site.domain} takes crypto`), text, el('p', 'panel-note', CHECKED));
 
+    const then = el('section', 'panel-col');
+    const ul = el('ul');
+    for (const line of WITH_SITEBOUND(site.domain)) ul.append(el('li', null, line));
+    then.append(el('h3', null, 'With Sitebound on Whitechain'), ul);
+
+    const cols = el('div', 'panel-cols');
+    cols.append(now, then);
     return [bar, cols];
   }
 
-  function tryBody(t) {
-    const bar = el('div', 'panel-bar');
-    const name = el('div', 'panel-name');
-    name.append(el('p', 'panel-what', t.eyebrow));
-    const title = el('h2', 'panel-title', t.title);
-    title.id = 'panel-title';
-    name.append(title);
-    bar.append(name, closeBtn());
-    const p = el('p', 'panel-lede', t.text);
-    const cta = el('a', 'btn panel-cta', t.cta);
-    cta.href = t.href; cta.target = '_blank'; cta.rel = 'noopener noreferrer';
-    return [bar, p, cta];
-  }
-
-  function show(kind, data, from) {
-    if (isOpen() && current === data) return hide();
-    root.replaceChildren(...(kind === 'site' ? siteBody(data, WITH_SITEBOUND) : tryBody(data)));
-    root.classList.toggle('is-site', kind === 'site');
+  function show(site, from) {
+    if (isOpen() && current === site) return hide();
+    root.replaceChildren(...body(site));
     root.scrollTop = 0;
     if (opener && opener !== from) opener.setAttribute('aria-expanded', 'false');
     opener = from || null;
-    current = data;
+    current = site;
     opener?.setAttribute('aria-expanded', 'true');
     root.classList.add('is-open');
     root.setAttribute('aria-hidden', 'false');
-    onToggle(true, kind === 'site' ? data : null);
+    onToggle(true, site);
     root.focus({ preventScroll: true });
   }
 
@@ -113,8 +98,7 @@ export function mountPanel(root, { hero, onToggle = () => {} }) {
   }, { passive: true });
 
   return {
-    openSite: (site, from) => show('site', site, from),
-    openTry: (t, from) => show('try', t, from),
+    openSite: (site, from) => show(site, from),
     close: (o) => hide(o),
     isOpen,
   };

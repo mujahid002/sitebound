@@ -3,7 +3,7 @@
 import { mountOrbit } from './orbit.js';
 import { mountField } from './field.js';
 import { mountPanel } from './panel.js';
-import { SITES, TRY } from './sites.js';
+import { SITES } from './sites.js';
 
 const C = window.SITEBOUND || {};
 const $ = (id) => document.getElementById(id);
@@ -81,8 +81,6 @@ const panel = mountPanel($('panel'), {
   hero: document.querySelector('.hero'),
   onToggle: (isOpen, site) => { orbit.setSlow(isOpen); orbit.highlight(site ? `https://${site.domain}` : null); },
 });
-const tryBtn = $('try');
-tryBtn.addEventListener('click', () => panel.openTry(TRY, tryBtn));
 
 function addToRing(origin) {
   if (SITES.some((b) => (b.origin || `https://${b.domain}`) === origin) || typed.includes(origin)) return;
@@ -151,13 +149,6 @@ input.addEventListener('input', () => { show(''); state(toOrigin(input.value).or
 // Warm the kit while the owner is still typing.
 input.addEventListener('focus', () => { loadKit().catch(() => {}); }, { once: true });
 
-// "Bring your website" at the bottom scrolls up and lands the cursor in the search box.
-document.querySelector('[data-focus-search]').addEventListener('click', (e) => {
-  e.preventDefault();
-  input.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'center' });
-  input.focus({ preventScroll: true });
-});
-
 const demoLink = document.querySelector('[data-demo-link]');
 if (demoLink && C.demoShop) demoLink.href = C.demoShop + '/';
 
@@ -171,18 +162,6 @@ if (shared) {
 // ---------------------------------------------------------------- verify us
 
 const isAddr = (a) => /^0x[0-9a-fA-F]{40}$/.test(a || '') && !/^0x0{40}$/.test(a);
-if (isAddr(C.address)) {
-  for (const el of document.querySelectorAll('[data-cfg-address]')) el.textContent = C.address;
-  if (C.explorer) for (const el of document.querySelectorAll('[data-cfg-explorer]')) el.href = `${C.explorer}/address/${C.address}`;
-}
-if (C.relayerFee) for (const el of document.querySelectorAll('[data-cfg-fee]')) el.textContent = C.relayerFee;
-
-const copyBtn = document.querySelector('[data-copy-address]');
-copyBtn?.addEventListener('click', async () => {
-  const text = document.querySelector('.vaddr code').textContent;
-  try { await navigator.clipboard.writeText(text); copyBtn.textContent = 'Copied'; } catch { copyBtn.textContent = 'Select the address to copy'; }
-  setTimeout(() => { copyBtn.textContent = 'Copy address'; }, 1800);
-});
 
 async function rpcCall(method, params) {
   const r = await fetch(C.rpcUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
@@ -190,13 +169,6 @@ async function rpcCall(method, params) {
   if (j.error) throw new Error('rpc'); // the message is not shown: it could carry a provider URL
   return j.result;
 }
-
-const words = (sec) => {
-  const unit = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
-  if (sec >= 86400 && sec % 86400 === 0) return unit(sec / 86400, 'day');
-  if (sec >= 3600 && sec % 3600 === 0) return unit(sec / 3600, 'hour');
-  return sec >= 60 ? unit(Math.round(sec / 60), 'minute') : unit(sec, 'second');
-};
 
 // Reads the contract's runtime code from the RPC in config.js, hashes it here and compares it with verify/expected.json.
 async function runCheck() {
@@ -218,29 +190,10 @@ async function runCheck() {
       loadEthers(),
     ]);
     const { ethers } = window;
-    if (exp?.commit && /^[0-9a-f]{7,40}$/i.test(exp.commit)) {
-      const a = Object.assign(document.createElement('a'), {
-        href: `https://github.com/mujahid002/sitebound/commit/${exp.commit}`, target: '_blank', rel: 'noopener', textContent: exp.commit.slice(0, 12),
-      });
-      $('vc-commit').replaceChildren(a);
-    }
-    if (exp?.solc) {
-      const runs = exp.optimizer?.enabled ? exp.optimizer.runs : exp.optimizerRuns;
-      set('vc-solc', [`solc ${exp.solc}`, exp.viaIR ? 'via_ir' : null, runs ? `optimizer ${runs} runs` : null,
-        exp.evmVersion ? `EVM ${exp.evmVersion}` : null].filter(Boolean).join(', '));
-    }
-    if (exp?.sourcify?.match && /^https:\/\/sourcify\.dev\//.test(exp.sourcify.url || '')) {
-      const a = Object.assign(document.createElement('a'), { href: exp.sourcify.url, target: '_blank', rel: 'noopener', textContent: `Sourcify: ${exp.sourcify.match.replace(/_/g, ' ')}` });
-      $('vc-sourcify').replaceChildren(a);
-      $('vc-sourcify-row').hidden = false;
-    }
-    rpcCall('eth_call', [{ to: C.address, data: ethers.id('delay()').slice(0, 10) }, 'latest'])
-      .then((d) => { for (const el of document.querySelectorAll('[data-delay]')) el.textContent = words(Number(BigInt(d))); })
-      .catch(() => {});
     if (!code || code === '0x') { set('vc-live', 'no code'); return mark('bad', 'Mismatch: there is no contract code at this address.'); }
     const want = exp && /^0x[0-9a-fA-F]{64}$/.test(exp.runtimeCodeHashMasked || '') ? exp.runtimeCodeHashMasked : null;
     if (!want) { set('vc-live', ethers.keccak256(code)); set('vc-exp', 'not published yet'); return mark('warn', 'The expected hash is not published yet, so there is nothing to compare with.'); }
-    if (exp.address && exp.address.toLowerCase() !== C.address.toLowerCase()) return mark('bad', 'Mismatch: verify/expected.json describes a different contract address.');
+    if (exp.address && exp.address.toLowerCase() !== C.address.toLowerCase()) return mark('bad', 'Mismatch: the published file describes a different contract address.');
     // Recipe from expected.json: zero every immutable's byte ranges, then keccak256. Before zeroing, check each
     // immutable holds the value the file lists (the token, the RP ID hash, the payout delay).
     const bytes = ethers.getBytes(code);
@@ -259,9 +212,9 @@ async function runCheck() {
     const names = Object.keys(exp.immutables || {});
     set('vc-imm', names.length ? (wrong.length ? `differ: ${[...new Set(wrong)].join(', ')}` : `${names.join(', ')}: as listed`) : 'none listed');
     const off = [...new Set(wrong)];
-    if (off.length) return mark('bad', `Mismatch: the deployed ${off.join(', ')} ${off.length === 1 ? 'differs' : 'differ'} from the repo's file.`);
-    if (live.toLowerCase() === want.toLowerCase()) mark('ok', 'Match: the code on chain is the code the repo says it is.');
-    else mark('bad', 'Mismatch: the code on chain differs from the repo\'s expected hash.');
+    if (off.length) return mark('bad', `Mismatch: the deployed ${off.join(', ')} ${off.length === 1 ? 'differs' : 'differ'} from the published file.`);
+    if (live.toLowerCase() === want.toLowerCase()) mark('ok', 'Match: the code on chain is the published code.');
+    else mark('bad', 'Mismatch: the code on chain differs from the published hash.');
   } catch {
     mark('warn', 'Could not reach the network to check. Reload to try again.');
   }
