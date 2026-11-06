@@ -186,6 +186,24 @@ relayer fee cap is 1 USDT). `DELAY` must be 1 s to 30 days. After a V2 deploy:
 
 Buyers set up again too: v1 bindings and allowances do not carry over.
 
+## Add a website without DNS (demo/admin only)
+
+For the demo, the relayer can add any website without a DNS record. This is off unless the Worker has the
+`ADMIN_TOKEN` secret.
+
+```sh
+sh scripts/add-site.sh https://shop.example 0xPayoutAddress   # prints the register tx hash and an explorer link
+```
+
+- The script stores the payout in the relayer's KV (`POST /admin/sites` with `Authorization: Bearer $ADMIN_TOKEN`),
+  then calls `/register`. The relayer signs the same attestation it signs for a DNS-verified site.
+- It reads `ADMIN_TOKEN` from the environment or `.env`. `GET /admin/sites` lists the added sites.
+  `DELETE /admin/sites` with `{"site": ...}` removes one; the on-chain registration stays.
+- The relayer checks `DEMO_SITES` first, then these entries, then DNS. An entry overrides the site's DNS record until
+  it is deleted.
+- Whoever holds the token can register any website: the power the relayer's attestor key already has. See
+  [docs/THREAT-MODEL.md](docs/THREAT-MODEL.md).
+
 ## Deployments (Whitechain Sepolia, chain 1874)
 
 - SiteboundV2 (live): [`0x64117398C837a8708a816818b31C36Df5a968596`](https://explorer.testnet.whitechain.io/address/0x64117398C837a8708a816818b31C36Df5a968596?tab=contract)
