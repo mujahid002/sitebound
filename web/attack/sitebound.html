@@ -13,6 +13,7 @@
     s.src = (['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://localhost:8002' : 'https://sitebound-pay.pages.dev') + '/button/sitebound.js';
     document.head.append(s);
   </script>
+  <script src="../config.js"></script>
   <script src="attack.js" defer></script>
 </head>
 <body>
@@ -49,7 +50,7 @@
 
       <h3>Log</h3>
       <ol id="log" class="log"></ol>
-      <p><a href="http://127.0.0.1:8003/attack/phish.html">Next: a fake site embedding the frame</a> (on a second origin, 127.0.0.1:8003)</p>
+      <p><a data-fake href="http://127.0.0.1:8003/attack/phish.html">Next: a fake site embedding the frame</a> (on another origin, <span data-fake-host>127.0.0.1:8003</span>)</p>
     </section>
   </main>
 </body>

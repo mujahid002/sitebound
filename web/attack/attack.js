@@ -84,3 +84,13 @@ if (overlay && fake) {
 
 const here = document.getElementById('here');
 if (here) here.textContent = location.origin;
+
+// Origins come from config.js so the same files work locally (8001 shop, 8003 fake) and on Pages.
+const C = window.SITEBOUND || {};
+const hostOf = (o) => { try { return new URL(o).host; } catch { return null; } };
+const realShop = document.getElementById('real-shop');
+if (realShop && hostOf(C.demoShop)) realShop.textContent = hostOf(C.demoShop);
+if (hostOf(C.fakeShop)) {
+  for (const a of document.querySelectorAll('a[data-fake]')) a.href = new URL('attack/phish.html', C.fakeShop + '/').href;
+  for (const el of document.querySelectorAll('[data-fake-host]')) el.textContent = hostOf(C.fakeShop);
+}

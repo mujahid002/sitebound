@@ -8,6 +8,8 @@
   <meta name="color-scheme" content="light dark">
   <link rel="stylesheet" href="../demo-shop/shop.css">
   <link rel="stylesheet" href="attack.css">
+  <script src="../config.js"></script>
+  <script src="attack.js" defer></script>
 </head>
 <body>
   <main class="wrap index">
@@ -23,8 +25,8 @@
         <p>No address to swap. The payee comes from the registry entry for the origin the browser signed.</p>
       </li>
       <li>
-        <a href="http://127.0.0.1:8003/attack/phish.html">Fake site embedding the frame</a>
-        <p>Runs on a different origin than the shop (locally <code>127.0.0.1:8003</code>, the shop is <code>127.0.0.1:8001</code>). Includes the overlay case, a known limit.</p>
+        <a data-fake href="http://127.0.0.1:8003/attack/phish.html">Fake site embedding the frame</a>
+        <p>Runs on its own origin (<code data-fake-host>127.0.0.1:8003</code>), not the shop's. Includes the overlay case, a known limit.</p>
       </li>
     </ol>
   </main>

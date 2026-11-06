@@ -13,6 +13,7 @@
     s.src = (['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://localhost:8002' : 'https://sitebound-pay.pages.dev') + '/button/sitebound.js';
     document.head.append(s);
   </script>
+  <script src="../config.js"></script>
   <script src="attack.js" defer></script>
 </head>
 <body>
@@ -36,7 +37,7 @@
       <div id="fake" class="fake" popover="manual" aria-hidden="true">
         <p>Checkout</p>
         <p class="big">16.50 <small>USDT</small></p>
-        <p>Pay 16.50 USDT to <b>127.0.0.1:8001</b></p>
+        <p>Pay 16.50 USDT to <b id="real-shop">the real shop</b></p>
       </div>
     </section>
 

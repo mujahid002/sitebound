@@ -8,5 +8,8 @@ window.SITEBOUND = {
   token: '0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7',
   relayerUrl: local ? 'http://localhost:8787' : 'https://sitebound-relayer.sitebound-relayer.workers.dev',
   frameOrigin: local ? 'http://localhost:8002' : 'https://sitebound-pay.pages.dev',
+  // Attack demos: the real demo shop, and the fake copy of it on a third origin.
+  demoShop: local ? 'http://127.0.0.1:8001' : 'https://sitebound-demo.pages.dev',
+  fakeShop: local ? 'http://127.0.0.1:8003' : 'https://sitebound-phish.pages.dev',
   relayerFee: '0.01',
 };
