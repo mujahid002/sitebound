@@ -59,6 +59,13 @@
       <span>Sitebound</span>
     </a>
     <nav aria-label="Primary">
+      <a class="wc-nav" href="#verify">
+        <span class="wc-nav-t">Built on</span>
+        <img class="wc-img wc-l on-light" src="art/whitechain.svg" alt="Whitechain" width="833" height="152">
+        <img class="wc-img wc-l on-dark" src="art/whitechain-light.svg" alt="Whitechain" width="833" height="152">
+        <img class="wc-img wc-m on-light" src="art/whitechain-mark.svg" alt="Whitechain" width="512" height="512">
+        <img class="wc-img wc-m on-dark" src="art/whitechain-mark-white.svg" alt="Whitechain" width="80" height="80">
+      </a>
       <a data-demo-link href="https://sitebound-demo.pages.dev/">Live demo</a>
       <a href="#verify">Verify us</a>
       <button id="theme" class="theme" type="button" aria-label="Switch to dark theme">
@@ -72,6 +79,11 @@
     <section class="hero" aria-labelledby="hero-h">
       <canvas id="field" class="hero-field" aria-hidden="true"></canvas>
       <div class="hero-inner">
+        <a class="wc-pill" href="#verify">
+          <img class="wc-img on-light" src="art/whitechain-mark.svg" alt="" width="512" height="512">
+          <img class="wc-img on-dark" src="art/whitechain-mark-white.svg" alt="" width="80" height="80">
+          <span>Live on Whitechain Sepolia</span>
+        </a>
         <h1 id="hero-h" class="hero-h" data-copy="hero-h">Addressless stablecoin checkout: every payment is bound to the site.</h1>
         <p class="tagline" data-copy="hero-sub">Buyers pay USDT on Whitechain with Touch ID. Your page holds no address to swap.</p>
 
@@ -145,52 +157,166 @@
     </section>
 
     <section id="verify" class="band verify" aria-labelledby="verify-h">
-      <div class="rules" data-reveal>
-        <h2 id="verify-h" class="section-title">Rules you can check</h2>
-        <p class="rules-lead">Nobody owns the contract or can upgrade it.</p>
-        <ul class="checks">
-          <li><a href="https://repo.sourcify.dev/1874/0x64117398C837a8708a816818b31C36Df5a968596" target="_blank" rel="noopener noreferrer">Sourcify</a> and the <a href="https://explorer.testnet.whitechain.io/address/0x64117398C837a8708a816818b31C36Df5a968596?tab=contract" target="_blank" rel="noopener noreferrer">Whitechain explorer</a> match the deployed code to its published source.</li>
-          <li><a href="#code-check">Check the code from your browser.</a></li>
-          <li><a href="https://sitebound-demo.pages.dev/attack/" target="_blank" rel="noopener noreferrer">Run one injected script on a classic checkout and on Sitebound.</a></li>
-          <li><a href="https://sitebound-phish.pages.dev/attack/phish" target="_blank" rel="noopener noreferrer">See a fake site embed the real Sitebound window.</a></li>
+      <div class="v-in">
+        <div class="v-hero">
+          <div class="v-copy">
+            <p class="v-eyebrow" data-reveal>Rules you can check</p>
+            <h2 id="verify-h" class="v-h" data-reveal>Nobody owns the contract or can upgrade it.</h2>
+            <p class="v-lead" data-reveal>The source is verified on Sourcify and the Whitechain explorer, and your own browser can check that the deployed code is that source.</p>
+          </div>
+          <div class="v-chain" data-reveal>
+            <p class="v-built">Built on</p>
+            <img class="v-lock" src="art/whitechain-light.svg" alt="Whitechain" width="833" height="152">
+            <dl class="v-meta">
+              <div><dt>Network</dt><dd>Whitechain Sepolia testnet</dd></div>
+              <div><dt>Contract</dt><dd><a href="https://explorer.testnet.whitechain.io/address/0x64117398C837a8708a816818b31C36Df5a968596?tab=contract" target="_blank" rel="noopener noreferrer"><code>0x6411…9596</code></a></dd></div>
+            </dl>
+          </div>
+        </div>
+
+        <ul class="v-tiles">
+          <li class="v-tile" data-reveal>
+            <svg class="v-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path pathLength="1" d="M4 6.5l1.8 1.8L9 5M4 14.5l1.8 1.8L9 13M13 7h7M13 15h7"/></svg>
+            <p class="v-num"><span class="sr-only">138</span><span aria-hidden="true" data-count="138">138</span></p>
+            <p class="v-lab">tests pass</p>
+            <p class="v-src">forge test, measured 7 Nov</p>
+          </li>
+          <li class="v-tile" data-reveal>
+            <svg class="v-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path pathLength="1" d="M12 3l7 3v5.2c0 4.3-2.8 7.7-7 9.8-4.2-2.1-7-5.5-7-9.8V6l7-3Z"/><path pathLength="1" d="M8.6 12.2l2.4 2.4 4.4-4.9"/></svg>
+            <p class="v-num">Exact</p>
+            <p class="v-lab">match</p>
+            <p class="v-src"><a href="https://repo.sourcify.dev/1874/0x64117398C837a8708a816818b31C36Df5a968596" target="_blank" rel="noopener noreferrer">Sourcify, verified source</a></p>
+          </li>
+          <li class="v-tile" data-reveal>
+            <svg class="v-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path pathLength="1" d="M7.5 11V8a4.5 4.5 0 0 1 9 0v3"/><rect pathLength="1" x="5" y="11" width="14" height="9.5" rx="2.5"/><path pathLength="1" d="M12 14.8v2.4"/></svg>
+            <p class="v-num"><span class="sr-only">0</span><span aria-hidden="true" data-count="0">0</span></p>
+            <p class="v-lab">upgrade paths</p>
+            <p class="v-src">No contract owner, no proxy</p>
+          </li>
+          <li class="v-tile" data-reveal>
+            <svg class="v-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path pathLength="1" d="M3.5 12h14M13 7.5l4.5 4.5-4.5 4.5"/><path pathLength="1" d="M21 7v10"/></svg>
+            <p class="v-num"><span class="sr-only">1</span><span aria-hidden="true" data-count="1">1</span></p>
+            <p class="v-lab">payment = 1 registered wallet</p>
+            <p class="v-src">Pays only the site's wallet</p>
+          </li>
         </ul>
-        <div class="vcard vcheck" id="code-check" aria-live="polite">
-          <div class="vhead"><p class="tag">Live check, in your browser</p><span id="vc-chip" class="chip">Waiting</span></div>
-          <dl class="vfacts">
-            <div><dt>Code on chain, keccak256</dt><dd id="vc-live">not read yet</dd></div>
-            <div><dt>Expected, published</dt><dd id="vc-exp">not read yet</dd></div>
-            <div><dt>Runtime code length</dt><dd id="vc-len">not read yet</dd></div>
-            <div><dt>Constructor values in the code</dt><dd id="vc-imm">not read yet</dd></div>
-          </dl>
-          <p id="vc-result" class="vresult">Waiting to run</p>
-          <p class="hint">Your browser reads the code from <span id="vc-rpc">the network</span>, hashes it, and compares it with <a href="../verify/expected.json">verify/expected.json</a>.</p>
+
+        <div class="v-grid">
+          <div class="v-actions" data-reveal>
+            <h3 class="v-h3">Check it yourself</h3>
+            <ul class="v-links">
+              <li><a href="https://explorer.testnet.whitechain.io/address/0x64117398C837a8708a816818b31C36Df5a968596?tab=contract" target="_blank" rel="noopener noreferrer"><span><b>Whitechain explorer</b><small>Read the deployed contract next to its verified source.</small></span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 17 17 7M9 7h8v8"/></svg></a></li>
+              <li><a href="https://sitebound-demo.pages.dev/attack/" target="_blank" rel="noopener noreferrer"><span><b>Injected script demo</b><small>Run one script on a classic checkout and on Sitebound.</small></span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 17 17 7M9 7h8v8"/></svg></a></li>
+              <li><a href="https://sitebound-phish.pages.dev/attack/phish" target="_blank" rel="noopener noreferrer"><span><b>Fake site demo</b><small>See a fake site embed the real Sitebound window.</small></span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 17 17 7M9 7h8v8"/></svg></a></li>
+            </ul>
+          </div>
+          <div class="vcard vcheck" id="code-check" aria-live="polite" data-reveal>
+            <div class="vhead"><p class="tag">Live check, in your browser</p><span id="vc-chip" class="chip">Waiting</span></div>
+            <dl class="vfacts">
+              <div><dt>Code on chain, keccak256</dt><dd id="vc-live">not read yet</dd></div>
+              <div><dt>Expected, published</dt><dd id="vc-exp">not read yet</dd></div>
+              <div><dt>Runtime code length</dt><dd id="vc-len">not read yet</dd></div>
+              <div><dt>Constructor values in the code</dt><dd id="vc-imm">not read yet</dd></div>
+            </dl>
+            <p id="vc-result" class="vresult">Waiting to run</p>
+            <p class="hint">Your browser reads the code from <span id="vc-rpc">the network</span>, hashes it, and compares it with <a href="../verify/expected.json">verify/expected.json</a>.</p>
+          </div>
         </div>
       </div>
     </section>
 
     <section id="try" class="band try" aria-labelledby="try-h">
-      <h2 id="try-h" class="section-title" data-copy="try-title" data-reveal>Try it on a real site</h2>
-      <p class="try-lead" data-reveal>Buy the builder a coffee for 3 test USDT on their portfolio, 0xmujahid.xyz.</p>
-      <ul class="ticks" data-reveal>
-        <li>No address on the page.</li>
-        <li>Touch ID confirms the site and amount.</li>
-        <li>Only that site's registered wallet is paid.</li>
-      </ul>
-      <p class="hint" data-reveal>First time? Link a wallet holding test USDT, once.</p>
-      <a class="btn try-go" href="https://0xmujahid.xyz/#coffee" target="_blank" rel="noopener noreferrer" data-reveal>Buy a coffee on 0xmujahid.xyz
-        <svg class="go-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      <div class="t-grid">
+        <div class="t-copy">
+          <h2 id="try-h" class="section-title" data-copy="try-title" data-reveal>Try it on a real site</h2>
+          <p class="try-lead" data-reveal>Buy the builder a coffee for 3 test USDT on their portfolio, 0xmujahid.xyz.</p>
+          <ul class="ticks" data-reveal>
+            <li>No address on the page.</li>
+            <li>Touch ID confirms the site and amount.</li>
+            <li>Only that site's registered wallet is paid.</li>
+          </ul>
+          <p class="hint" data-reveal>First time? Link a wallet holding test USDT, once.</p>
+          <a class="btn try-go" href="https://0xmujahid.xyz/#coffee" target="_blank" rel="noopener noreferrer" data-reveal>Buy a coffee on 0xmujahid.xyz
+            <svg class="go-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+
+        <figure class="t-demo" data-reveal>
+          <div class="mock" id="mock" role="img" aria-label="Illustration of the coffee checkout on 0xmujahid.xyz: the page shows three small buttons, Pay 3, 5 and 10 USDT. Choosing one opens the Sitebound window, which names the site, 0xmujahid.xyz, and the amount, 3 USDT, and pays after Touch ID.">
+            <div class="mk-win" aria-hidden="true">
+              <div class="mk-bar">
+                <span class="mk-dots"><i></i><i></i><i></i></span>
+                <span class="mk-url"><svg viewBox="0 0 16 16" focusable="false"><rect x="3.5" y="7" width="9" height="6.5" rx="1.6"/><path d="M5.5 7V5.5a2.5 2.5 0 0 1 5 0V7"/></svg>0xmujahid.xyz/#coffee</span>
+              </div>
+              <div class="mk-page">
+                <p class="mk-h">Buy me a coffee</p>
+                <p class="mk-line">Send a few USDT, no wallet address to copy. Checkout by Sitebound: pick an amount and confirm with Touch ID.</p>
+                <div class="mk-tiers">
+                  <span class="mk-b mk-b1">Pay 3 USDT<span class="mk-cur mk-cur1"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 3.2v15.6l4.2-3.7 2.9 6.2 2.6-1.2-2.9-6.1 5.7-.3L5 3.2Z"/></svg></span></span>
+                  <span class="mk-b">Pay 5 USDT</span>
+                  <span class="mk-b">Pay 10 USDT</span>
+                </div>
+                <p class="mk-note">Whitechain Sepolia test USDT, no real value. Money goes only to the wallet registered on-chain for <code>0xmujahid.xyz</code>.</p>
+                <span class="mk-sk mk-sk1"></span><span class="mk-sk mk-sk2"></span>
+              </div>
+              <div class="mk-scrim"></div>
+              <div class="mk-frame">
+                <div class="fr-head"><span class="fr-brand"><svg viewBox="0 0 32 32" focusable="false"><path d="M10 4.5H9A5.5 5.5 0 0 0 3.5 10V22A5.5 5.5 0 0 0 9 27.5H10M22 4.5H23A5.5 5.5 0 0 1 28.5 10V22A5.5 5.5 0 0 1 23 27.5H22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle class="mark-dot" cx="16" cy="16" r="5.5"/></svg>Sitebound</span><span class="fr-x">&times;</span></div>
+                <p class="fr-k">You are paying this website</p>
+                <p class="fr-site">0xmujahid.xyz</p>
+                <p class="fr-amt">3 <small>USDT</small></p>
+                <span class="fr-pay"><span class="fr-ring"></span><span class="fr-l fr-l1">Pay with Touch ID<span class="mk-cur mk-cur2"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 3.2v15.6l4.2-3.7 2.9 6.2 2.6-1.2-2.9-6.1 5.7-.3L5 3.2Z"/></svg></span></span><span class="fr-l fr-l2"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Paid</span></span>
+                <p class="fr-fee">Fee 0.01 USDT, no gas.</p>
+              </div>
+            </div>
+          </div>
+          <figcaption class="t-cap"><span>An illustration of the real checkout, on test USDT.</span><button class="t-pause" id="mock-pause" type="button" aria-pressed="false" aria-controls="mock">Pause animation</button></figcaption>
+        </figure>
+      </div>
     </section>
 
     <section class="band limits" aria-labelledby="limits-h">
       <h2 id="limits-h" class="section-title" data-copy="limits-title" data-reveal>Honest limits</h2>
-      <ul class="rows warn">
-        <li data-reveal><b>One trusted checker.</b><p>Our relayer alone checks DNS and signs registrations.</p></li>
-        <li data-reveal><b>Site owners hold power.</b><p>They can freeze payments or cut a partner's share instantly.</p></li>
-        <li data-reveal><b>Not phishing protection.</b><p>A fake site or overlay can fool buyers, not change who a real site pays.</p></li>
+      <ul class="lim-grid">
+        <li class="lim" data-reveal>
+          <span class="lim-ico" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg></span>
+          <b>One trusted checker.</b>
+          <p>Our relayer alone checks DNS and signs registrations.</p>
+        </li>
+        <li class="lim" data-reveal>
+          <span class="lim-ico" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="8" cy="15.5" r="4"/><path d="M11 12.5 20 3.5M16.5 7l3 3M14 9.5l2 2"/></svg></span>
+          <b>Site owners hold power.</b>
+          <p>They can freeze payments or cut a partner's share instantly.</p>
+        </li>
+        <li class="lim" data-reveal>
+          <span class="lim-ico" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 3l7 3v5.2c0 4.3-2.8 7.7-7 9.8-4.2-2.1-7-5.5-7-9.8V6l7-3Z"/><path d="M12 8.5v4.2M12 16v.2"/></svg></span>
+          <b>Not phishing protection.</b>
+          <p>A fake site or overlay can fool buyers, not change who a real site pays.</p>
+        </li>
       </ul>
-      <p class="foot-note strong" data-reveal>Testnet only. Not audited.</p>
+      <p class="lim-foot" data-reveal><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.5 22 20H2L12 3.5ZM12 10v4.5M12 17.2v.1"/></svg><span>Testnet only. Not audited.</span></p>
     </section>
   </main>
+
+  <footer class="foot">
+    <div class="foot-in">
+      <a class="top-brand" href="./" aria-label="Sitebound home">
+        <svg class="mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+          <path d="M10 4.5H9A5.5 5.5 0 0 0 3.5 10V22A5.5 5.5 0 0 0 9 27.5H10M22 4.5H23A5.5 5.5 0 0 1 28.5 10V22A5.5 5.5 0 0 1 23 27.5H22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          <circle class="mark-dot" cx="16" cy="16" r="5.5" />
+        </svg>
+        <span>Sitebound</span>
+      </a>
+      <p class="foot-built">Built on
+        <img class="wc-img wc-l on-light" src="art/whitechain.svg" alt="Whitechain" width="833" height="152">
+        <img class="wc-img wc-l on-dark" src="art/whitechain-light.svg" alt="Whitechain" width="833" height="152">
+      </p>
+      <nav aria-label="Footer">
+        <a href="#verify">Rules you can check</a>
+        <a href="#try">Try it</a>
+      </nav>
+    </div>
+    <p class="foot-credit">Built at ETHGlobal Mumbai 2026 with love by <a href="https://github.com/mujahid002" target="_blank" rel="noopener">mujahid002</a> and <a href="https://github.com/sowjanyalakshmi001" target="_blank" rel="noopener">sowjanyalakshmi001</a></p>
+  </footer>
 
   <aside id="panel" class="panel" role="dialog" aria-modal="false" aria-labelledby="panel-title" aria-hidden="true" tabindex="-1"></aside>
 </body>
