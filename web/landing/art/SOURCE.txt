@@ -1,0 +1,6 @@
+Whitechain logo files. Fetched 2026-11-07 (IST) from whitechain.io. No brand/press kit found (/brand, /press, /brand-kit, /media-kit all 404).
+
+whitechain.svg            https://whitechain.io/logo.svg  (site header logo; also the Organization "logo" in the site's JSON-LD). Unmodified. Ink is navy #080A28, so light backgrounds only.
+whitechain-light.svg      Derived from whitechain.svg: only the wordmark path fill #080A28 -> #FFFFFF, for dark backgrounds. Not an official file.
+whitechain-mark.svg       https://whitechain.io/icon.svg  (site icon, 512x512). Unmodified. Full-colour mark.
+whitechain-mark-white.svg https://whitechain.io/footer-glyph.svg  (site footer mark, 80x80, white-only). Unmodified. Dark backgrounds.
