@@ -506,7 +506,7 @@ contract SiteboundV2Test is Test {
 
     function test_relayer_fee_is_capped_on_chain() public {
         Opts memory o = _opts("K1");
-        o.fee = sb.MAX_RELAYER_FEE();
+        o.fee = sb.maxRelayerFee();
         SiteboundV2.PayInput memory p = _input(o);
         vm.prank(relayer);
         sb.pay(p);
@@ -1455,6 +1455,304 @@ contract SiteboundV2Test is Test {
     function test_contract_holds_no_funds() public {
         _pay(_opts("F3"));
         assertEq(usdt.balanceOf(address(sb)), 0);
+    }
+
+    // ------------------------------------------------ review fixes (M1, L1-L3, INFO)
+
+    function _addLiveAdmin(address admin) internal {
+        vm.prank(shopWallet);
+        sb.addAdmin(keccak256(bytes(SHOP)), admin);
+        vm.warp(block.timestamp + DELAY);
+    }
+
+    function _threeWay(address a, address b, address c) internal pure returns (address[] memory to, uint16[] memory bps) {
+        to = new address[](3);
+        (to[0], to[1], to[2]) = (a, b, c);
+        bps = new uint16[](3);
+        (bps[0], bps[1], bps[2]) = (5000, 3000, 2000);
+    }
+
+    function _addrs2(address a, address b) internal pure returns (address[] memory l) {
+        l = new address[](2);
+        (l[0], l[1]) = (a, b);
+    }
+
+    function _bps2(uint16 a, uint16 b) internal pure returns (uint16[] memory l) {
+        l = new uint16[](2);
+        (l[0], l[1]) = (a, b);
+    }
+
+    /// M1: the owner's key is lost, the attestors approve a recovery payout, then an admin freezes. The freeze only
+    /// pauses payments; the recovery still takes effect, and the old owner's admins go with it.
+    function test_admin_freeze_cannot_cancel_an_attested_recovery() public {
+        bytes32 h = keccak256(bytes(SHOP));
+        address admin = address(0xAD1);
+        _addLiveAdmin(admin);
+        address recovered = address(0xE11);
+        _register(SHOP, recovered);
+        vm.prank(admin);
+        sb.freeze(h);
+        (, address pend,, bool frozen,) = sb.sites(h);
+        assertEq(pend, recovered, "admin freeze dropped the pending recovery");
+        assertTrue(frozen);
+        (bool ownerFrozen, uint64 until) = sb.freezeOf(h);
+        assertFalse(ownerFrozen);
+        assertEq(until, block.timestamp + 72 hours);
+        _register(SHOP, recovered); // the attestors can still register during an admin freeze
+        vm.warp(block.timestamp + DELAY);
+        (,,, frozen,) = sb.sites(h);
+        assertFalse(frozen, "the old admin's freeze outlived the owner change");
+        _pay(_opts("REC1"));
+        (address payout,,,,) = sb.sites(h);
+        assertEq(payout, recovered);
+        assertEq(usdt.balanceOf(recovered), 10e6);
+        assertFalse(sb.isAdmin(h, admin));
+        (address[] memory who,) = sb.adminsOf(h);
+        assertEq(who.length, 0);
+    }
+
+    function test_admin_freeze_lasts_72_hours_and_the_owner_can_lift_it() public {
+        bytes32 h = keccak256(bytes(SHOP));
+        address admin = address(0xAD1);
+        _addLiveAdmin(admin);
+        vm.prank(admin);
+        sb.freeze(h);
+        SiteboundV2.PayInput memory p = _input(_opts("AF1"));
+        vm.expectRevert("frozen");
+        sb.pay(p);
+        vm.warp(block.timestamp + 72 hours - 1);
+        p = _input(_opts("AF2"));
+        vm.expectRevert("frozen");
+        sb.pay(p);
+        vm.warp(block.timestamp + 1);
+        _pay(_opts("AF3"));
+        vm.prank(admin);
+        sb.freeze(h);
+        vm.prank(admin);
+        vm.expectRevert("not payout");
+        sb.unfreeze(h);
+        vm.prank(shopWallet);
+        sb.unfreeze(h);
+        _pay(_opts("AF4"));
+        assertEq(usdt.balanceOf(shopWallet), 20e6);
+        // the owner's own freeze is unchanged: it drops a pending change and blocks registration
+        _register(SHOP, address(0xE12));
+        vm.prank(shopWallet);
+        sb.freeze(h);
+        (, address pend,, bool frozen,) = sb.sites(h);
+        assertEq(pend, address(0));
+        assertTrue(frozen);
+        SiteboundV2.Sig[] memory sigs =
+            _sigs(_keys(attestorKey), _attestHead(SHOP, address(0xE12)), uint64(block.timestamp + 1 days));
+        vm.expectRevert("frozen");
+        _reg(SHOP, address(0xE12), sigs);
+    }
+
+    /// L1
+    function test_admin_changes_and_activation_bump_the_config_version() public {
+        bytes32 h = keccak256(bytes(SHOP));
+        Opts memory o = _opts("ADM");
+        o.deadline = block.timestamp + 2 hours;
+        SiteboundV2.PayInput memory p = _input(o);
+        uint256 v = sb.configVersion(h);
+        vm.prank(shopWallet);
+        sb.addAdmin(h, address(0xAD1));
+        assertEq(sb.configVersion(h), v + 1);
+        vm.warp(block.timestamp + DELAY);
+        assertEq(sb.configVersion(h), v + 2, "activation not counted");
+        vm.expectRevert("bad challenge");
+        sb.pay(p);
+        _pay(_opts("ADM2"));
+        assertEq(sb.configVersion(h), v + 2);
+        vm.prank(shopWallet);
+        sb.removeAdmin(h, address(0xAD1));
+        assertEq(sb.configVersion(h), v + 3);
+    }
+
+    /// L2
+    function test_owner_change_clears_the_old_owners_roles() public {
+        bytes32 h = keccak256(bytes(SHOP));
+        address oldAdmin = address(0xAD1);
+        vm.startPrank(shopWallet);
+        sb.addAdmin(h, oldAdmin);
+        sb.setQuoteSigner(h, vm.addr(QUOTE_KEY));
+        sb.setRefundOperator(h, address(0x09E));
+        vm.stopPrank();
+        vm.warp(block.timestamp + DELAY);
+        address newOwner = address(0x0E3);
+        _register(SHOP, newOwner);
+        vm.warp(block.timestamp + DELAY);
+        assertFalse(sb.isAdmin(h, oldAdmin));
+        bytes32 id = _pay(_opts("NEW1")); // the old owner's quote key no longer gates the site
+        assertEq(usdt.balanceOf(newOwner), 10e6);
+        (address qs, address qp, uint64 qa) = sb.quoteSignerOf(h);
+        assertEq(abi.encode(qs, qp, qa), abi.encode(address(0), address(0), uint64(0)));
+        (address op, address pop, uint64 oa) = sb.refundOperatorOf(h);
+        assertEq(abi.encode(op, pop, oa), abi.encode(address(0), address(0), uint64(0)));
+        _approve(oldAdmin);
+        _approve(address(0x09E));
+        vm.prank(oldAdmin);
+        vm.expectRevert("not refunder");
+        sb.refund(id, 1e6);
+        vm.prank(address(0x09E));
+        vm.expectRevert("not refunder");
+        sb.refund(id, 1e6);
+        vm.prank(oldAdmin);
+        vm.expectRevert("not payout");
+        sb.freeze(h);
+    }
+
+    function test_split_change_that_keeps_the_owner_keeps_roles() public {
+        bytes32 h = keccak256(bytes(SHOP));
+        _addLiveAdmin(address(0xAD1));
+        (address[] memory to, uint16[] memory bps) = _threeWay(shopWallet, address(0xB1), address(0xB2));
+        _registerSplit(SHOP, to, bps);
+        vm.warp(block.timestamp + DELAY);
+        _pay(_opts("KEEP"));
+        assertTrue(sb.isAdmin(h, address(0xAD1)));
+        assertEq(usdt.balanceOf(address(0xB1)), 3e6);
+    }
+
+    /// L3
+    function test_owner_drops_a_blocked_recipient_at_once() public {
+        BlacklistToken t = new BlacklistToken();
+        usdt = MockToken(address(t));
+        sb = _deploy(_one(vm.addr(attestorKey)), 1);
+        vm.prank(wallet);
+        usdt.approve(address(sb), type(uint256).max);
+        usdt.mint(wallet, 1000e6);
+        _bind(walletKey, 50e6, 100e6, uint64(block.timestamp + 30 days));
+        bytes32 h = keccak256(bytes(SHOP));
+        address bad = address(0xB1);
+        (address[] memory to, uint16[] memory bps) = _threeWay(shopWallet, bad, address(0xB2));
+        _registerSplit(SHOP, to, bps);
+        t.block_(bad);
+        SiteboundV2.PayInput memory p = _input(_opts("BL1"));
+        vm.expectRevert("transfer failed");
+        sb.pay(p);
+
+        vm.prank(address(0xB2));
+        vm.expectRevert("not payout");
+        sb.dropRecipient(h, bad);
+        vm.prank(shopWallet);
+        vm.expectRevert("not a recipient"); // the owner itself
+        sb.dropRecipient(h, shopWallet);
+        vm.prank(shopWallet);
+        vm.expectRevert("not a recipient");
+        sb.dropRecipient(h, address(0x1234));
+        uint256 v = sb.configVersion(h);
+        vm.prank(shopWallet);
+        sb.dropRecipient(h, bad);
+        assertEq(sb.configVersion(h), v + 1);
+        (to, bps,,,) = sb.splitOf(h);
+        assertEq(abi.encode(to, bps), abi.encode(_addrs2(shopWallet, address(0xB2)), _bps2(8000, 2000)));
+        vm.expectRevert("bad challenge"); // signed before the drop
+        sb.pay(p);
+        _pay(_opts("BL2"));
+        assertEq(usdt.balanceOf(shopWallet), 8e6);
+        assertEq(usdt.balanceOf(address(0xB2)), 2e6);
+    }
+
+    /// INFO: constructor bounds, no self-payment, a fee cap in the token's own units.
+    function test_constructor_bounds_the_delay() public {
+        address[] memory att = _one(vm.addr(attestorKey));
+        vm.expectRevert("bad delay");
+        new SiteboundV2(IERC20(address(usdt)), FRAME, rp, att, 1, 0, GUARDIAN);
+        vm.expectRevert("bad delay");
+        new SiteboundV2(IERC20(address(usdt)), FRAME, rp, att, 1, 30 days + 1, GUARDIAN);
+        assertEq(new SiteboundV2(IERC20(address(usdt)), FRAME, rp, att, 1, 30 days, GUARDIAN).delay(), 30 days);
+    }
+
+    function test_split_cannot_name_the_contract() public {
+        SiteboundV2.Sig[] memory none = new SiteboundV2.Sig[](0);
+        address[] memory to = _addrs2(R0, address(sb));
+        uint16[] memory bps = _bps2(5000, 5000);
+        vm.expectRevert("bad split");
+        sb.register(EVIL, to, bps, none);
+    }
+
+    function test_relayer_fee_cap_is_one_whole_token() public {
+        assertEq(sb.maxRelayerFee(), 1e6);
+        address[] memory att = _one(vm.addr(attestorKey));
+        Decimals18 d18 = new Decimals18();
+        SiteboundV2 s18 = new SiteboundV2(IERC20(address(d18)), FRAME, rp, att, 1, DELAY, GUARDIAN);
+        assertEq(s18.maxRelayerFee(), 1e18);
+        NoDecimals nd = new NoDecimals();
+        vm.expectRevert();
+        new SiteboundV2(IERC20(address(nd)), FRAME, rp, att, 1, DELAY, GUARDIAN);
+    }
+
+    // ------------------------------------------------ review regressions kept as tests
+
+    function test_split_shrinks_on_promote() public {
+        bytes32 h = keccak256(bytes(SHOP));
+        (address[] memory to3, uint16[] memory bps3) = _threeWay(address(0xA1), address(0xA2), address(0xA3));
+        _registerSplit(SHOP, to3, bps3);
+        vm.warp(block.timestamp + DELAY);
+        _register(SHOP, shopWallet);
+        vm.warp(block.timestamp + DELAY);
+        _pay(_opts("SH1"));
+        (address[] memory to, uint16[] memory bps,,,) = sb.splitOf(h);
+        assertEq(to.length, 1);
+        assertEq(bps.length, 1);
+        assertEq(usdt.balanceOf(shopWallet), 10e6);
+        assertEq(usdt.balanceOf(address(0xA2)), 0);
+    }
+
+    /// L4, documented not fixed: a quote does not name the payer, so anyone with a bound passkey can use a quote
+    /// they see first. It is griefing only: they pay the full quoted amount to the shop, and the buyer's own
+    /// attempt then fails with "order used".
+    function test_quote_is_not_bound_to_the_payer_and_the_taker_pays_in_full() public {
+        _quoteSigner(vm.addr(QUOTE_KEY));
+        Opts memory o = _opts("QF");
+        uint64 exp = uint64(block.timestamp + 5 minutes);
+        bytes memory q = _quote(QUOTE_KEY, o.orderId, o.amount, exp);
+        SiteboundV2.PayInput memory victim = _input(o);
+        uint256 aw = 0xA77A;
+        usdt.mint(vm.addr(aw), 100e6);
+        vm.prank(vm.addr(aw));
+        usdt.approve(address(sb), type(uint256).max);
+        passkey = 0xBEEF;
+        (px, py) = vm.publicKeyP256(passkey);
+        cred = keccak256("attacker-cred");
+        _bind(aw, 50e6, 100e6, uint64(block.timestamp + 30 days));
+        bytes32 id = sb.payWithQuote(_input(o), exp, q);
+        (address w,, uint256 amount,) = sb.payments(id);
+        assertEq(w, vm.addr(aw));
+        assertEq(amount, o.amount);
+        assertEq(usdt.balanceOf(shopWallet), o.amount);
+        assertEq(usdt.balanceOf(vm.addr(aw)), 100e6 - o.amount);
+        vm.expectRevert("order used");
+        sb.payWithQuote(victim, exp, q);
+    }
+}
+
+/// A token that refuses transfers to or from blocked addresses, like USDT's blacklist.
+contract BlacklistToken is MockToken {
+    mapping(address => bool) public blocked;
+
+    function block_(address a) external {
+        blocked[a] = true;
+    }
+
+    function transferFrom(address from, address to, uint256 amount) external override returns (bool) {
+        require(!blocked[to] && !blocked[from], "blacklisted");
+        allowance[from][msg.sender] -= amount;
+        balanceOf[from] -= amount;
+        balanceOf[to] += amount;
+        return true;
+    }
+}
+
+contract Decimals18 {
+    function decimals() external pure returns (uint8) {
+        return 18;
+    }
+}
+
+contract NoDecimals {
+    function name() external pure returns (string memory) {
+        return "none";
     }
 }
 

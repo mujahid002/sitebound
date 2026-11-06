@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 interface IERC20 {
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function decimals() external view returns (uint8);
 }
 
 interface IERC1271 {
@@ -16,8 +17,10 @@ interface IERC1271 {
 /// A site's payout can be split between up to 5 wallets; the first one is the site's owner.
 contract SiteboundV2 {
     uint256 public constant MAX_RECIPIENTS = 5;
-    /// On-chain cap on the relayer fee, on top of the buyer signing the exact fee: 1 USDT (6 decimals).
-    uint256 public constant MAX_RELAYER_FEE = 1e6;
+    uint256 public constant MAX_ADMINS = 3;
+    /// How long an admin's freeze stops payments, unless the owner lifts it sooner.
+    uint64 public constant ADMIN_FREEZE = 72 hours;
+    uint64 public constant MAX_DELAY = 30 days;
     uint256 constant BPS = 10_000;
 
     /// Who gets paid, in basis points summing to 10000. to[0] owns the site (freeze, unfreeze, refund)
@@ -40,10 +43,19 @@ contract SiteboundV2 {
         address quoteSigner;
         address pendingQuoteSigner;
         uint64 quoteSignerAt; // 0: no quote signer change pending
-        /// Bumped by every change to the site's split, refund operator, quote signer or frozen state, including
-        /// a pending change taking effect. The buyer signs it, so a payment signed before a change cannot
-        /// execute after it.
+        /// Up to MAX_ADMINS. An admin may refund and freeze payments for ADMIN_FREEZE, nothing else.
+        Admin[] admins;
+        uint64 adminFrozenUntil;
+        /// Bumped by every change to the site's split, refund operator, quote signer, admins or frozen state,
+        /// including a pending change taking effect. The buyer signs it, so a payment signed before a change
+        /// cannot execute after it.
         uint256 version;
+    }
+
+    struct Admin {
+        address who;
+        uint64 from; // rights start here
+        bool counted; // its activation has bumped the site's version
     }
 
     struct Buyer {
@@ -103,6 +115,8 @@ contract SiteboundV2 {
     IERC20 public immutable token;
     bytes32 public immutable rpIdHash;
     uint64 public immutable delay;
+    /// On-chain cap on the relayer fee, on top of the buyer signing the exact fee: one whole token.
+    uint256 public immutable maxRelayerFee;
     /// Can pause and unpause new payments, and nothing else. address(0): no one can.
     address public immutable guardian;
     string frameOrigin; // slot 0, as in v1
@@ -125,10 +139,6 @@ contract SiteboundV2 {
     mapping(bytes32 => bytes32) public pubKeyOwner;
     mapping(bytes32 => mapping(bytes32 => bool)) public orderUsed;
     mapping(bytes32 => Payment) public payments;
-    uint256 public constant MAX_ADMINS = 3;
-    /// Site admins: when each one's rights start (0: not an admin). They may refund and freeze, nothing else.
-    mapping(bytes32 => mapping(address => uint64)) public adminFrom;
-    mapping(bytes32 => uint256) public adminCount;
 
     event Registered(bytes32 indexed siteHash, string site, address payout);
     event PayoutProposed(bytes32 indexed siteHash, address pendingPayout, uint64 activeAt);
@@ -156,6 +166,8 @@ contract SiteboundV2 {
     event QuoteSignerProposed(bytes32 indexed siteHash, address signer, uint64 activeAt);
     event AdminAdded(bytes32 indexed siteHash, address indexed admin, uint64 activeAt);
     event AdminRemoved(bytes32 indexed siteHash, address indexed admin);
+    event AdminFrozen(bytes32 indexed siteHash, address indexed admin, uint64 until);
+    event RecipientDropped(bytes32 indexed siteHash, address indexed recipient);
     event AttestorsProposed(uint256 indexed setId, address[] attestors, uint256 threshold, uint64 activeAt);
 
     modifier nonReentrant() {
@@ -175,7 +187,11 @@ contract SiteboundV2 {
         address guardian_
     ) {
         require(address(token_).code.length > 0, "token has no code");
+        require(delay_ > 0 && delay_ <= MAX_DELAY, "bad delay");
+        uint8 decimals = token_.decimals();
+        require(decimals <= 36, "bad decimals");
         token = token_;
+        maxRelayerFee = 10 ** decimals;
         frameOrigin = frameOrigin_;
         rpIdHash = rpIdHash_;
         delay = delay_;
@@ -281,11 +297,11 @@ contract SiteboundV2 {
         emit SplitSet(siteHash, to, bps, st.activeAt);
     }
 
-    function _checkSplit(address[] calldata to, uint16[] calldata bps) internal pure {
+    function _checkSplit(address[] calldata to, uint16[] calldata bps) internal view {
         require(to.length > 0 && to.length <= MAX_RECIPIENTS && bps.length == to.length, "bad split");
         uint256 sum;
         for (uint256 i; i < to.length; i++) {
-            require(to[i] != address(0) && bps[i] > 0, "bad split");
+            require(to[i] != address(0) && to[i] != address(this) && bps[i] > 0, "bad split");
             for (uint256 j; j < i; j++) require(to[j] != to[i], "bad split");
             sum += bps[i];
         }
@@ -299,7 +315,14 @@ contract SiteboundV2 {
         returns (address payout, address pendingPayout, uint64 activeAt, bool frozen, uint256 nonce)
     {
         Site storage st = _sites[siteHash];
-        return (_first(st.payout), _first(st.pending), st.activeAt, st.frozen, st.nonce);
+        bool adminFrozen = block.timestamp < st.adminFrozenUntil && !_ownerChangeDue(st);
+        return (_first(st.payout), _first(st.pending), st.activeAt, st.frozen || adminFrozen, st.nonce);
+    }
+
+    /// The owner's freeze (until it unfreezes) and an admin's (until `adminUntil`, if in the future).
+    function freezeOf(bytes32 siteHash) external view returns (bool ownerFrozen, uint64 adminUntil) {
+        Site storage st = _sites[siteHash];
+        return (st.frozen, _ownerChangeDue(st) ? 0 : st.adminFrozenUntil);
     }
 
     function splitOf(bytes32 siteHash)
@@ -311,24 +334,62 @@ contract SiteboundV2 {
         return (st.payout.to, st.payout.bps, st.pending.to, st.pending.bps, st.activeAt);
     }
 
-    /// The owner or an admin can freeze: payments stop and the pending split change is dropped. Only the
-    /// owner can unfreeze.
+    /// The owner's freeze lasts until the owner unfreezes: payments and split changes stop, and a pending split
+    /// change is dropped.
+    /// An admin's freeze only stops payments, for ADMIN_FREEZE, and leaves a pending split change alone. So an admin
+    /// can buy the owner time but cannot cancel a change the attestors approved, such as a recovery after the owner's
+    /// key is lost; when that change makes someone else the owner, every admin is removed.
     function freeze(bytes32 siteHash) external {
         Site storage st = _sites[siteHash];
         _promote(st);
-        require(msg.sender == _first(st.payout) || isAdmin(siteHash, msg.sender), "not payout");
-        st.frozen = true;
+        if (msg.sender == _first(st.payout)) {
+            st.frozen = true;
+            delete st.pending;
+            emit Frozen(siteHash);
+        } else {
+            require(isAdmin(siteHash, msg.sender), "not payout");
+            st.adminFrozenUntil = uint64(block.timestamp) + ADMIN_FREEZE;
+            emit AdminFrozen(siteHash, msg.sender, st.adminFrozenUntil);
+        }
         st.version++;
-        delete st.pending;
-        emit Frozen(siteHash);
     }
 
+    /// Lifts the owner's freeze and any admin's.
     function unfreeze(bytes32 siteHash) external {
-        Site storage st = _sites[siteHash];
-        require(msg.sender == _first(st.payout), "not payout");
+        Site storage st = _owned(siteHash);
         st.frozen = false;
+        st.adminFrozenUntil = 0;
         st.version++;
         emit Unfrozen(siteHash);
+    }
+
+    /// Owner only, immediate: takes a recipient other than the owner out of the current split and gives its share
+    /// to the owner, e.g. when the token refuses transfers to it, which makes every payment revert. It can only
+    /// remove; adding a recipient or moving a share anywhere but to the owner still needs the attestors and `delay`.
+    function dropRecipient(bytes32 siteHash, address recipient) external {
+        Site storage st = _owned(siteHash);
+        address[] storage to = st.payout.to;
+        uint16[] storage bps = st.payout.bps;
+        for (uint256 i = 1; i < to.length; i++) {
+            if (to[i] != recipient) continue;
+            bps[0] += bps[i];
+            to[i] = to[to.length - 1];
+            bps[i] = bps[bps.length - 1];
+            to.pop();
+            bps.pop();
+            st.version++;
+            emit RecipientDropped(siteHash, recipient);
+            emit SplitSet(siteHash, to, bps, uint64(block.timestamp));
+            return;
+        }
+        revert("not a recipient");
+    }
+
+    /// Applies due changes, then requires the caller to be the owner.
+    function _owned(bytes32 siteHash) internal returns (Site storage st) {
+        st = _sites[siteHash];
+        _promote(st);
+        require(msg.sender == _first(st.payout), "not payout");
     }
 
     function _first(Split storage sp) internal view returns (address) {
@@ -337,9 +398,7 @@ contract SiteboundV2 {
 
     /// The owner names a wallet that may also refund; it takes effect after `delay`. address(0) removes it.
     function setRefundOperator(bytes32 siteHash, address operator) external {
-        Site storage st = _sites[siteHash];
-        _promote(st);
-        require(msg.sender == _first(st.payout), "not payout");
+        Site storage st = _owned(siteHash);
         st.pendingOperator = operator;
         st.operatorAt = uint64(block.timestamp) + delay;
         st.version++;
@@ -354,9 +413,7 @@ contract SiteboundV2 {
     /// The owner names the key that must sign each payment's Quote (its merchant backend); it takes effect
     /// after `delay`. address(0) stops requiring quotes, also after `delay`.
     function setQuoteSigner(bytes32 siteHash, address signer) external {
-        Site storage st = _sites[siteHash];
-        _promote(st);
-        require(msg.sender == _first(st.payout), "not payout");
+        Site storage st = _owned(siteHash);
         st.pendingQuoteSigner = signer;
         st.quoteSignerAt = uint64(block.timestamp) + delay;
         st.version++;
@@ -368,32 +425,48 @@ contract SiteboundV2 {
         return (st.quoteSigner, st.pendingQuoteSigner, st.quoteSignerAt);
     }
 
-    /// Up to MAX_ADMINS per site. Adding waits `delay`; removing is immediate. Owner only.
+    /// Up to MAX_ADMINS per site. Adding waits `delay`; removing is immediate. Owner only. Both, and an added
+    /// admin's rights starting, bump the config version.
     function addAdmin(bytes32 siteHash, address admin) external {
-        Site storage st = _sites[siteHash];
-        _promote(st);
-        require(msg.sender == _first(st.payout), "not payout");
-        require(admin != address(0) && adminFrom[siteHash][admin] == 0, "bad admin");
-        require(adminCount[siteHash] < MAX_ADMINS, "too many admins");
-        adminCount[siteHash]++;
+        Site storage st = _owned(siteHash);
+        require(admin != address(0) && _adminIndex(st, admin) == type(uint256).max, "bad admin");
+        require(st.admins.length < MAX_ADMINS, "too many admins");
         uint64 at = uint64(block.timestamp) + delay;
-        adminFrom[siteHash][admin] = at;
+        st.admins.push(Admin(admin, at, false));
+        st.version++;
         emit AdminAdded(siteHash, admin, at);
     }
 
     function removeAdmin(bytes32 siteHash, address admin) external {
-        Site storage st = _sites[siteHash];
-        _promote(st);
-        require(msg.sender == _first(st.payout), "not payout");
-        require(adminFrom[siteHash][admin] != 0, "not admin");
-        adminCount[siteHash]--;
-        delete adminFrom[siteHash][admin];
+        Site storage st = _owned(siteHash);
+        uint256 i = _adminIndex(st, admin);
+        require(i != type(uint256).max, "not admin");
+        st.admins[i] = st.admins[st.admins.length - 1];
+        st.admins.pop();
+        st.version++;
         emit AdminRemoved(siteHash, admin);
     }
 
     function isAdmin(bytes32 siteHash, address a) public view returns (bool) {
-        uint64 from = adminFrom[siteHash][a];
-        return from != 0 && block.timestamp >= from;
+        Site storage st = _sites[siteHash];
+        uint256 i = _adminIndex(st, a);
+        return i != type(uint256).max && block.timestamp >= st.admins[i].from && !_ownerChangeDue(st);
+    }
+
+    function adminsOf(bytes32 siteHash) external view returns (address[] memory who, uint64[] memory from) {
+        Admin[] storage list = _sites[siteHash].admins;
+        who = new address[](list.length);
+        from = new uint64[](list.length);
+        for (uint256 i; i < list.length; i++) {
+            (who[i], from[i]) = (list[i].who, list[i].from);
+        }
+    }
+
+    function _adminIndex(Site storage st, address a) internal view returns (uint256) {
+        for (uint256 i; i < st.admins.length; i++) {
+            if (st.admins[i].who == a) return i;
+        }
+        return type(uint256).max;
     }
 
     /// The version a payment must sign now: the stored one plus each pending change whose delay has passed,
@@ -401,13 +474,31 @@ contract SiteboundV2 {
     function configVersion(bytes32 siteHash) external view returns (uint256 v) {
         Site storage st = _sites[siteHash];
         v = st.version;
-        if (st.pending.to.length != 0 && block.timestamp >= st.activeAt) v++;
+        if (st.pending.to.length != 0 && block.timestamp >= st.activeAt) {
+            v++;
+            if (_ownerChangeDue(st)) return v; // _promote clears every role, so nothing below applies
+        }
         if (st.operatorAt != 0 && block.timestamp >= st.operatorAt) v++;
         if (st.quoteSignerAt != 0 && block.timestamp >= st.quoteSignerAt) v++;
+        for (uint256 i; i < st.admins.length; i++) {
+            if (!st.admins[i].counted && block.timestamp >= st.admins[i].from) v++;
+        }
+    }
+
+    /// A pending split whose delay has passed names a different owner (first wallet).
+    function _ownerChangeDue(Site storage st) internal view returns (bool) {
+        return st.pending.to.length != 0 && block.timestamp >= st.activeAt && st.pending.to[0] != _first(st.payout);
     }
 
     function _promote(Site storage st) internal {
         if (st.pending.to.length != 0 && block.timestamp >= st.activeAt) {
+            // A new owner starts clean: the old owner's operator, quote signer, admins and admin freeze end here.
+            if (_ownerChangeDue(st)) {
+                (st.refundOperator, st.pendingOperator, st.operatorAt) = (address(0), address(0), 0);
+                (st.quoteSigner, st.pendingQuoteSigner, st.quoteSignerAt) = (address(0), address(0), 0);
+                delete st.admins;
+                st.adminFrozenUntil = 0;
+            }
             st.payout = st.pending;
             delete st.pending;
             st.version++;
@@ -423,6 +514,12 @@ contract SiteboundV2 {
             st.pendingQuoteSigner = address(0);
             st.quoteSignerAt = 0;
             st.version++;
+        }
+        for (uint256 i; i < st.admins.length; i++) {
+            if (!st.admins[i].counted && block.timestamp >= st.admins[i].from) {
+                st.admins[i].counted = true;
+                st.version++;
+            }
         }
     }
 
@@ -512,7 +609,7 @@ contract SiteboundV2 {
     function _check(PayInput calldata p) internal returns (bytes32 siteHash, address wallet) {
         require(!paused, "paused");
         require(p.amount > 0, "zero amount");
-        require(p.relayerFee <= MAX_RELAYER_FEE, "fee over cap");
+        require(p.relayerFee <= maxRelayerFee, "fee over cap");
         Buyer storage b = buyers[p.credentialHash];
         _spend(b, p.amount + p.relayerFee);
         siteHash = _verify(p, b);
@@ -560,7 +657,7 @@ contract SiteboundV2 {
     function _settle(PayInput calldata p, address wallet, bytes32 siteHash) internal returns (bytes32 paymentId) {
         Site storage st = _sites[siteHash];
         require(st.payout.to.length != 0, "site not registered");
-        require(!st.frozen, "frozen");
+        require(!st.frozen && block.timestamp >= st.adminFrozenUntil, "frozen");
 
         paymentId = keccak256(abi.encode(siteHash, p.orderId));
         payments[paymentId] = Payment(wallet, siteHash, p.amount, 0);

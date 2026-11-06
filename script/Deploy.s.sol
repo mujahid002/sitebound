@@ -10,7 +10,8 @@ import {SiteboundV2, IERC20} from "../src/SiteboundV2.sol";
 ///   THRESHOLD     signatures needed per registration and rotation (default 1)
 ///   FRAME_ORIGIN  e.g. https://sitebound-pay.pages.dev
 ///   RP_ID         e.g. sitebound-pay.pages.dev
-///   DELAY         seconds before payout, split, operator and attestor-set changes take effect (default 3600)
+///   DELAY         seconds before payout, split, operator, quote-signer, admin and attestor-set changes take
+///                 effect (default 3600; the constructor requires 1 s to 30 days)
 ///   GUARDIAN      may pause new payments only (default address(0): no one can pause)
 contract Deploy is Script {
     address constant USDT = 0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7;
@@ -28,6 +29,7 @@ contract Deploy is Script {
         console.log("SiteboundV2", address(sb));
         console.log("threshold", threshold, "of", attestors.length);
         console.log("delay", delay);
+        console.log("maxRelayerFee", sb.maxRelayerFee());
         console.log("guardian", guardian);
     }
 }
