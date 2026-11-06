@@ -1,9 +1,10 @@
 // End-to-end run, no human. anvil (chain 1874) with the test P-256 verifier etched at 0x100, PermitToken and
-// Sitebound deployed with `forge create`, the worker's handle() behind a local HTTP server, web/ served by
+// SiteboundV2 deployed with `forge create`, the worker's handle() behind a local HTTP server, web/ served by
 // web/dev/serve.py, and headless Chromium with a CDP virtual authenticator and a window.ethereum that forwards
 // to anvil's unlocked dev accounts (no key in the page).
 // Flow: shop registers -> buyer sets up (passkey, permit, bind) -> pays via the relayer -> pays from the wallet
-// (popup path, then a wallet inside the iframe) -> shop refunds in the dashboard. Each step checks the chain.
+// (popup path, then a wallet inside the iframe) -> shop refunds in the dashboard -> shop turns on merchant quotes:
+// a quoted payment goes through and a page-changed amount does not. Each step checks the chain.
 // Run: cd e2e && npm install && npm test. Env: CHROME=<binary>, E2E_HEADED=1 to watch, E2E_BLOCK_TIME=<s>.
 import { spawn, execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -12,7 +13,7 @@ import net from 'node:net';
 import os from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { AbiCoder, Contract, HDNodeWallet, JsonRpcProvider, Signature, concat, encodeBytes32String, getBytes, id, keccak256, sha256, toUtf8Bytes } from 'ethers';
+import { AbiCoder, Contract, HDNodeWallet, JsonRpcProvider, Signature, ZeroAddress, concat, encodeBytes32String, getBytes, id, keccak256, sha256, toUtf8Bytes } from 'ethers';
 import { chromium } from 'playwright-core';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -28,12 +29,15 @@ const SHOP = 'http://127.0.0.1:8001';
 const FRAME = 'http://localhost:8002';
 const MNEMONIC = 'test test test test test test test test test test test junk'; // anvil's public dev accounts
 const dev = (i) => HDNodeWallet.fromPhrase(MNEMONIC, undefined, `m/44'/60'/0'/0/${i}`);
-const [deployer, relayer, buyer, shop] = [0, 1, 2, 3].map(dev);
+const [deployer, relayer, buyer, shop, merchantKey] = [0, 1, 2, 3, 4].map(dev);
 const USDT = (n) => BigInt(Math.round(n * 1e6));
 const abi = AbiCoder.defaultAbiCoder();
 
 const SB_ABI = [
-  'function register(string site, address payout, uint64 deadline, address attestor, uint8 v, bytes32 r, bytes32 s)',
+  'function register(string site, address[] to, uint16[] bps, (uint64 deadline, uint8 v, bytes32 r, bytes32 s)[] sigs)',
+  'function quorum() view returns (uint256 setId, uint256 threshold)',
+  'function setQuoteSigner(bytes32 siteHash, address signer)',
+  'function configVersion(bytes32) view returns (uint256)',
   'function sites(bytes32) view returns (address payout, address pendingPayout, uint64 activeAt, bool frozen, uint256 nonce)',
   'function buyers(bytes32) view returns (address wallet, uint256 pubX, uint256 pubY, uint256 perPayCap, uint256 totalCap, uint256 spent, uint64 expiry)',
   'function payments(bytes32) view returns (address wallet, bytes32 siteHash, uint256 amount, uint256 refunded)',
@@ -186,14 +190,15 @@ async function main() {
     return `port ${ANVIL_PORT}, fixture signature verifies`;
   });
 
-  await step('deploy PermitToken and Sitebound with forge create', async () => {
+  await step('deploy PermitToken and SiteboundV2 with forge create', async () => {
     const tokenAddr = forgeCreate('e2e/PermitToken.sol:PermitToken');
-    const sbAddr = forgeCreate('src/Sitebound.sol:Sitebound', [tokenAddr, FRAME, sha256(toUtf8Bytes('localhost')), `[${relayer.address}]`, '60']);
+    // 1-of-1 attestor (the relayer), 60 s delay, no guardian
+    const sbAddr = forgeCreate('src/SiteboundV2.sol:SiteboundV2', [tokenAddr, FRAME, sha256(toUtf8Bytes('localhost')), `[${relayer.address}]`, '1', '60', ZeroAddress]);
     const signer = await provider.getSigner(deployer.address);
     sb = new Contract(sbAddr, SB_ABI, signer);
     token = new Contract(tokenAddr, TOKEN_ABI, signer);
     await (await token.mint(buyer.address, USDT(100))).wait();
-    return `Sitebound ${sbAddr}, buyer minted 100 USDT`;
+    return `SiteboundV2 ${sbAddr}, buyer minted 100 USDT`;
   });
 
   await step('relayer: worker handle() on a local port', async () => {
@@ -231,9 +236,10 @@ async function main() {
   await step('shop registers (attestor-signed register, as the relayer does for https sites)', async () => {
     const deadline = Math.floor(Date.now() / 1000) + 3600;
     const domain = { name: 'Sitebound', version: '1', chainId: 1874, verifyingContract: sb.target };
-    const types = { Attest: [{ name: 'siteHash', type: 'bytes32' }, { name: 'payout', type: 'address' }, { name: 'nonce', type: 'uint256' }, { name: 'deadline', type: 'uint64' }] };
-    const sig = Signature.from(await relayer.signTypedData(domain, types, { siteHash, payout: shop.address, nonce: 0, deadline }));
-    await (await sb.register(SHOP, shop.address, deadline, relayer.address, sig.v, sig.r, sig.s)).wait();
+    const types = { Attest: [{ name: 'siteHash', type: 'bytes32' }, { name: 'to', type: 'address[]' }, { name: 'bps', type: 'uint16[]' }, { name: 'nonce', type: 'uint256' }, { name: 'setId', type: 'uint256' }, { name: 'deadline', type: 'uint64' }] };
+    const [setId] = await sb.quorum();
+    const sig = Signature.from(await relayer.signTypedData(domain, types, { siteHash, to: [shop.address], bps: [10000], nonce: 0, setId, deadline }));
+    await (await sb.register(SHOP, [shop.address], [10000], [[deadline, sig.v, sig.r, sig.s]])).wait();
     const st = await sb.sites(siteHash);
     expect(st.payout === shop.address, `payout on-chain is ${st.payout}`);
     return `${SHOP} -> ${shop.address}`;
@@ -366,6 +372,55 @@ async function main() {
     expect((await bal(buyer.address)) === USDT(100 - 12.01 - 12 - 12 + 12), `buyer holds ${await bal(buyer.address)}`);
     const shown = (await dash.locator('.c-order').allTextContents()).join(', ');
     return `payments(A123).refunded = 12 USDT, back in the buyer wallet; dashboard lists orders as: ${shown}`;
+  });
+
+  // ------------------------------------------------------- merchant quotes
+  // The shop's backend key (merchantKey) signs Quote(siteHash, orderId, token, amount, expiry); the page only
+  // carries the result in <sitebound-pay quote="...">.
+  const quoteFor = async (order, amount) => {
+    const expiry = Math.floor(Date.now() / 1000) + 3600;
+    const domain = { name: 'Sitebound', version: '1', chainId: 1874, verifyingContract: sb.target };
+    const types = { Quote: [{ name: 'siteHash', type: 'bytes32' }, { name: 'orderId', type: 'bytes32' }, { name: 'token', type: 'address' }, { name: 'amount', type: 'uint256' }, { name: 'expiry', type: 'uint64' }] };
+    const sig = await merchantKey.signTypedData(domain, types, { siteHash, orderId: encodeBytes32String(order), token: token.target, amount: USDT(amount), expiry });
+    return `${expiry}.${sig}`;
+  };
+  const openCheckout = async (attrs) => {
+    if (await frame.locator('#done').isVisible().catch(() => false)) await frame.locator('#done').click();
+    else if (await frame.locator('#close').isVisible().catch(() => false)) await frame.locator('#close').click();
+    await page.locator('sitebound-pay').evaluate((el, a) => { for (const [k, v] of Object.entries(a)) v == null ? el.removeAttribute(k) : el.setAttribute(k, v); }, attrs);
+    await page.locator('sitebound-pay button.pay').click();
+    await frame.locator('#pay').waitFor({ state: 'visible', timeout: 15_000 });
+  };
+
+  await step('shop turns on merchant quotes; a quoted payment pays A126', async () => {
+    const v = await sb.configVersion(siteHash);
+    await (await sb.connect(await provider.getSigner(shop.address)).setQuoteSigner(siteHash, merchantKey.address)).wait();
+    await provider.send('evm_increaseTime', [61]);
+    await provider.send('evm_mine', []);
+    expect((await sb.configVersion(siteHash)) === v + 2n, 'configVersion did not count the set and the activation');
+    await openCheckout({ order: 'A126', amount: '12.00', quote: await quoteFor('A126', 12) });
+    await frame.locator('#pay').click();
+    await until(frame, '#receipt', '#msg.err', 60_000);
+    const pm = await sb.payments(paymentId('A126'));
+    expect(pm.wallet === buyer.address && pm.amount === USDT(12), `payments(A126) = ${pm}`);
+    return 'setQuoteSigner live after 61 s; the frame passed the quote to the relayer, payWithQuote paid 12 USDT';
+  });
+
+  await step('a page that changes the amount to 13 with the 12 USDT quote does not get paid (A127)', async () => {
+    await openCheckout({ order: 'A127', amount: '13.00', quote: await quoteFor('A127', 12) });
+    await frame.locator('#pay').click();
+    const err = frame.locator('#msg.err');
+    await err.waitFor({ state: 'visible', timeout: 60_000 });
+    const text = (await err.textContent()).trim();
+    expect(/quote/i.test(text), `frame says: ${text}`);
+    const pm = await sb.payments(paymentId('A127'));
+    expect(pm.wallet === ZeroAddress, `payments(A127) = ${pm}`);
+    await openCheckout({ order: 'A128', amount: '12.00', quote: null }); // no quote at all
+    await frame.locator('#pay').click();
+    await err.waitFor({ state: 'visible', timeout: 60_000 });
+    const text2 = (await err.textContent()).trim();
+    expect(/quote required/i.test(text2), `frame says: ${text2}`);
+    return `frame says "${text}"; without a quote: "${text2}"; nothing paid`;
   });
 }
 
