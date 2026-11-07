@@ -38,15 +38,25 @@
 }
 
 /* ================================================================ TRUST BAND */
+/* Follows the theme: light page tokens by default, a dark band in dark mode. */
 .band.verify {
-  --ink: #eef0ee; --muted: #a3aaa6; --line: rgba(255, 255, 255, 0.11); --line-2: rgba(255, 255, 255, 0.2);
-  --surface: #111417; --sunk: rgba(255, 255, 255, 0.04);
-  --accent: #3fd69a; --accent-ink: #04150d; --ring: rgba(63, 214, 154, 0.3);
-  --warn: #f1c56b; --err: #ff9a90; --rl: 255, 255, 255;
-  --wc: #3fd69a;                      /* the site accent: structure and icons; Whitechain keeps its own colors in the logo */
+  --wc: var(--accent);                /* the site accent: structure and icons; Whitechain keeps its own colors in the logo */
   position: relative; isolation: isolate; overflow: clip; max-width: none; margin: clamp(24px, 5vw, 64px) 0;
   padding: clamp(56px, 8vw, 104px) var(--pad);
   color: var(--ink);
+  background:
+    radial-gradient(860px 460px at 92% -10%, rgba(15, 125, 90, 0.10), transparent 66%),
+    radial-gradient(640px 380px at -4% 108%, rgba(15, 125, 90, 0.06), transparent 70%),
+    var(--surface, #fff);
+  border-block: 1px solid var(--line);
+}
+:root[data-theme="dark"] .band.verify {
+  --ink: #eef0ee; --muted: #a3aaa6; --line: rgba(var(--rl), 0.11); --line-2: rgba(var(--rl), 0.2);
+  --surface: #111417; --sunk: rgba(var(--rl), 0.04);
+  --accent: #3fd69a; --accent-ink: #04150d; --ring: rgba(63, 214, 154, 0.3);
+  --warn: #f1c56b; --err: #ff9a90; --rl: 255, 255, 255;
+  --wc: #3fd69a;
+  border-block: 0;
   background:
     radial-gradient(860px 460px at 92% -10%, rgba(63, 214, 154, 0.16), transparent 66%),
     radial-gradient(640px 380px at -4% 108%, rgba(63, 214, 154, 0.08), transparent 70%),
@@ -54,7 +64,7 @@
 }
 .verify::before {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.09) 1px, transparent 1.5px); background-size: 28px 28px;
+  background-image: radial-gradient(circle, rgba(var(--rl), 0.08) 1px, transparent 1.5px); background-size: 28px 28px;
   -webkit-mask-image: linear-gradient(180deg, #000, transparent 70%); mask-image: linear-gradient(180deg, #000, transparent 70%);
 }
 .v-in { max-width: calc(1040px - 2 * var(--pad)); margin-inline: auto; }
@@ -65,8 +75,8 @@
 .v-chain {
   display: grid; justify-items: start; gap: var(--s2); padding: clamp(20px, 3vw, 28px);
   border: 1px solid var(--line-2); border-radius: var(--r-lg);
-  background: radial-gradient(260px 160px at 100% 0%, rgba(63, 214, 154, 0.12), transparent 70%), rgba(255, 255, 255, 0.045);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  background: radial-gradient(260px 160px at 100% 0%, rgba(63, 214, 154, 0.12), transparent 70%), rgba(var(--rl), 0.045);
+  box-shadow: inset 0 1px 0 rgba(var(--rl), 0.09);
 }
 .v-lock { width: auto; height: clamp(40px, 5vw, 52px); margin-block: 2px 8px; }
 .v-meta { display: grid; gap: 12px; width: 100%; padding-top: var(--s2); border-top: 1px solid var(--line); }
@@ -88,8 +98,8 @@
 .v-tile {
   display: grid; grid-row: span 4; grid-template-rows: subgrid; row-gap: 0; min-width: 0; padding: clamp(16px, 2.4vw, 22px);
   border: 1px solid var(--line-2); border-radius: var(--r-lg);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.02));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(var(--rl), 0.075), rgba(var(--rl), 0.02));
+  box-shadow: inset 0 1px 0 rgba(var(--rl), 0.08);
 }
 .v-ico {
   justify-self: start; width: 44px; height: 44px; padding: 10px; border-radius: 12px; background: rgba(63, 214, 154, 0.12);
@@ -114,7 +124,7 @@
 .v-links li { display: flex; }
 .v-links a {
   display: flex; flex: 1; align-items: center; justify-content: space-between; gap: var(--s2); padding: 18px 20px;
-  border: 1px solid var(--line-2); border-radius: var(--r-md); background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line-2); border-radius: var(--r-md); background: rgba(var(--rl), 0.04);
   color: var(--ink); text-decoration: none; transition: border-color 0.2s, background-color 0.2s;
 }
 .v-links a:hover { border-color: var(--wc); background: rgba(63, 214, 154, 0.08); }
@@ -124,9 +134,9 @@
 .v-links a:hover svg { transform: translate(2px, -2px); }
 
 /* The live check card, restyled for the dark band. Its ids and the chip and result classes belong to main.js. */
-.verify .vcard { margin: 0; padding: clamp(18px, 3vw, 28px); border-color: var(--line-2); background: rgba(255, 255, 255, 0.045); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07); }
+.verify .vcard { margin: 0; padding: clamp(18px, 3vw, 28px); border-color: var(--line-2); background: rgba(var(--rl), 0.045); box-shadow: inset 0 1px 0 rgba(var(--rl), 0.07); }
 .verify .vfacts dd { color: var(--ink); }
-.verify .vresult { background: rgba(255, 255, 255, 0.03); }
+.verify .vresult { background: rgba(var(--rl), 0.03); }
 .verify :focus-visible { outline-color: var(--wc); }
 
 /* ================================================================ TRY IT */
