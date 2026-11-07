@@ -286,7 +286,13 @@ async function main() {
     await page.goto(`${SHOP}/dev/shop.html`);
     await page.locator('sitebound-pay button.pay').click();
     await frame.locator('#pay').waitFor({ state: 'visible', timeout: 15_000 });
-    const msg = (await frame.locator('#msg').textContent()).trim();
+    // The frame first checks the site's registration (up to 5 s) and shows "Checking this website…" meanwhile.
+    let msg = '';
+    for (let i = 0; i < 40; i++) {
+      msg = (await frame.locator('#msg').textContent()).trim();
+      if (msg !== 'Checking this website…') break;
+      await page.waitForTimeout(200);
+    }
     expect(!msg, `frame shows: ${msg}`);
     return `frame says "${(await frame.locator('#line').textContent()).trim()}"`;
   });
