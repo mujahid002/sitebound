@@ -31,6 +31,8 @@ const problem =
   : notDeployed();
 
 let pending = null, sendWin = null, setupWin = null, notSetUp = false;
+// Set while a signed payment may be on its way to the chain: closing then would hide the result from the shop.
+let paying = false;
 // The site's config version is part of what the passkey signs. Read it ahead of the click, so nothing slow sits
 // between the click and the passkey prompt; read it again after each attempt in case the site changed.
 const readVersion = () => (siteHash && !problem ? new ethers.Contract(C.address, SITEBOUND_ABI, rpc).configVersion(siteHash) : Promise.resolve(null));
@@ -65,11 +67,12 @@ function lock(on) {
   for (const id of ['pay', 'pay-wallet', 'continue']) $(id).disabled = on || !!problem || notSetUp;
 }
 const busy = (text) => (lock(true), say(text, { busy: true }));
-const fail = (text, opts) => (lock(false), say(text, { err: true, ...opts }));
+const fail = (text, opts) => (paying = false, lock(false), say(text, { err: true, ...opts }));
 
 async function pay(mode) {
   const relayerFee = mode === 'relayer' ? units(C.relayerFee) : 0n;
   const deadline = BigInt(Math.floor(Date.now() / 1000) + 600);
+  lock(true); // the settings read can be slow: a second click must not start a second Touch ID prompt
   const configVersion = await versionP;
   versionP = readVersion().catch(() => null);
   if (configVersion == null) return fail('Could not read this website’s settings from Whitechain. Check your connection and try again.');
@@ -91,11 +94,17 @@ async function pay(mode) {
     const clientDataJSON = new TextDecoder().decode(r.clientDataJSON);
     checkClientData(clientDataJSON, { challenge, frameOrigin: location.origin, topOrigin });
     const input = payInputOf({ rawId: cred.rawId, authenticatorData: r.authenticatorData, clientDataJSON, signature: r.signature, orderId, amount, relayerFee, deadline });
-    const { wallet } = await new ethers.Contract(C.address, SITEBOUND_ABI, rpc).buyers(input.credentialHash);
-    if (wallet === ethers.ZeroAddress) throw new Error('This passkey is not linked to a wallet yet. Choose “Set up” below.');
+    const b = await new ethers.Contract(C.address, SITEBOUND_ABI, rpc).buyers(input.credentialHash);
+    if (b.wallet === ethers.ZeroAddress) throw new Error('This passkey is not linked to a wallet yet. Choose “Set up” below.');
+    // The contract checks the same limits, counting the fee, but only after the transaction is sent.
+    const total = amount + relayerFee, usdt = (v) => ethers.formatUnits(v, 6);
+    if (BigInt(Math.floor(Date.now() / 1000)) > b.expiry) throw new Error('Your Sitebound setup has expired. Choose “Set up” below to renew it.');
+    if (total > b.perPayCap) throw new Error(`This payment with its fee is ${usdt(total)} USDT, over your limit of ${usdt(b.perPayCap)} USDT per payment. Choose “Set up” below to raise it.`);
+    if (b.spent + total > b.totalCap) throw new Error(`This payment with its fee is ${usdt(total)} USDT, but only ${usdt(b.totalCap - b.spent)} USDT of your total limit is left. Choose “Set up” below to raise it.`);
     if (mode === 'relayer') return await settle(await viaRelayer(input));
     if (window.ethereum) {
       busy('Confirm in your wallet…');
+      paying = true;
       return await settle(await sendPay(window.ethereum, input, quote));
     }
     // No wallet inside this cross-origin frame: a top-level popup on our origin sends the signed input.
@@ -110,10 +119,11 @@ async function pay(mode) {
 
 async function viaRelayer(input) {
   busy('Paying. This takes a few seconds.');
+  paying = true;
   let res;
   try {
     const req = quote ? { ...input, quoteExpiry: quote.expiry, quoteSig: quote.sig } : input;
-    res = await fetch(`${C.relayerUrl}/pay`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: jsonOf(req) });
+    res = await fetch(`${C.relayerUrl}/pay`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: jsonOf(req), signal: AbortSignal.timeout(90_000) });
   } catch {
     throw new Error('Could not reach the payment service. Try again, or choose “Pay from my wallet instead”.');
   }
@@ -125,6 +135,7 @@ async function viaRelayer(input) {
 // Trust the chain, not whoever sent the transaction: the receipt must carry Paid for this order.
 async function settle(txHash) {
   busy('Paying. This takes a few seconds.');
+  paying = true;
   try {
     const rc = await rpc.waitForTransaction(txHash, 1, 180_000);
     const paid = rc?.status === 1 && rc.logs.some((l) =>
@@ -133,6 +144,7 @@ async function settle(txHash) {
   } catch (e) {
     return fail(errText(e), { tx: txHash });
   }
+  paying = false;
   for (const id of ['checkout', 'actions', 'warn']) $(id).hidden = true;
   $('receipt').hidden = false;
   $('r-amount').textContent = `${amountText} USDT`;
@@ -144,7 +156,7 @@ async function settle(txHash) {
   parent.postMessage({ type: 'sitebound:paid', orderId: order, txHash, paymentId }, parentOrigin);
 }
 
-const close = () => parentOrigin && parent.postMessage({ type: 'sitebound:close' }, parentOrigin);
+const close = () => !paying && parentOrigin && parent.postMessage({ type: 'sitebound:close' }, parentOrigin);
 
 $('pay').onclick = () => pay('relayer');
 $('pay-wallet').onclick = () => pay('wallet');
@@ -155,6 +167,7 @@ $('continue').onclick = () => {
   sendWin = open('send.html', 'sitebound-send', 'popup,width=440,height=600');
   if (!sendWin) return fail('Your browser blocked the wallet window. Allow pop-ups for this checkout, then try again.');
   busy('Finish in the wallet window…');
+  paying = true;
   const w = sendWin;
   const watch = setInterval(() => {
     if (!w.closed) return;
@@ -170,7 +183,8 @@ $('setup').onclick = (e) => {
 addEventListener('message', (e) => {
   if (e.origin !== location.origin || !e.data) return;
   const d = e.data;
-  if (e.source === setupWin && d.type === 'sitebound:setup-done') {
+  // From the setup popup, or from the setup tab the link opens when pop-ups are blocked: both are our own origin.
+  if (d.type === 'sitebound:setup-done') {
     $('pay').textContent = 'Pay with Touch ID';
     lock(false);
     if (!notSetUp) say('Setup complete. Pay with Touch ID.');
