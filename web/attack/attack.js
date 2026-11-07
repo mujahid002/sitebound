@@ -90,6 +90,8 @@ const C = window.SITEBOUND || {};
 const hostOf = (o) => { try { return new URL(o).host; } catch { return null; } };
 const realShop = document.getElementById('real-shop');
 if (realShop && hostOf(C.demoShop)) realShop.textContent = hostOf(C.demoShop);
+// On the fake origin, "All demos" must lead back to the real demo site, where the Sitebound demo is registered.
+for (const a of document.querySelectorAll('a[data-real]')) if (C.demoShop) a.href = new URL('attack/', C.demoShop + '/').href;
 if (hostOf(C.fakeShop)) {
   for (const a of document.querySelectorAll('a[data-fake]')) a.href = new URL('attack/phish.html', C.fakeShop + '/').href;
   for (const el of document.querySelectorAll('[data-fake-host]')) el.textContent = hostOf(C.fakeShop);

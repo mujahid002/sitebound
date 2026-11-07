@@ -20,9 +20,12 @@ mkdir -p "$tmp/demo/demo-shop" && cp "$root/web/demo-shop/shop.css" "$tmp/demo/d
 mkdir -p "$tmp/demo/vendor" "$tmp/demo/merchant"
 cp "$root/web/vendor/ethers-6.17.0.umd.min.js" "$tmp/demo/vendor/"
 cp "$root/web/merchant/sitebound-merchant.mjs" "$tmp/demo/merchant/"
-mkdir -p "$tmp/demo/attack" && rsync -a "$root/web/attack/" "$tmp/demo/attack/"
+# The fake site lives only on the phish origin: on the real, registered origin it would contradict its own copy.
+mkdir -p "$tmp/demo/attack" && rsync -a --exclude phish.html "$root/web/attack/" "$tmp/demo/attack/"
 mkdir -p "$tmp/phish/attack" "$tmp/phish/demo-shop"
-rsync -a "$root/web/attack/" "$tmp/phish/attack/"
+# Only the fake page and what it loads; its root opens the fake page instead of a 404.
+rsync -a --exclude index.html --exclude classic.html --exclude sitebound.html "$root/web/attack/" "$tmp/phish/attack/"
+printf '/ /attack/phish 302\n' > "$tmp/phish/_redirects"
 cp "$root/web/config.js" "$tmp/phish/"
 cp "$root/web/demo-shop/shop.css" "$tmp/phish/demo-shop/"
 
