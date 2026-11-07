@@ -4,7 +4,7 @@ Four scenes in order: the attack, onboarding a real domain, a coffee payment wit
 Target length 2 to 4 minutes. No music, voice only. Record at 720p or higher.
 
 Each scene lists its time slot, page URL, on-screen steps and spoken line. Button and heading text is copied from the
-code at 0701c14 (7 Nov 2026). Wallet pop-ups, Touch ID sheets and explorer pages are not our code, so their wording is
+code at 53eddf0 (7 Nov 2026). Wallet pop-ups, Touch ID sheets and explorer pages are not our code, so their wording is
 described, not quoted. Cut every wait for a block in editing. Whitechain's block time is not checked.
 
 The real domain is `https://0xmujahid.xyz`, the owner's portfolio. It has a "Buy me a coffee" section (3, 5 and 10
@@ -40,10 +40,12 @@ Hosts:
 - [ ] **Buyer, set up once before recording.** Scene 3 is a paying buyer, not a first-time one.
   - A browser wallet (MetaMask or Rabby) with testnet USDT `0xcedf…55a7`: at least 3.01 (3 plus the 0.01 fee).
     It needs no WBT. Where to get testnet USDT: not checked.
-  - Open the frame's setup (`https://sitebound-pay.pages.dev/frame/setup.html`, or **Set up** inside any checkout).
-    The page reads "Set up once, then pay with Touch ID". Connect the wallet, keep the limits (50 per payment, 200
-    total, 30 days), click **Confirm with Touch ID**, and sign twice in the wallet. It reads "Done. From now on each
-    payment is one Touch ID." The buyer pays no gas for any of it.
+  - On a first click of **Confirm payment**, the frame opens the setup window (or open
+    `https://sitebound-pay.pages.dev/frame/setup.html` yourself). It reads "Set up once, then pay with Touch ID".
+    Click **Connect wallet** and pick the wallet from the chooser, keep the limits (50 per payment, 200 total, 30
+    days), click **Confirm with Touch ID**: Touch ID creates the passkey, then the wallet signs twice. It reads "Done.
+    From now on each payment is one Touch ID." The buyer pays no gas for any of it. Do this before recording, so
+    scene 3 is one Touch ID.
 - [ ] **Browser.** Desktop Chrome, pop-ups allowed for `sitebound-pay.pages.dev`. Chrome writes `topOrigin`. Safari
   may omit it (not measured), and Firefox is not checked. The passkey lives under rpId `sitebound-pay.pages.dev`, so
   use the same Chrome profile for setup and for scene 3.
@@ -64,8 +66,8 @@ URLs: `https://sitebound-demo.pages.dev/attack/classic.html`, then `.../attack/s
 4. Click "Next: the same script against the Sitebound checkout".
 5. On sitebound.html, click **Inject the hacked script**. The log shows "addresses found and swapped on the page: 0" and
    "<sitebound-pay> elements: 1. Attributes: amount, order. None of them is a payee."
-6. Click **Pay 16.50 USDT**. The frame names the website in the address bar, `sitebound-demo.pages.dev`, under
-   "You are paying this website". Close it with ×. Don't pay here.
+6. Click **Pay 16.50 USDT**. The frame, headed "Confirm payment", names the website, `sitebound-demo.pages.dev`, next
+   to "Website". Close it with ×. Don't pay here.
 
 Spoken:
 > "Here's the attack that keeps happening: a compromised checkout script swaps the address on the page and in the
@@ -85,15 +87,14 @@ URL: `https://sitebound-pay.pages.dev/`. The wizard opens inline on the same pag
    - Do not click **I already have a wallet** in the video. It keeps the old flow: **Connect wallet** with MetaMask or
      Rabby, on Whitechain Sepolia.
 4. "Step 3 of 5", **Add one DNS record**: Type TXT, Name `_sitebound.0xmujahid.xyz`, Value `sitebound=<wallet>`. Click
-   the copy buttons, switch to the DNS provider's tab, add the record, come back and click **Verify domain**. After
-   that it checks every 5 seconds. Cut the wait. (If the provider adds the domain by itself, leave off the part after
+   the copy buttons. If the wizard recognises the DNS provider it shows an **Open <provider> DNS settings** button:
+   click it, add the record there, come back and click **Verify domain**. After that it checks every 5 seconds. Cut the wait. (If the provider adds the domain by itself, leave off the part after
    `_sitebound`; the wizard says so.)
 5. "Step 4 of 5", **Register your site**: "Saves 0x… as the wallet that gets paid for this site only. Sitebound's
    relayer sends the transaction and pays the gas, so there is nothing to sign." Click **Register site**. The button
    reads "Waiting for the chain…" (cut it), then "Transaction sent:" with a link.
 6. "Step 5 of 5, done", **Your site is live**: "USDT from buyers arrives at 0x…. Add the button below to start taking
-   payments." Below it: the snippet ("Paste this where your checkout button goes. There is no address in it, and there
-   never will be."). Click **Copy snippet**. Then cut to https://0xmujahid.xyz, which already carries the button.
+   payments." Below it: the snippet ("Paste this where your checkout button goes. There is no payment address in it."). Click **Copy snippet**. Then cut to https://0xmujahid.xyz, which already carries the button.
 
 Spoken:
 > "Now a real website, 0xmujahid.xyz. The owner types the domain and Sitebound creates the payout wallet right here in
@@ -106,19 +107,20 @@ URL: `https://0xmujahid.xyz/#coffee`. The section is "Buy me a coffee" with thre
 
 1. Point at the section text: "this page holds no wallet address, and the wallet that gets paid is registered
    on-chain for 0xmujahid.xyz".
-2. Click **Pay 3 USDT**. The frame opens: "You are paying this website" over `0xmujahid.xyz`, "3 USDT", "Order COFFEE-…".
-3. Point at the note "+0.01 USDT network fee, taken from your wallet. You need no gas." The buyer pays USDT only. The
-   relayer pays the WBT gas.
-4. Click **Pay with Touch ID**. The status reads "Waiting for Touch ID…". Touch ID. Then "Paying. This takes a few
-   seconds." (cut the wait).
+2. Click **Pay 3 USDT**. The frame opens, headed "Confirm payment": Website `0xmujahid.xyz`, Amount "3 USDT", "Order
+   COFFEE-…". The frame shows no fee line.
+3. Point at the website and the amount: this is what the passkey signs. The buyer needs no gas, because the relayer
+   pays the WBT.
+4. Click **Confirm payment**. The status reads "Waiting for Touch ID…". Touch ID. Then "Paying. This takes a few
+   seconds." (cut the wait). (A buyer who has not set up yet gets the setup window here instead, which is not filmed.)
 5. The frame switches to "Paid" with Amount, Website, Order, Receipt and Transaction. It stays open on this page. Hold
    on it for 2 seconds, then click **Close**.
 6. The page reads "Thank you. Payment confirmed on Whitechain." with **View the transaction**. Click it (scene 4).
 
 Spoken:
-> "A buyer who set up once pays with one Touch ID. The frame shows the website the browser reports, 0xmujahid.xyz, and
-> the amount. The buyer pays only USDT and no gas: the relayer covers that for a small fee. The page never names who
-> gets paid. The contract pays the wallet registered for this domain."
+> "A buyer who set up once pays with one Touch ID, like 3-D Secure for cards. The frame shows the website the browser
+> reports, 0xmujahid.xyz, and the amount. The buyer needs no gas: the relayer sends the transaction. The page never
+> names who gets paid. The contract pays the wallet registered for this domain."
 
 ## 4. On the explorer (2:35 to 2:55)
 
@@ -126,8 +128,9 @@ URLs:
 - The "View the transaction" link: `https://explorer.testnet.whitechain.io/tx/<tx hash>`.
 - `https://explorer.testnet.whitechain.io/address/0x64117398C837a8708a816818b31C36Df5a968596?tab=contract`.
 
-1. Show the payment transaction: USDT from the buyer to the owner's payout wallet (3) and to the relayer (0.01). How
-   the explorer labels these: not checked.
+1. Show the payment transaction: USDT from the buyer to the owner's payout wallet (3) and to the relayer (0.01, the
+   relayer fee; the frame does not show it). The transaction is sent by the relayer. How the explorer labels these:
+   not checked.
 2. Open the contract address (the landing's "Live on Whitechain Sepolia" chip, then **View on the explorer**, or the URL
    above) and click the **Contract** tab. The source is verified (SiteboundV2, solc v0.8.28).
 
