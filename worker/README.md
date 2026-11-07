@@ -12,6 +12,7 @@ on-chain registry, never from request data.
 | `POST /setup` | `{owner, permit?:{value,deadline,v,r,s}, bind:{credentialHash,pubX,pubY,perPayCap,totalCap,expiry,v,r,s}}` | `{txHash, permitTxHash?}` |
 | `POST /pay` | PayInput fields (`relayerFee >= MIN_FEE`) | `{txHash, paymentId}` after 1 confirmation |
 | `GET /health` | | `{ok, relayer, chainId}` |
+| `POST`, `GET`, `DELETE /admin/sites` | `{site, payout}` / none / `{site}` | Adds, lists or removes a site the relayer attests without DNS. Off (404) unless the `ADMIN_TOKEN` secret is set; every call needs `Authorization: Bearer <token>`. Used by `scripts/add-site.sh`. |
 
 Rules:
 - `site` must be exactly a Chrome-serialized https origin (`https://shop.com`): no port, path, IP or uppercase.
@@ -22,7 +23,8 @@ Rules:
   simulation passes.
 
 ## Config
-- Secrets: `RELAYER_KEY` (the hot EOA; also the DNS attestor, so pass its address to the constructor) and `RPC_URL`.
+- Secrets: `RELAYER_KEY` (the hot EOA; also the DNS attestor, so pass its address to the constructor), `RPC_URL`,
+  and optionally `ADMIN_TOKEN` (turns on `/admin/sites`).
 - Vars in `wrangler.toml`: `CHAIN_ID`, `SITEBOUND_ADDRESS` (fill in after deploy), `TOKEN_ADDRESS`,
   `ALLOWED_ORIGINS` (comma list or `*`), `MIN_FEE` (default 10000 = 0.01 USDT), `PAY_DAILY_CAP` (20),
   `SETUP_DAILY_CAP` (3), `REGISTER_DAILY_CAP` (3).
@@ -43,5 +45,6 @@ The test uses anvil's public dev keys and never reads `../.env`. It replays the 
 the same checks under `wrangler dev` (`SKIP_WRANGLER=1` skips that part).
 
 ## Limits
-- One EOA. Sends are serialized per isolate only, so two isolates can race on a nonce.
+- One EOA on one chain (`CHAIN_ID`). Another chain needs its own Worker, a funded key and a SiteboundV2 deployment.
+- Sends are serialized per isolate only, so two isolates can race on a nonce.
 - KV is eventually consistent, so a cap can be exceeded slightly.
