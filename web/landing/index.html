@@ -620,6 +620,8 @@
         <div class="rm-col rm-next" data-reveal>
           <div class="rm-head"><h3 class="rm-h">Next</h3><span class="rm-tag">Planned, not built</span></div>
           <ul class="rm-list">
+            <li><b>Bring businesses on chain</b><span>We talk to web2 businesses and set them up: their domain, one DNS record, no crypto team.</span></li>
+            <li><b>Pay from any chain, settle on Whitechain</b><span>Buyers pay from the chain they hold USDT on, Relay (relay.link) moves it, and the site is paid on Whitechain. Waits on Relay adding Whitechain: not listed, checked 7 Nov.</span></li>
             <li><b>Public API for adding sites</b><span>Today only our admin script does it.</span></li>
             <li><b>Team payout wallet</b><span>Several owners, passkey-bound. Needs a new contract; today one browser key.</span></li>
             <li><b>More than one DNS checker</b><span>The contract supports it. Today there is one.</span></li>
@@ -631,7 +633,7 @@
           <div class="rm-head"><h3 class="rm-h">Later</h3><span class="rm-tag">Planned, not built</span></div>
           <ul class="rm-list">
             <li><b>Audit, then mainnet</b><span>A professional audit first, then real USDT.</span></li>
-            <li><b>Pay from any chain</b><span>Needs a route into Whitechain; we found none yet.</span></li>
+            <li><b>More chains</b><span>A deployment and a funded relayer on each chain. One chain for now, on a testnet budget.</span></li>
             <li><b>Shop plugins</b><span>Ready-made server code for common store platforms.</span></li>
             <li><b>Overlay detection</b><span>Warn when a page draws over the payment window.</span></li>
             <li><b>On-chain DNSSEC proof</b><span>Replaces the trusted DNS checker.</span></li>
@@ -679,7 +681,7 @@
           </details>
           <details class="faq-item" data-reveal>
             <summary><span>Why Whitechain?</span><i class="faq-i" aria-hidden="true"></i></summary>
-            <p>Stablecoin payments settle in one transaction, and its USDT supports permit, which lets a relayer pay the gas. The chain's P-256 precompile also lets the contract verify Touch ID signatures itself.</p>
+            <p>Stablecoin payments settle in one transaction, and its USDT supports permit, which lets a relayer pay the gas. The chain's P-256 precompile also lets the contract verify Touch ID signatures itself. Paying from other chains is planned through Relay, once it supports Whitechain.</p>
           </details>
           <details class="faq-item" data-reveal>
             <summary><span>Is it open source?</span><i class="faq-i" aria-hidden="true"></i></summary>
