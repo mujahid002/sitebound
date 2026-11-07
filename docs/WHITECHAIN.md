@@ -12,7 +12,7 @@ real value, and the contract is not audited.
   - The explorer API reports `is_verified: true`, name SiteboundV2, compiler v0.8.28, verified 23:00:53 IST on 6 Nov
     (read 07:56 IST, 7 Nov).
   - Sourcify: `exact_match` for creation and runtime code ([repo.sourcify.dev](https://repo.sourcify.dev/1874/0x64117398C837a8708a816818b31C36Df5a968596)).
-  - To check it yourself: `sh scripts/verify.sh` (README, "Verify it yourself").
+  - To check it yourself: `sh scripts/verify.sh` (README, "Verify it yourself"; details in [DEPLOYMENTS.md](DEPLOYMENTS.md)).
 - [x] **At least one USDT payment settled on Whitechain in the main flow, with the explorer link in the README.**
   - 3 USDT to 0xmujahid.xyz through `pay()`, block 12,419,948, status success: [transaction](https://explorer.testnet.whitechain.io/tx/0x65a00ae0fec55014c6331f2767e815ea8c49e00241b6215d7a917e3076cd71d0).
   - The token is Whitechain USDT `0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7`, the one the contract is built with,
@@ -26,8 +26,8 @@ real value, and the contract is not audited.
 - [x] **A public GitHub repo with steady progress, and a README on setup, architecture and limits.**
   - [github.com/mujahid002/sitebound](https://github.com/mujahid002/sitebound) opens without signing in (07:56 IST, 7 Nov).
   - First commit 09:56 IST, 6 Nov. 196 commits by 07:59 IST, 7 Nov: 108 on 6 Nov and 88 on 7 Nov.
-  - README sections "Setup and local dev", "Architecture" and "Threat model (summary)", plus
-    [ARCHITECTURE.md](ARCHITECTURE.md) and [THREAT-MODEL.md](THREAT-MODEL.md).
+  - README sections "Run it", "Repo map", "How it works" and "Threat model (summary)", plus
+    [DEVELOPMENT.md](DEVELOPMENT.md) for setup, [ARCHITECTURE.md](ARCHITECTURE.md) and [THREAT-MODEL.md](THREAT-MODEL.md).
 - [ ] **A 2 to 4 minute demo video showing each party.** Status: to be recorded. The script, with the shop, the buyer
   and the attacker on screen: [demo-script.md](demo-script.md).
   - TODO: video link.
