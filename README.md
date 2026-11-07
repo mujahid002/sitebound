@@ -9,8 +9,35 @@ This defends against **recipient substitution**: hacked code on a real website s
 phishing protection. A lookalike domain that registers its own wallet is a separate threat; the fake-site demo shows
 it, along with the overlay limit. Full trust model: [docs/THREAT-MODEL.md](docs/THREAT-MODEL.md).
 
-Built for ETHGlobal Mumbai (Nov 2026) on Whitechain Sepolia testnet. Not audited. The code on `main` is SiteboundV2
-(`src/SiteboundV2.sol`), live at `0x64117398C837a8708a816818b31C36Df5a968596`. v1 (`src/Sitebound.sol`) is deprecated.
+**Built at [ETHGlobal Mumbai 2026](https://ethglobal.com/events/mumbai/prizes)** on Whitechain Sepolia testnet. The
+code on `main` is SiteboundV2 (`src/SiteboundV2.sol`), live at `0x64117398C837a8708a816818b31C36Df5a968596`. v1
+(`src/Sitebound.sol`) is deprecated.
+
+| Try it | Link |
+|---|---|
+| Live app: landing, onboarding, checkout frame | https://sitebound-pay.pages.dev |
+| Demo shop | https://sitebound-demo.pages.dev |
+| Real site using it, a portfolio with "Buy me a coffee" | https://0xmujahid.xyz |
+| Attack demos | [Address swap](https://sitebound-demo.pages.dev/attack/), [fake site and overlay](https://sitebound-phish.pages.dev) |
+| Dashboard for 0xmujahid.xyz | https://sitebound-pay.pages.dev/dashboard/?site=0xmujahid.xyz |
+| Receipt of the first payment | [sitebound-pay.pages.dev/receipt](https://sitebound-pay.pages.dev/receipt/?id=0x6f35db4f550b0e40d646bd02a633964e94c4f5a6e6d07c2537cfe67d14fab9d6) |
+| First real USDT payment (Whitechain Sepolia testnet transaction) | [`0x65a00ae0…71d0`](https://explorer.testnet.whitechain.io/tx/0x65a00ae0fec55014c6331f2767e815ea8c49e00241b6215d7a917e3076cd71d0) |
+| Contract, verified source | [SiteboundV2 on the Whitechain explorer](https://explorer.testnet.whitechain.io/address/0x64117398C837a8708a816818b31C36Df5a968596?tab=contract) |
+| Relayer health | https://sitebound-relayer.sitebound-relayer.workers.dev/health |
+| Repo | https://github.com/mujahid002/sitebound |
+
+**Plainly:** a 3-D Secure-style confirmation, not hack-proof. Testnet only (testnet USDT has no value), not audited.
+Buyers pay a 0.01 USDT relayer fee instead of gas. Gasless withdrawal for websites is roadmap only, not built: today a
+payout wallet needs a little WBT to refund, freeze or move its USDT.
+
+## Docs
+
+- [Why we are building it](docs/WHY.md): the attacks on web checkout code, and the name.
+- [Architecture](docs/ARCHITECTURE.md): diagrams of the parts, onboarding, setup, a payment and the attacker.
+- [Threat model](docs/THREAT-MODEL.md): what it stops, what it trusts, known limits.
+- [Whitechain prize checklist](docs/WHITECHAIN.md): each requirement with its evidence.
+- [Whitechain feedback](WHITECHAIN_FEEDBACK.md): what worked and what broke on Whitechain.
+- [Demo video script](docs/demo-script.md) and the [relayer](worker/README.md).
 
 ## The problems
 
@@ -39,10 +66,10 @@ Built for ETHGlobal Mumbai (Nov 2026) on Whitechain Sepolia testnet. Not audited
   - The onboarding wizard creates the payout wallet in the browser: no extension, no gas, nothing to copy. The wallet
     stays in that browser, with an optional backup. "I already have a wallet" connects MetaMask or Rabby instead.
 - **Buyer, first time.** In a popup on the Sitebound origin, the buyer:
-  - connects a wallet;
+  - connects a wallet and picks the limits;
+  - creates a passkey;
   - signs a capped EIP-2612 permit;
-  - signs an EIP-712 binding: passkey public key, per-payment cap, total cap and expiry;
-  - creates a passkey.
+  - signs an EIP-712 binding: passkey public key, per-payment cap, total cap and expiry.
 
   One passkey is bound to one wallet.
 - **Buyer, every payment.** The button opens the Sitebound frame in a cross-origin iframe. The frame shows the site
@@ -163,6 +190,8 @@ A page that changes the amount gets "bad quote", and one without a quote gets "q
 quote signer can be a contract wallet (ERC-1271).
 
 ## Architecture
+
+Diagrams of each flow: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 | Part | Path | What it does |
 |---|---|---|
