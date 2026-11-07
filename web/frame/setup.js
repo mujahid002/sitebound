@@ -8,7 +8,7 @@ const $ = (id) => document.getElementById(id);
 const now = () => Math.floor(Date.now() / 1000);
 // Reads go to our own RPC: a wallet's saved network can have a slow or dead RPC, and then even a plain read fails.
 const rpc = new ethers.JsonRpcProvider(C.rpcUrl, C.chainId, { staticNetwork: true });
-let signer, account, passkey, signed;
+let signer, account, passkey, signed, eth;
 
 const step = (k, s) => (document.querySelector(`[data-k="${k}"]`).dataset.s = s);
 function say(text, err = false) {
@@ -23,6 +23,7 @@ async function pick() {
   try {
     const { provider, info } = await choose();
     say(`Check ${info.name} to switch network…`);
+    eth = provider;
     signer = await connect(provider);
     account = await signer.getAddress();
     $('wallet-name').textContent = info.name;
@@ -53,6 +54,21 @@ async function createPasskey() {
   });
   const { x, y } = pubKeyXY(c.response.getPublicKey());
   return { credentialHash: credentialHashOf(c.rawId), x, y };
+}
+
+// MetaMask answers 4100 ("not authorized") when the page's permission for the account has lapsed, for example after
+// a long Touch ID step. Ask for the accounts again, rebuild the signer and sign once more before giving up.
+async function sign(domain, types, value) {
+  try {
+    return await signer.signTypedData(domain, types, value);
+  } catch (e) {
+    const code = e?.code ?? e?.error?.code ?? e?.info?.error?.code;
+    if (code !== 4100 && !/not been authorized/i.test(errText(e))) throw e;
+    const accounts = await eth.request({ method: 'eth_requestAccounts' });
+    if (!accounts.some((a) => a.toLowerCase() === account.toLowerCase())) throw new Error(`Allow Sitebound to use ${account.slice(0, 6)}…${account.slice(-4)} in your wallet, or use Change wallet.`);
+    signer = await connect(eth);
+    return await signer.signTypedData(domain, types, value);
+  }
 }
 
 function readCaps() {
@@ -87,13 +103,13 @@ $('s-caps').onsubmit = async (e) => {
     step((k = 'permit'), 'doing');
     const token = new ethers.Contract(C.token, TOKEN_ABI, rpc);
     const permit = { owner: account, spender: C.address, value: totalCap, nonce: await token.nonces(account), deadline: BigInt(now() + 3600) };
-    const ps = ethers.Signature.from(await signer.signTypedData(permitDomain(C), PERMIT_TYPES, permit));
+    const ps = ethers.Signature.from(await sign(permitDomain(C), PERMIT_TYPES, permit));
     step(k, 'done');
 
     step((k = 'bind'), 'doing');
     const sb = new ethers.Contract(C.address, SITEBOUND_ABI, rpc);
     const bind = { credentialHash: passkey.credentialHash, pubX: passkey.x, pubY: passkey.y, perPayCap, totalCap, expiry, nonce: await sb.bindNonce(account) };
-    const bs = ethers.Signature.from(await signer.signTypedData(bindDomain(C), BIND_TYPES, bind));
+    const bs = ethers.Signature.from(await sign(bindDomain(C), BIND_TYPES, bind));
     step(k, 'done');
 
     signed = { permit: { ...permit, v: ps.v, r: ps.r, s: ps.s }, bind: { ...bind, wallet: account, v: bs.v, r: bs.r, s: bs.s } };
