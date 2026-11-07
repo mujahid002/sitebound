@@ -57,8 +57,10 @@ Built for ETHGlobal Mumbai (Nov 2026) on Whitechain Sepolia testnet. Not audited
 
   There is no payee field in the call.
 
-**Why on-chain settlement:** the site check runs in the same contract that moves the money, so hacked checkout code
-can't redirect it. An off-chain processor can't give the buyer that guarantee.
+**Why on-chain settlement:** the registry binds each site to a payout wallet and `pay()` takes no payee argument, so
+no server or page can redirect the money, and anyone can read and verify the rules. The site check runs in the same
+contract that moves the money, so hacked checkout code can't redirect it. An off-chain processor can't give the buyer
+that guarantee.
 
 ## Why Whitechain
 
@@ -66,7 +68,7 @@ Sitebound runs on Whitechain Sepolia (chain 1874) because the chain has the piec
 6 Nov 2026. Details, and what was hard, are in [WHITECHAIN_FEEDBACK.md](WHITECHAIN_FEEDBACK.md).
 
 - **P-256 precompile at `0x100` (RIP-7212).** The contract verifies every passkey (Touch ID) signature on chain.
-  Without it, each payment would need a Solidity P-256 verifier. Gas cost of `pay()` on Whitechain: not measured.
+  Without it, each payment would need a Solidity P-256 verifier. Gas of `pay()` on Whitechain: 305,060 for the one real payment below (a single sample).
 - **USDT with EIP-2612 `permit`.** The buyer grants the capped allowance with a signature, so the relayer can pay
   all the gas and the buyer never needs WBT.
 - **A public RPC with no key** (`https://rpc.testnet.whitechain.io`), so the frame, the dashboard and "Verify us" read
@@ -266,7 +268,12 @@ sh scripts/add-site.sh https://site.example 0xPayoutAddress   # prints the regis
   (06:20 IST, 7 Nov), tx `0x964220005b082172d8b06777eb0535ae4a5204633bd1ad8bd39830426279002c`, payout
   `0x0eCFCF7d2b8c76794Af34b061a9886786fE6709f` (`splitOf`, measured 07:25 IST, 7 Nov).
 - Relayer Worker: https://sitebound-relayer.sitebound-relayer.workers.dev (`/health`)
-- First USDT payment: TBD
+- First real USDT payment: 3 USDT to 0xmujahid.xyz (order `COFFEE-…`) on Whitechain Sepolia, block 12,419,948, status
+  success, tx [`0x65a00ae0…71d0`](https://explorer.testnet.whitechain.io/tx/0x65a00ae0fec55014c6331f2767e815ea8c49e00241b6215d7a917e3076cd71d0).
+  - Buyer `0xEF37153803f75630c64475c17EC0547e65Ba3B6d`, contract SiteboundV2. The relayer sent it, so the buyer paid
+    no gas. The transaction logs show 3 USDT to the payout wallet `0x0eCF…709f` and 0.01 USDT to the relayer.
+  - [Receipt](https://sitebound-pay.pages.dev/receipt/?id=0x6f35db4f550b0e40d646bd02a633964e94c4f5a6e6d07c2537cfe67d14fab9d6)
+    and [dashboard](https://sitebound-pay.pages.dev/dashboard/?site=0xmujahid.xyz).
 - Explorer: https://explorer.testnet.whitechain.io
 
 ## Verify it yourself
