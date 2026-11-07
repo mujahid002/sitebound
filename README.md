@@ -77,12 +77,15 @@ Sitebound runs on Whitechain Sepolia (chain 1874) because the chain has the piec
 
 ## Multi-chain: planned, blocked for now
 
-Sitebound is not tied to Whitechain. The plan is one SiteboundV2 per EVM chain, with the same frame and button, and a
-"pay from any chain" option for buyers. It is not built, for these reasons:
+Sitebound settles on Whitechain. The plan for buyers on other chains: they pay from the chain that holds their
+stablecoin, [Relay](https://relay.link) moves it to Whitechain, and the contract pays the site there. Later, other
+chains can get their own SiteboundV2 with the same frame and button. Next to that, we plan to talk to web2 businesses
+and bring them on chain with the same onboarding: their domain and one DNS record. None of this is built yet, for
+these reasons:
 
-- **No bridge route into Whitechain.** "Pay from any chain" needs a route that moves a buyer's stablecoin into
-  Whitechain. The Relay bridge's chain API (checked 6 Nov) lists no Whitechain: none of its 58 mainnet chains, and its
-  testnet list has only Base Sepolia and Sepolia, so we dropped the feature. Other bridges: not checked.
+- **No Relay route into Whitechain yet.** Relay's chain API lists no Whitechain. On 6 Nov it had 58 mainnet chains,
+  and on 7 Nov (07:40 IST) 57. Its testnet API lists only Base Sepolia and Sepolia. "Pay from any chain" waits on
+  that listing. Other bridges: not checked.
 - **The relayer needs gas on every chain.** Our relayer pays the gas for register, setup and every payment, from one
   hot wallet on one chain (`CHAIN_ID` in `worker/wrangler.toml`). Each new chain needs its own funded wallet, a
   Worker and monitoring. On testnet our gas comes from a faucet that gives 2 WBT a day. As a team of two with a

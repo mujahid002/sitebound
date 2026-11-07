@@ -26,8 +26,8 @@ Only things we measured; the rest is marked "not checked".
   (`0xcdcfacb6b15c8238b4e5fbb47bdb83b7f83f50a531d264bf9763d2bd1d3d2a25`). One line in the docs would save every
   permit integrator that step.
 - **No cross-chain route in.** Relay's chain API (checked 6 Nov) lists no Whitechain: none among its 58 mainnet
-  chains, and its testnet list has only Base Sepolia and Sepolia. So we could not offer "pay from any chain" and
-  dropped it.
+  chains, and its testnet list has only Base Sepolia and Sepolia (re-checked 07:40 IST, 7 Nov: 57 mainnet chains,
+  still no Whitechain). So "pay from any chain, settle on Whitechain" is on our roadmap, waiting on that listing.
 - **Local testing of P-256.** Inside `forge test` (Foundry 1.7.1), a call to `0x100` with a valid `vm.signP256`
   signature returned success with empty data, with `--evm-version` cancun, prague and osaka and with
   `-n optimism`, so our unit tests etch a Solidity P-256 verifier at `0x100`. `anvil --hardfork osaka` does verify at
