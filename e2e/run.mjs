@@ -301,7 +301,7 @@ async function main() {
     const [popup] = await Promise.all([buyerCtx.waitForEvent('page'), frame.locator('#setup').click()]);
     track('setup', popup);
     const popupAuth = await authenticator(popup);
-    await popup.locator('#connect').click();
+    await popup.locator('.wp-wallet').first().click(); // the wallet chooser opens on load; the stub only has window.ethereum
     await until(popup, '#s-caps', '#msg.err', 15_000);
     await popup.locator('#go').click();
     await until(popup, '#finish', '#msg.err', 90_000);
@@ -343,6 +343,7 @@ async function main() {
     await until(frame, '#continue', '#msg.err', 30_000);
     const [popup] = await Promise.all([buyerCtx.waitForEvent('page'), frame.locator('#continue').click()]);
     track('send', popup);
+    await popup.locator('.wp-wallet').first().click();
     await popup.locator('#send:enabled').click({ timeout: 10_000 });
     await until(frame, '#receipt', '#msg.err', 60_000);
     const pm = await sb.payments(paymentId('A124'));

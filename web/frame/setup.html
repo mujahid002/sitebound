@@ -7,6 +7,7 @@
   <title>Sitebound · set up</title>
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="frame.css">
+  <link rel="stylesheet" href="wallet-picker.css">
   <script src="../config.js"></script>
   <script src="../vendor/ethers-6.17.0.umd.min.js"></script>
   <script type="module" src="setup.js"></script>
@@ -34,7 +35,8 @@
     </section>
 
     <form id="s-caps" class="stack" hidden novalidate>
-      <p class="meta">Wallet <span id="account" class="mono"></span></p>
+      <p class="meta">Wallet <span id="wallet-name"></span> <span id="account" class="mono"></span></p>
+      <button id="change" class="wp-change" type="button">Change wallet</button>
       <fieldset class="fields">
         <legend class="sr-only">Limits</legend>
         <label>Per payment<input id="perPay" inputmode="decimal" value="50" required></label>

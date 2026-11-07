@@ -7,6 +7,7 @@
   <title>Sitebound · pay from your wallet</title>
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="frame.css">
+  <link rel="stylesheet" href="wallet-picker.css">
   <script src="../config.js"></script>
   <script src="../vendor/ethers-6.17.0.umd.min.js"></script>
 </head>
@@ -16,16 +17,17 @@
     <p id="lead" class="lead">Waiting for the checkout…</p>
     <div class="stack">
       <button id="send" class="btn" type="button" disabled>Connect wallet and pay</button>
+      <button id="change" class="wp-change" type="button">Choose wallet</button>
       <p class="note">Your wallet sends the payment your passkey signed. You pay the network gas in WBT. No service fee.</p>
       <p id="msg" class="msg" role="status" aria-live="polite"></p>
     </div>
   </main>
   <script type="module">
-    import { sendPay } from './wallet.js';
+    import { sendPay, choose, cancelled } from './wallet.js';
     import { errText } from './lib.js';
     const $ = (id) => document.getElementById(id);
     const tell = (m) => opener?.postMessage(m, location.origin);
-    let input, quote = null;
+    let input, quote = null, picked = null;
 
     addEventListener('message', (e) => {
       if (e.origin !== location.origin || e.source !== opener || e.data?.type !== 'sitebound:send') return;
@@ -35,12 +37,33 @@
       $('send').disabled = false;
     });
 
+    // The EIP-6963 chooser: opens on load and from "Change wallet". Picking asks the wallet for its accounts.
+    async function pick() {
+      $('change').disabled = true;
+      try {
+        picked = await choose();
+        $('send').textContent = `Pay with ${picked.info.name}`;
+        $('change').textContent = 'Change wallet';
+        $('msg').textContent = '';
+      } catch (e) {
+        if (!cancelled(e)) { $('msg').className = 'msg err'; $('msg').textContent = errText(e); }
+      } finally {
+        $('change').disabled = false;
+      }
+      return picked;
+    }
+    $('change').onclick = pick;
+
     $('send').onclick = async () => {
       $('send').disabled = true;
       $('msg').className = 'msg';
-      $('msg').textContent = 'Confirm in your wallet…';
       try {
-        tell({ type: 'sitebound:sent', txHash: await sendPay(window.ethereum, input, quote) });
+        if (!picked && !(await pick())) {
+          $('send').disabled = false;
+          return;
+        }
+        $('msg').textContent = 'Confirm in your wallet…';
+        tell({ type: 'sitebound:sent', txHash: await sendPay(picked.provider, input, quote) });
         $('msg').textContent = 'Sent. You can close this window.';
         setTimeout(close, 1200);
       } catch (e) {
@@ -53,6 +76,7 @@
 
     if (!opener) $('lead').textContent = 'Open this from a Sitebound checkout.';
     tell({ type: 'sitebound:send-ready' });
+    pick();
   </script>
 </body>
 </html>

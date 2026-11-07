@@ -1,0 +1,58 @@
+/* Wallet chooser dialog (wallet-picker.js). Uses the tokens from frame.css. */
+.wp-root {
+  position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px;
+  background: rgba(13, 15, 17, 0.55);
+}
+.wp-dialog {
+  width: min(100%, 380px); max-height: calc(100% - 8px); overflow: auto; display: grid; gap: 12px; padding: 18px;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 16px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28); outline: none;
+  animation: wp-in 0.22s var(--ease);
+}
+@keyframes wp-in { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
+@media (prefers-reduced-motion: reduce) { .wp-dialog { animation: none; } }
+.wp-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.wp-title { font-size: 1.15rem; font-weight: 650; letter-spacing: -0.02em; margin: 0; }
+.wp-close {
+  flex: none; width: 36px; height: 36px; margin: -6px -8px -6px 0; border: 0; border-radius: 10px;
+  background: transparent; color: var(--muted); font-size: 1.5rem; line-height: 1; cursor: pointer;
+}
+.wp-close:hover { background: var(--bg); color: var(--ink); }
+.wp-sub { margin: 0; color: var(--muted); font-size: 0.85rem; }
+.wp-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.wp-wallet {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 10px 14px;
+  border: 1px solid var(--line); border-radius: 12px; background: transparent; color: var(--ink);
+  font: inherit; font-weight: 600; text-align: left; cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s var(--ease);
+}
+.wp-wallet:hover:not(:disabled) { border-color: var(--accent); background: var(--bg); }
+.wp-wallet:active:not(:disabled) { transform: scale(0.98); }
+.wp-wallet:disabled { opacity: 0.55; cursor: progress; }
+.wp-wallet.wp-busy { opacity: 1; border-color: var(--accent); }
+.wp-icon { flex: none; width: 32px; height: 32px; border-radius: 8px; object-fit: contain; }
+.wp-letter { display: grid; place-items: center; background: var(--bg); border: 1px solid var(--line); color: var(--muted); font-weight: 700; }
+.wp-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.wp-tag { flex: none; padding: 2px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 0.72rem; font-weight: 600; }
+.wp-status { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; min-height: 1.3em; color: var(--muted); font-size: 0.9rem; text-align: center; }
+.wp-status:empty { display: none; }
+.wp-status.wp-err { padding: 8px 10px; border: 1px solid var(--err); border-radius: 10px; color: var(--err); text-align: left; justify-content: flex-start; }
+.wp-status.wp-spin::before {
+  content: ""; flex: none; width: 14px; height: 14px; border: 2px solid var(--line); border-top-color: var(--accent);
+  border-radius: 50%; animation: wp-spin 0.8s linear infinite;
+}
+@keyframes wp-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .wp-status.wp-spin::before { animation-duration: 3s; } }
+.wp-none { display: grid; gap: 10px; text-align: center; }
+.wp-nowallet { margin: 0; font-size: 1.05rem; font-weight: 650; }
+.wp-install { display: grid; gap: 8px; }
+.wp-install a, .wp-reload {
+  display: inline-flex; align-items: center; justify-content: center; height: 46px; padding: 0 16px; border-radius: 12px;
+  font: inherit; font-weight: 600; text-decoration: none; cursor: pointer;
+}
+.wp-install a { border: 1px solid var(--line); color: var(--ink); }
+.wp-install a:hover { border-color: var(--accent); background: var(--bg); }
+.wp-reload { border: 0; background: var(--accent); color: var(--accent-ink); }
+.wp-reload:hover { filter: brightness(1.06); }
+.wp-change { justify-self: center; padding: 4px; border: 0; background: none; color: var(--accent); font: inherit; font-size: 0.85rem; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.wp-change[hidden] { display: none; }
