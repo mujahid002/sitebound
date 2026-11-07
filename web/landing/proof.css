@@ -287,3 +287,11 @@
 .wc-inline { display: inline-flex; vertical-align: -0.2em; margin: 0 0.15em; }
 .wc-inline .wc-img { width: auto; height: 1.15em; }
 .tagline .tl { display: block; }
+
+/* Try it: where a new tester gets test funds. */
+.try-fund { margin-top: var(--s3); max-width: 44ch; color: var(--muted); font-size: var(--fs-sm); line-height: 1.5; }
+.try-fund summary { cursor: pointer; color: var(--ink); font-weight: 560; }
+.try-fund ol { margin: var(--s2) 0 0; padding-left: 1.4em; display: grid; gap: 8px; list-style: decimal; }
+.try-fund a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.try-fund a:hover { color: var(--accent); }
+.try .try-go { margin-top: var(--s3); }
