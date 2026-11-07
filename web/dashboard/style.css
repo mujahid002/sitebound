@@ -111,7 +111,7 @@ body { font-variant-numeric: tabular-nums; }
   .thead { position: static; width: auto; height: auto; overflow: visible; clip: auto; border-bottom: 1px solid var(--line); background: var(--sunk); }
   .thead .tr { padding-block: 9px; border: 0; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
   .tr {
-    grid-template-columns: 104px minmax(0, 1fr) 124px 150px 126px 232px;
+    grid-template-columns: 96px minmax(0, 1fr) 124px 136px 110px 216px;
     grid-template-areas: none; gap: 12px; padding: 11px 20px;
   }
   .tr > *, .c-order, .c-amt, .c-time, .c-buyer, .c-status, .c-act { grid-area: auto; }
