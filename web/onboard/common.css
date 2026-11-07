@@ -156,7 +156,7 @@ button { font: inherit; color: inherit; }
 .empty p { color: var(--muted); max-width: 46ch; text-wrap: pretty; overflow-wrap: anywhere; }
 .empty .btn, .empty .row { margin-top: 12px; }
 
-.foot { width: min(680px, 100% - 2 * var(--pad)); margin: 0 auto; padding: 24px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.875rem; }
+.foot { width: min(calc(680px - 2 * var(--pad)), calc(100% - 2 * var(--pad))); margin: 0 auto; padding: 24px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.875rem; }
 .foot p + p { margin-top: 6px; }
 
 @media (prefers-reduced-motion: reduce) {
