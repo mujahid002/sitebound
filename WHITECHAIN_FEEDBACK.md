@@ -11,6 +11,12 @@ Only things we measured; the rest is marked "not checked".
 - **USDT has EIP-2612 `permit`.** Buyers can grant the allowance with a signature, and a relayer pays the gas.
   The ERC-3009 typehashes are present too. A real signed permit on Whitechain is not checked yet.
 - **Public RPC.** `https://rpc.testnet.whitechain.io` works with `cast` without a key.
+- **A real payment settled (7 Nov).** First real USDT payment (Whitechain Sepolia testnet transaction): 3 USDT to
+  0xmujahid.xyz through SiteboundV2, block 12,419,948, status success, sent by our relayer (the buyer paid no gas),
+  gasUsed 305,060 at 5.001 gwei (one sample). Testnet USDT has no real value.
+  https://explorer.testnet.whitechain.io/tx/0x65a00ae0fec55014c6331f2767e815ea8c49e00241b6215d7a917e3076cd71d0
+  The passkey check by the `0x100` precompile (`src/SiteboundV2.sol:656`) is inferred from the successful `pay()`;
+  the call trace was not read.
 
 ## What was hard or missing
 
@@ -73,4 +79,4 @@ These blocked it this weekend:
 
 - A real signed USDT `permit` submitted on Whitechain.
 - The YetiTrade WBT to USDT swap.
-- Gas costs of `pay()` on Whitechain.
+- Gas of `pay()` beyond the one sample above (305,060).
