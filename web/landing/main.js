@@ -52,7 +52,7 @@ let typed = [];
 const ringSites = () => [
   ...SITES.filter((b) => b.kind === 'ours'),
   ...typed.filter((o) => !SITES.some((b) => (b.origin || `https://${b.domain}`) === o)).reverse().map((o) => ({ origin: o, domain: hostOf(o), kind: 'user' })),
-  ...SITES.filter((b) => b.kind !== 'ours'),
+  // Businesses that are not Sitebound sites (kind 'real') are not drawn: only sites that use it, and the ones a visitor types.
 ];
 
 // Theme: index.html sets data-theme before first paint; the toggle flips it and remembers the choice.
