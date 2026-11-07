@@ -148,6 +148,7 @@ sequenceDiagram
   relayer->>sb: pay, or payWithQuote
   sb->>sb: P-256 check at 0x100, origin is the frame, crossOrigin is true
   sb->>sb: Site = topOrigin, challenge matches, order unused, caps and expiry
+  sb->>sb: Registry has the site, and it is not frozen
   sb->>usdt: transferFrom buyer to the registered payout wallet
   sb->>usdt: transferFrom buyer to the sender, the 0.01 USDT fee
   sb-->>frame: Paid event in the receipt
