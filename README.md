@@ -2,7 +2,7 @@
 
 # Sitebound
 
-**Addressless checkout.** 3-D Secure-style USDT payments on Whitechain: every payment is bound to the website, so a hacked page can't redirect the money.
+**We are killing stablecoin checkout addresses.**<br>Addressless checkout: onchain, easy to add, and 3-D Secure-style USDT payments on Whitechain. Every payment is bound to the website, so a hacked page can't redirect the money.
 
 [![Whitechain Sepolia](https://img.shields.io/badge/Whitechain-Sepolia%20testnet-0b5fff?style=flat-square)](https://explorer.testnet.whitechain.io/address/0x64117398C837a8708a816818b31C36Df5a968596?tab=contract)
 [![Tests](https://img.shields.io/badge/forge%20tests-138%20passing-0f7d5a?style=flat-square)](#run-it)
@@ -56,6 +56,25 @@ audited. Full trust model: [docs/THREAT-MODEL.md](docs/THREAT-MODEL.md).
 | Relayer health | https://sitebound-relayer.sitebound-relayer.workers.dev/health |
 
 Need testnet funds to pay? The landing page's **Try it** section lists the Whitechain faucet and the USDT swap steps.
+
+## Three steps for a website
+
+1. **Register the site.** Your browser creates a payout wallet. Add one DNS TXT record, `_sitebound.<your domain>` =
+   `sitebound=<wallet>`. The relayer checks DNS, not the page, and registers the site to that wallet on Whitechain.
+2. **Paste one tag.** `<sitebound-pay amount="12.00" order="A123">`. There is no address in it.
+3. **Buyers pay with Touch ID.** A frame on another origin shows the site name the browser reports. The contract checks
+   the passkey signature on chain and pays only the wallet registered for that site. The buyer pays no gas, only a
+   0.01 USDT fee; the relayer pays the gas.
+
+## Try it with test funds
+
+Buy the builder a coffee for 3 test USDT at https://0xmujahid.xyz (or on the landing page's **Try it** section).
+
+1. Get test WBT from the Whitechain faucet (GitHub sign-in) and add Whitechain Testnet, chain 1874, to your wallet.
+2. Swap a little WBT for test USDT on YetiTrade.
+3. Pay 3 USDT, choose your wallet, then confirm with Touch ID. You pay no gas.
+
+Test USDT has no real value.
 
 ## The problems
 
@@ -182,6 +201,53 @@ The full version, with line references, is [docs/THREAT-MODEL.md](docs/THREAT-MO
 - **Owner key:** a stolen owner key can freeze a site permanently.
 - **Browsers:** Safari may omit `topOrigin` (not measured), and a missing `topOrigin` fails closed. Firefox: not
   checked.
+
+## Roadmap
+
+No dates and no promises. **Live** means running on Whitechain Sepolia testnet today.
+
+**Now (live on testnet)**
+- Addressless payment: the contract pays the wallet registered for the site.
+- Touch ID confirmation: a passkey signs the site and the amount.
+- Gasless for buyers: a relayer pays gas; buyers pay USDT and a 0.01 USDT fee.
+- DNS TXT onboarding, with the payout wallet created in the browser.
+- Refunds, and payouts split across up to 5 wallets.
+- Optional quotes: your server signs the amount, so a page can't change it.
+- Verified source on Sourcify and the Whitechain explorer, plus "Verify us" in the browser.
+
+**Next (planned, not built)**
+- Bring web2 businesses on chain: their domain, one DNS record, no crypto team.
+- Pay from any chain, settle on Whitechain, through Relay. Waits on Relay adding Whitechain (not listed, checked 7 Nov).
+- A public API for adding sites (today only our admin script does it).
+- A team payout wallet with several passkey-bound owners (needs a new contract).
+- More than one DNS checker (the contract supports it; today there is one).
+- Safari and Firefox testing (only Chrome is measured).
+
+**Later (planned, not built)**
+- Audit, then mainnet. More chains. Shop plugins. Overlay detection. An on-chain DNSSEC proof instead of the trusted DNS checker.
+
+Gasless withdrawal for websites is not built: today a payout wallet needs a little WBT to refund, freeze or move its USDT.
+
+## FAQ
+
+- **What is Sitebound?** Checkout for USDT with no payout address on the page. The buyer confirms the site and the amount
+  with Touch ID, like 3-D Secure for cards, and a contract pays the wallet registered for that site.
+- **Do I need a crypto wallet, or to know crypto?** Site owners: no. Setup creates the payout wallet in your browser, so
+  back it up, because it lives only there. Buyers link a wallet that holds USDT once, then pay with Touch ID.
+- **Do buyers need gas?** No. Buyers pay in USDT only, never WBT. A relayer pays the gas and takes a 0.01 USDT fee.
+- **Who gets the money?** Only the wallet, or split of wallets, registered on chain for that site's domain. `pay()` has
+  no payee field, so a page can't name another wallet.
+- **Can a hacked page steal the payment?** It can't redirect the money. It can still show a wrong amount, and a fake
+  lookalike site can fool a buyer, so check the site and the amount in the confirmation. A site that signs quotes closes
+  the amount gap.
+- **What stops someone registering my domain?** A DNS TXT record that only the domain's owner can add. One trusted
+  checker, our relayer, reads it today, and that is a real trust assumption. A change to an existing site's payout waits
+  1 hour, and its owner can freeze it.
+- **Is it real money?** No. Whitechain Sepolia testnet with test USDT that has no value. Not audited; don't use real funds.
+- **Why Whitechain?** Stablecoin payments settle in one transaction, its USDT supports `permit` (a relayer can pay the
+  gas), and its P-256 precompile lets the contract verify Touch ID signatures itself.
+- **Is it open source?** Yes, MIT. The contract source is verified on Sourcify and the Whitechain explorer, and "Verify us"
+  checks the live code in your browser.
 
 ## Docs
 
