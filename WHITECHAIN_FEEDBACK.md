@@ -8,15 +8,25 @@ Only things we measured; the rest is marked "not checked".
 - **P-256 precompile.** `0x100` on Whitechain Sepolia returns 1 for the RIP-7212 test vector (4 Nov) and for a
   Foundry `vm.signP256` signature (6 Nov, `cast call`). Sitebound verifies every passkey signature on-chain, so
   this is the feature the whole design rests on.
-- **USDT has EIP-2612 `permit`.** Buyers can grant the allowance with a signature, and a relayer pays the gas.
-  The ERC-3009 typehashes are present too. A real signed permit on Whitechain is not checked yet.
-- **Public RPC.** `https://rpc.testnet.whitechain.io` works with `cast` without a key.
+- **USDT has EIP-2612 `permit`, and it works on chain.** Buyers grant the allowance with a signature and a relayer
+  pays the gas. The ERC-3009 typehashes are present too. Measured 07:48 IST, 7 Nov:
+  - Our buyer wallet `0xEF371538…3B6d` has USDT `nonces` = 2, so two signed permits were executed on Whitechain.
+  - Its allowance to SiteboundV2 is 196.99 USDT: the 200 USDT limit minus the 3.01 USDT paid below.
+- **Public RPC.** `https://rpc.testnet.whitechain.io` works with `cast` and `curl` without a key. Every on-chain read
+  in this file on 7 Nov used it.
+- **Fast blocks.** Blocks 12,420,544 to 12,421,544 took 1,000 s, an average of 1.0 s per block (measured 07:48 IST,
+  7 Nov).
 - **A real payment settled (7 Nov).** First real USDT payment (Whitechain Sepolia testnet transaction): 3 USDT to
   0xmujahid.xyz through SiteboundV2, block 12,419,948, status success, sent by our relayer (the buyer paid no gas),
-  gasUsed 305,060 at 5.001 gwei (one sample). Testnet USDT has no real value.
+  gasUsed 305,060 at 5.001 gwei, so 0.0015 WBT of gas for one payment (one sample). Testnet USDT has no real
+  value.
   https://explorer.testnet.whitechain.io/tx/0x65a00ae0fec55014c6331f2767e815ea8c49e00241b6215d7a917e3076cd71d0
   The passkey check by the `0x100` precompile (`src/SiteboundV2.sol:656`) is inferred from the successful `pay()`;
   the call trace was not read.
+- **Test USDT from a WBT swap (7 Nov).** The buyer wallet wrapped 1.5 WBT to WWBT at 07:14 IST, block 12,419,473
+  (tx `0x4cb0b0a593faa41e4f721cd46ab25e318acef6a6d97ad798cbd40c922b1e1c42`). At block 12,419,506 it swapped the WWBT
+  for 109.248354 USDT through the explorer-verified `UniversalRouter`, `0xbCB198083504E31293bC3765b3c791cF2B2202d8`
+  (tx `0x434d460c797dbf18e2686d182319bda7f47dfe9489c101839f43cd22cb117f4b`). Which front end sent it: not checked.
 
 ## What was hard or missing
 
@@ -35,7 +45,11 @@ Only things we measured; the rest is marked "not checked".
   returned 1 for one `vm.signP256` signature in a single `cast call`; not tested further.) Not Whitechain's bug, but
   a docs note ("P-256 at 0x100; for local tests use `anvil --hardfork osaka` or etch a verifier") would help.
 - **Getting test USDT.** The faucet gives 2 WBT per day and needs a GitHub account older than 30 days. There is no
-  USDT faucet; the path is swapping WBT to USDT on YetiTrade (not checked yet).
+  USDT faucet, so every tester has to get WBT first and then swap it (the swap itself worked, above).
+- **`eth_getLogs` is capped at 10,000 blocks.** A query from block N to N+10,000 works. N to N+10,001 returns
+  `-32602 query exceeds max block range 10000` (measured 07:48 IST, 7 Nov). With 1 s blocks that is under 3 hours of
+  history per call, so our dashboard and receipt pages read events in chunks. A documented limit, or a hosted
+  indexer, would help every app that shows payment history.
 
 ## What kept us on one chain
 
@@ -46,7 +60,9 @@ These blocked it this weekend:
   Whitechain site in one step. A listing on Relay or another bridge would unblock it. Other bridges: not checked.
 - **Gas for the relayer.** Our relayer pays the gas for every register, setup and payment, so each chain needs a
   funded hot wallet. On Whitechain Sepolia the faucet gives 2 WBT a day, which also had to cover deploys and
-  rehearsals. Running funded relayers on more chains was beyond a two-person testnet budget (our view).
+  rehearsals. Whitechain's own gas was cheap: one payment cost 0.0015 WBT, and the relayer held 1.96 WBT at
+  07:48 IST, 7 Nov. The constraint is a funded and watched wallet on every extra chain. Running those was beyond a
+  two-person testnet budget (our view).
 - **No USDT faucet.** Every test payment needs test USDT, and the only path we found is a WBT swap (not checked).
   A USDT faucet next to the WBT one would make demos and judging much easier.
 
@@ -77,6 +93,7 @@ These blocked it this weekend:
 
 ## Not checked yet
 
-- A real signed USDT `permit` submitted on Whitechain.
-- The YetiTrade WBT to USDT swap.
 - Gas of `pay()` beyond the one sample above (305,060).
+- Which front end (YetiTrade or another) sent the WBT to USDT swap above.
+- The v1 contract's current explorer status: the explorer API returned no verification fields for it at 07:48 IST,
+  7 Nov (last measured unverified at 23:06 IST, 6 Nov).
