@@ -67,3 +67,5 @@
   @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .step-body, .status, .notice { animation: rise 0.45s var(--ease) both; }
 }
+
+.dns-host { margin: 2px 0 0; }

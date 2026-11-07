@@ -318,7 +318,7 @@ function DnsStep({ cfg, site, account, wallet, dns, dnsOk, nextAt, onCheck, onSt
       <div class="kv"><div class="kv-top"><dt class="kv-label">Name</dt><${CopyButton} text=${name} what="record name" /></div><dd class="kv-val">${name}</dd></div>
       <div class="kv"><div class="kv-top"><dt class="kv-label">Value</dt><${CopyButton} text=${value} what="record value" /></div><dd class="kv-val">${value}</dd></div>
     </dl>
-    ${host && html`<p class="row"><a class="btn ghost" href=${host.href} target="_blank" rel="noopener noreferrer">Open ${host.label} DNS settings</a></p>`}
+    ${host && html`<p class="dns-host"><a class="btn ghost sm" href=${host.href} target="_blank" rel="noopener noreferrer">Open ${host.label} DNS settings</a></p>`}
     <p class="hint">The value is your payout wallet. If your DNS provider adds the domain by itself, leave off the part after <span class="mono">_sitebound</span>. The bare domain and <span class="mono">www</span> count as separate sites.</p>
 
     <div class="row">
