@@ -19,7 +19,7 @@
     dialog { padding: 0; border: 0; border-radius: 20px; background: transparent; overflow: hidden;
       width: min(400px, calc(100vw - 24px)); box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 18px 60px rgba(0,0,0,.25); }
     dialog::backdrop { background: rgba(13,15,17,.45); backdrop-filter: blur(2px); }
-    iframe { display: block; width: 100%; height: min(560px, calc(100vh - 24px)); border: 0; }
+    iframe { display: block; width: 100%; height: min(560px, calc(100vh - 48px)); height: min(560px, calc(100dvh - 48px)); border: 0; }
   `;
   const MARK = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="3" width="26" height="26" rx="8" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="16" cy="16" r="5" fill="currentColor"/></svg>';
 
@@ -27,7 +27,8 @@
     static observedAttributes = ['amount'];
 
     connectedCallback() {
-      if (this.shadowRoot) return;
+      // Moving the element in the page disconnects and reconnects it: listen again, or close and paid are lost.
+      if (this.shadowRoot) return addEventListener('message', this.onMessage);
       const root = this.attachShadow({ mode: 'open' });
       root.innerHTML = `<style>${CSS}</style><button class="pay" part="button" type="button">${MARK}<span></span></button><dialog aria-label="Sitebound checkout"></dialog>`;
       this.dialog = root.querySelector('dialog');
