@@ -124,4 +124,4 @@ export const jsonOf = (v) => JSON.stringify(v, (_, x) => (typeof x === 'bigint' 
 
 // Wallet and RPC errors can carry endpoint URLs (sometimes with keys): never show those.
 export const errText = (e) =>
-  String(e?.info?.error?.message || e?.shortMessage || e?.reason || e?.message || e).replace(/\bhttps?:\/\/\S+/g, '[url]').slice(0, 240);
+  String(e?.info?.error?.message || e?.error?.message || e?.shortMessage || e?.reason || e?.message || e).replace(/\bhttps?:\/\/\S+/g, '[url]').slice(0, 240);
