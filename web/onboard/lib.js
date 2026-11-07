@@ -54,8 +54,12 @@ export async function loadConfig() {
 
 // siteHash is keccak256 over the exact origin string, so anything that is not already
 // an origin (path, trailing slash, uppercase host) would silently address another site.
+// Links carry the short form: ?site=example.com for https sites, the encoded origin for anything else.
+export const siteParam = (origin) => (origin.startsWith('https://') ? origin.slice(8) : encodeURIComponent(origin));
+
 export function parseSite(raw, { allowHttp = false } = {}) {
   if (!raw) return { error: 'none' };
+  if (/^[a-z0-9.-]+(:\d+)?$/.test(raw)) raw = `https://${raw}`; // a bare host is short for https://host
   let u;
   try { u = new URL(raw); } catch { return { error: 'bad' }; }
   if (u.origin !== raw || u.origin === 'null') return { error: 'notorigin', hint: u.origin };

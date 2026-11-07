@@ -3,7 +3,7 @@ import { render } from 'preact';
 import { useState, useEffect, useRef, useCallback } from 'preact/hooks';
 import { html, Brand, Icon, Spinner, Notice, TxLink, AddrLink, Empty, useTick, WalletNote } from '../onboard/ui.js';
 import {
-  ABI, ERC20, iface, ZERO, loadConfig, parseSite, rpc, reader, contractState, readSite, secondsLeft, useWallet,
+  ABI, ERC20, iface, ZERO, loadConfig, parseSite, siteParam, rpc, reader, contractState, readSite, secondsLeft, useWallet,
   errText, readText, short, sameAddr, fmtUsdt, parseUsdt, orderText, duration, txUrl, copyText,
 } from '../onboard/lib.js';
 
@@ -205,7 +205,7 @@ function Dashboard({ cfg, site }) {
 
   let content;
   if (chain.status === 'none') {
-    content = html`<${Empty} title="Not deployed yet" action=${html`<a class="btn ghost" href=${'../onboard/index.html?site=' + encodeURIComponent(site.origin)}>Set up your site</a>`}>
+    content = html`<${Empty} title="Not deployed yet" action=${html`<a class="btn ghost" href=${'../onboard/index.html?site=' + siteParam(site.origin)}>Set up your site</a>`}>
       The Sitebound contract has no address on ${cfg.chainName} yet, so there are no payments to show.<//>`;
   } else if (chain.status === 'error') {
     content = html`<${Notice} kind="error" title="Could not read the chain">${chain.message}
@@ -213,7 +213,7 @@ function Dashboard({ cfg, site }) {
   } else {
     content = html`
       ${info && !info.registered && html`<${Notice} kind="warn" title="This site is not registered yet">
-        Payments to it fail until you register it. <a href=${'../onboard/index.html?site=' + encodeURIComponent(site.origin)}>Set up your site</a>.<//>`}
+        Payments to it fail until you register it. <a href=${'../onboard/index.html?site=' + siteParam(site.origin)}>Set up your site</a>.<//>`}
       <${Totals} feed=${feed} />
       <${Orders} cfg=${cfg} site=${site} feed=${feed} load=${load} onRefund=${setRefund} />
       <${Webhook} site=${site} />`;
@@ -288,7 +288,7 @@ export function Totals({ feed }) {
 export function Orders({ cfg, site, feed, load, onRefund }) {
   const { rows, loading, error, more } = feed;
   const exportCsv = () => download(`sitebound-${site.hostname}-orders.csv`, toCsv(rows));
-  const setup = '../onboard/index.html?site=' + encodeURIComponent(site.origin);
+  const setup = '../onboard/index.html?site=' + siteParam(site.origin);
   let inner;
   if (loading && !rows.length) {
     inner = html`<div class="skeleton-rows" role="status"><span class="sr-only">Loading payments</span>

@@ -3,7 +3,7 @@
 import { render } from 'preact';
 import { useState, useEffect, useMemo, useRef } from 'preact/hooks';
 import { html, Notice, Spinner, Icon } from '../onboard/ui.js';
-import { loadConfig, parseSite, useWallet, sameAddr, short } from '../onboard/lib.js';
+import { loadConfig, parseSite, siteParam, useWallet, sameAddr, short } from '../onboard/lib.js';
 import { Shop } from '../onboard/app.js';
 import { useOrders, Totals, Orders, RefundDialog, WalletChip } from '../dashboard/app.js';
 
@@ -164,7 +164,7 @@ function DoneLinks({ site }) {
     <button type="button" class="btn ghost sm" onClick=${jump}>Test checkout</button>
     <a class="btn ghost sm" href="../receipt/">Receipt example</a>
     <a class="btn ghost sm" href="../pay/">Pay-link generator</a>
-    <a class="btn ghost sm" href=${'../dashboard/index.html?site=' + encodeURIComponent(site.origin)}>Dashboard</a>
+    <a class="btn ghost sm" href=${'../dashboard/index.html?site=' + siteParam(site.origin)}>Dashboard</a>
   </nav>`;
 }
 
@@ -215,7 +215,7 @@ function MiniDashboard({ cfg, site }) {
       <div><p class="eyebrow">Dashboard</p><h2 id="mini-h" class="sect">Payments to ${site.host}</h2></div>
       <div class="row">
         ${chain.status === 'ok' && html`<${WalletChip} wallet=${wallet} isPayout=${isPayout} />`}
-        <a class="btn ghost sm" href=${'../dashboard/index.html?site=' + encodeURIComponent(site.origin)}>Full dashboard</a>
+        <a class="btn ghost sm" href=${'../dashboard/index.html?site=' + siteParam(site.origin)}>Full dashboard</a>
       </div>
     </div>
     ${chain.status === 'error'

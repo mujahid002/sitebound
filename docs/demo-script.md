@@ -144,6 +144,6 @@ These pages still work, but their wording was not re-checked after the frame tex
 before filming one.
 - Fake site embedding the real frame: `/attack/phish.html` on the fake-site host (`sitebound-phish.pages.dev`; live: not
   checked). The frame names the fake's own domain and the payment fails with "site not registered".
-- Dashboard: `https://sitebound-pay.pages.dev/dashboard/?site=https%3A%2F%2F0xmujahid.xyz`. Refund and CSV export. A
+- Dashboard: `https://sitebound-pay.pages.dev/dashboard/?site=0xmujahid.xyz`. Refund and CSV export. A
   created payout wallet needs a little WBT for the refund's two transactions.
 - Demo site checkout at `https://sitebound-demo.pages.dev/`, with the forged "paid" event and the chain check.
