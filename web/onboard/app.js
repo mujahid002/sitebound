@@ -274,6 +274,34 @@ function OwnWallet({ cfg, wallet, onBack }) {
 
 // ---------------------------------------------------------------- 2 dns
 
+// Who runs DNS for this domain? Ask a public resolver for the NS records (walking up from the hostname), then link to
+// that provider's DNS page. This only saves a search: no provider lets a link add the record for the owner.
+const DNS_HOSTS = [
+  [/\.ns\.cloudflare\.com\.?$/i, 'Cloudflare', (d) => `https://dash.cloudflare.com/?to=/:account/${d}/dns/records`],
+  [/domaincontrol\.com\.?$/i, 'GoDaddy', (d) => `https://dcc.godaddy.com/control/portfolio/${d}/settings?tab=dns`],
+  [/registrar-servers\.com\.?$/i, 'Namecheap', (d) => `https://ap.www.namecheap.com/domains/domaincontrolpanel/${d}/advancedns`],
+  [/awsdns-/i, 'Amazon Route 53', () => 'https://console.aws.amazon.com/route53/v2/hostedzones'],
+  [/vercel-dns\.com\.?$/i, 'Vercel', () => 'https://vercel.com/dashboard/domains'],
+  [/squarespacedns\.com\.?$/i, 'Squarespace', () => 'https://account.squarespace.com/domains'],
+  [/googledomains\.com\.?$|google\.com\.?$/i, 'Google', () => 'https://domains.google.com/registrar'],
+];
+
+async function findDnsHost(hostname) {
+  const labels = hostname.split('.');
+  for (let i = 0; i <= labels.length - 2; i++) {
+    const domain = labels.slice(i).join('.');
+    try {
+      const res = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=NS`, { signal: AbortSignal.timeout(4000) });
+      const body = await res.json();
+      const names = (body.Answer || []).filter((a) => a.type === 2).map((a) => a.data);
+      if (!names.length) continue;
+      for (const [re, label, url] of DNS_HOSTS) if (names.some((n) => re.test(n))) return { label, href: url(domain) };
+      return null;
+    } catch { return null; }
+  }
+  return null;
+}
+
 function DnsStep({ cfg, site, account, wallet, dns, dnsOk, nextAt, onCheck, onStop, attempts }) {
   const name = `_sitebound.${site.hostname}`;
   const value = `sitebound=${account}`;
@@ -281,6 +309,8 @@ function DnsStep({ cfg, site, account, wallet, dns, dnsOk, nextAt, onCheck, onSt
   const waiting = nextAt > 0;
   const wait = Math.max(0, Math.ceil((nextAt - Date.now()) / 1000));
   const found = dns.state === 'ok' && !dnsOk;
+  const [host, setHost] = useState(null);
+  useEffect(() => { let live = true; findDnsHost(site.hostname).then((h) => { if (live) setHost(h); }); return () => { live = false; }; }, [site.hostname]);
   return html`
     <p>Add one <strong>TXT</strong> record at the company that manages DNS for <strong>${site.hostname}</strong>.</p>
     <dl class="records">
@@ -288,6 +318,7 @@ function DnsStep({ cfg, site, account, wallet, dns, dnsOk, nextAt, onCheck, onSt
       <div class="kv"><div class="kv-top"><dt class="kv-label">Name</dt><${CopyButton} text=${name} what="record name" /></div><dd class="kv-val">${name}</dd></div>
       <div class="kv"><div class="kv-top"><dt class="kv-label">Value</dt><${CopyButton} text=${value} what="record value" /></div><dd class="kv-val">${value}</dd></div>
     </dl>
+    ${host && html`<p class="row"><a class="btn ghost" href=${host.href} target="_blank" rel="noopener noreferrer">Open ${host.label} DNS settings</a></p>`}
     <p class="hint">The value is your payout wallet. If your DNS provider adds the domain by itself, leave off the part after <span class="mono">_sitebound</span>. The bare domain and <span class="mono">www</span> count as separate sites.</p>
 
     <div class="row">
