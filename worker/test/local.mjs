@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { AbiCoder, Contract, Interface, JsonRpcProvider, Signature, Wallet, keccak256, sha256, toUtf8Bytes, zeroPadValue, MaxUint256 } from "ethers";
-import { handle, SITEBOUND_ABI } from "../src/index.js";
+import { handle, SITEBOUND_ABI, canonicalSite, registeredDomain } from "../src/index.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const PORT = Number(process.env.ANVIL_PORT || 8545);
@@ -326,6 +326,16 @@ async function run(stop) {
   const fakePermit = { value: "100000000", deadline: String(deadline), v: 27, r: zeroPadValue("0x01", 32), s: zeroPadValue("0x02", 32) };
   r = await call(env(), "/setup", { ...(await bindReq(buyer, cred, FIX.pubX, FIX.pubY, stranger)), permit: fakePermit });
   check("setup with wrong signer rejected by simulation", r.status === 400 && r.json.error === "bad binding signature", r.json);
+  {
+    const z = await bindReq(buyer);
+    r = await call(env(), "/setup", { ...z, bind: { ...z.bind, perPayCap: "0" }, permit: fakePermit });
+    check("setup refuses a zero per-payment limit", r.status === 400 && /relayer fee/.test(r.json.error), r.json);
+    r = await call(env(), "/setup", { ...z, bind: { ...z.bind, totalCap: "9999" }, permit: fakePermit });
+    check("setup refuses a total limit below the fee", r.status === 400 && /relayer fee/.test(r.json.error), r.json);
+    let dotErr = null; try { canonicalSite("https://shop.example."); } catch (e) { dotErr = e; }
+    check("a trailing-dot site is refused", !!dotErr && /dot/.test(dotErr.message), dotErr?.message);
+    check("registeredDomain groups subdomains", registeredDomain("a.b.example.com") === "example.com" && registeredDomain("x.shop.co.uk") === "shop.co.uk");
+  }
   const setupEnv = env({ SETUP_DAILY_CAP: "1" });
   nonceBefore = await provider.getTransactionCount(relayer.address);
   r = await call(setupEnv, "/setup", { ...(await bindReq(buyer)), permit: fakePermit });

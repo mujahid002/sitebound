@@ -48,9 +48,17 @@ export function canonicalSite(site) {
   try { u = new URL(site); } catch { bad("site must be an https origin like https://shop.com"); }
   if (u.protocol !== "https:") bad("site must use https");
   if (u.port || u.username || u.password) bad("site must not have a port or credentials");
+  if (u.hostname.endsWith(".")) bad("site must not end with a dot");
   if (u.origin !== site) bad(`site must be exactly the origin, e.g. ${u.origin}`);
   if (u.hostname.startsWith("[") || /^\d+(\.\d+){3}$/.test(u.hostname) || !u.hostname.includes(".")) bad("site must be a domain name");
   return u.origin;
+}
+
+/// The last two labels (three under country second levels like co.uk): good enough to group a domain's subdomains.
+export function registeredDomain(host) {
+  const labels = host.split(".");
+  const n = labels.length >= 3 && labels.at(-1).length === 2 && ["co", "com", "org", "net", "gov", "ac", "edu"].includes(labels.at(-2)) ? 3 : 2;
+  return labels.slice(-n).join(".");
 }
 
 /// The one trusted step: TXT _sitebound.<host> = "sitebound=<payout>", read over DNS-over-HTTPS.
@@ -108,7 +116,8 @@ async function simulate(method, args) {
 
 async function send(method, args, gas) {
   const tx = await serial(() => method(...args, { gasLimit: (gas * 12n) / 10n }));
-  const receipt = await tx.wait(1);
+  // ethers throws on a reverted receipt; say which transaction, so the caller can look it up.
+  const receipt = await tx.wait(1).catch(() => null);
   if (!receipt || receipt.status !== 1) bad(`transaction reverted: ${tx.hash}`, 502);
   return receipt;
 }
@@ -180,6 +189,8 @@ async function register(body, env) {
   );
   const args = [site, split.to, split.bps, [[deadline, sig.v, sig.r, sig.s]]];
   const gas = await simulate(sb.register, args);
+  // One wildcard TXT record would make every subdomain look owned: cap new sites per registered domain too.
+  await takeDaily(env, `regdom:${registeredDomain(new URL(site).hostname)}`, Number(env.REGISTER_DOMAIN_DAILY_CAP || 10));
   await takeDaily(env, `reg:${siteHash}`, Number(env.REGISTER_DAILY_CAP || 3));
   const receipt = await send(sb.register, args, gas);
   const proposed = event(sb, receipt, "PayoutProposed");
@@ -192,6 +203,11 @@ async function setup(body, env) {
   const owner = getAddress(body.owner ?? b.wallet ?? bad("owner missing"));
   const { sb, token } = chain(env);
   const bindArgs = [b.credentialHash, b.pubX, b.pubY, b.perPayCap, b.totalCap, b.expiry, owner, b.v, b.r, b.s];
+  // A zero limit passes every check and then fails at the first payment, after the relayer paid for setup.
+  const minFee = BigInt(env.MIN_FEE || 10000);
+  let caps;
+  try { caps = [BigInt(b.perPayCap), BigInt(b.totalCap)]; } catch { bad("spending limits must be numbers"); }
+  if (caps[0] < minFee || caps[1] < minFee) bad("spending limits must be at least the relayer fee");
   const bindGas = await simulate(sb.bind, bindArgs);
 
   const p = body.permit;
