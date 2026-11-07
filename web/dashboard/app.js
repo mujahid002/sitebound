@@ -438,7 +438,7 @@ export function RefundDialog({ cfg, row, info, wallet, isPayout, onClose, onDone
             <div class="row"><button type="button" class="btn sm" onClick=${wallet.connect} disabled=${wallet.busy}>${wallet.account ? 'Switch network' : 'Connect wallet'}</button></div><//>`
         : !isPayout && html`<${Notice} kind="warn" title="This is not the payout wallet">Connected as <span class="mono">${short(wallet.account)}</span>. Switch to <span class="mono">${short(info.payout)}</span> in your wallet to refund.<//>`}
       ${wallet.error && html`<p class="hint err" role="alert">${wallet.error}</p>`}
-      ${wallet.kind === 'local' && walletOk && html`<p class="hint">Needs a little WBT for gas. Send some to <span class="mono">${short(wallet.account)}</span> first.</p>`}
+      ${wallet.kind === 'local' && walletOk && html`<p class="hint">Receiving payments needs no WBT. A refund is a transaction from this wallet, so it needs a little WBT for gas in <span class="mono">${short(wallet.account)}</span>.</p>`}
 
       <div aria-live="polite" class="live">
         ${step.approveHash && html`<p class="hint">Approval: <${TxLink} cfg=${cfg} hash=${step.approveHash} /></p>`}

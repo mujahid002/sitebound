@@ -443,7 +443,7 @@ function SiteStatus({ cfg, site, info, wallet, refresh }) {
           </button>
           ${!info.frozen && html`<span class="hint">Stops all payments and cancels any pending change.</span>`}
         </div>
-        ${wallet.kind === 'local' && html`<p class="hint">Needs a little WBT for gas. Send some to <span class="mono">${short(wallet.account)}</span> first.</p>`}`
+        ${wallet.kind === 'local' && html`<p class="hint">Receiving payments needs no WBT. Freezing the site is a transaction from this wallet, so it needs a little WBT for gas in <span class="mono">${short(wallet.account)}</span>.</p>`}`
       : html`<p class="hint">${wallet.account ? 'Switch to the payout wallet to freeze or unfreeze.' : 'Open this page in the browser where you made the wallet, or connect the payout wallet, to freeze or unfreeze.'}</p>`}
     <div aria-live="polite">
       ${tx.state === 'wait' && html`<p class="hint">Waiting for confirmation: <${TxLink} cfg=${cfg} hash=${tx.hash} /></p>`}
