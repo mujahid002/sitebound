@@ -44,7 +44,7 @@ const snippetFor = (origin) => `<script src="${origin}/button/sitebound.js"></sc
 </script>`;
 
 // Plain-language fixes for what the relayer says. The raw text stays available under "Details".
-const recordFix = (name, value) => `We could not find the TXT record yet. DNS can take a few minutes. Name: ${name}, value: ${value}. Check it is added at your DNS provider, then press Check now.`;
+const recordFix = (name, value) => `We cannot see the TXT record yet. If you have not added it, add it at your DNS provider with the name and value above. If you just added it, DNS can take a few minutes. Then press Check now.`;
 function dnsFix(detail, name, value) {
   const low = (detail || '').toLowerCase();
   if (low.includes('more than one')) return `There is more than one sitebound TXT record at ${name}. Delete all but the one with value ${value}, then press Check now.`;

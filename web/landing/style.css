@@ -550,3 +550,8 @@ code { font: 0.9em var(--mono); }
 .ticks li::before { content: ""; position: absolute; left: 4px; top: 0.7em; width: 6px; height: 6px; border-radius: 50%; background: var(--line-2); }
 .try .hint { margin-top: var(--s3); }
 .try-go { margin-top: var(--s2); display: inline-flex; width: auto; padding: 0 var(--s4); }
+
+/* "Details" under a wizard notice: the raw reply sits below the toggle, not beside it. */
+.wiz .more { display: block; margin-top: 6px; color: var(--muted); font-size: 0.875rem; text-align: left; }
+.wiz .more summary { width: fit-content; cursor: pointer; }
+.wiz .more p { margin-top: 4px; overflow-wrap: anywhere; }
