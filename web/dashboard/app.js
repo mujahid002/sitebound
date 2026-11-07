@@ -395,8 +395,10 @@ export function RefundDialog({ cfg, row, info, wallet, isPayout, onClose, onDone
       const t = await c.refund(row.id, amount);
       setStep({ phase: 'refunding', approveHash, hash: t.hash });
       await t.wait();
-      await onDone(row.id, t.hash);
+      // The refund is on chain now. A failed refresh after this must not read as a failed refund, or a second
+      // press would refund again.
       setStep({ phase: 'done', approveHash, hash: t.hash });
+      try { await onDone(row.id, t.hash); } catch {}
     } catch (err) {
       setStep((s) => ({ phase: 'error', message: errText(err), approveHash: s.approveHash }));
     }
