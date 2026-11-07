@@ -24,8 +24,11 @@ Hosts:
   the pages rendered unstyled. `deploy/pages.sh` now copies it. Live after a redeploy: not checked.
 - [ ] **Frame host redeploy**, so the current frame, wizard and `web/assets/` are live. Not checked.
 - [ ] **0xmujahid.xyz must not be registered yet.** If it has a payout wallet already, the wizard offers a payout change
-  that waits `delay` (1 hour), which cannot be filmed. Current on-chain state: not checked. Read it from the contract
-  with `splitOf(keccak256("https://0xmujahid.xyz"))`.
+  that waits `delay` (1 hour), which cannot be filmed. Read it from the contract with
+  `splitOf(keccak256("https://0xmujahid.xyz"))`.
+  - **Measured 07:25 IST, 7 Nov: it is registered** (block 12,416,278, 06:20 IST, payout `0x0eCF…709f`). So scene 2
+    cannot film a first registration on this domain: film the registered state (the fallback below), or onboard a
+    different, unregistered domain.
 - [ ] **DNS access for 0xmujahid.xyz.** The wallet is created on camera, so the TXT value is only known in step 2 of the
   wizard. Have the DNS provider's page open in another tab. The wizard checks every 5 s for about 3 minutes, so a slow
   provider needs the cut.
