@@ -21,6 +21,11 @@ Built for ETHGlobal Mumbai (Nov 2026) on Whitechain Sepolia testnet. Not audited
    one and have to compare 40 hex characters they can't read.
 3. **Crypto has no 3-D Secure.** Card buyers get a confirmation step from their bank that shows the merchant and
    the amount. Crypto buyers sign raw transactions.
+4. **Buyers need gas.** Paying USDT on an EVM chain also costs the chain's own coin for gas
+   ([ethereum.org](https://ethereum.org/developers/docs/gas/)). On Whitechain that coin is WBT. With Sitebound a
+   relayer pays the gas and the buyer pays a 0.01 USDT fee.
+5. **Hard for a web2 business to start (our view).** Accepting crypto today means managing wallets, addresses and gas.
+   Sitebound's onboarding is a domain, a wallet created in the browser and one DNS record.
 
 ## How it works
 
@@ -54,6 +59,41 @@ Built for ETHGlobal Mumbai (Nov 2026) on Whitechain Sepolia testnet. Not audited
 
 **Why on-chain settlement:** the site check runs in the same contract that moves the money, so hacked checkout code
 can't redirect it. An off-chain processor can't give the buyer that guarantee.
+
+## Why Whitechain
+
+Sitebound runs on Whitechain Sepolia (chain 1874) because the chain has the pieces the design needs, checked on 4 to
+6 Nov 2026. Details, and what was hard, are in [WHITECHAIN_FEEDBACK.md](WHITECHAIN_FEEDBACK.md).
+
+- **P-256 precompile at `0x100` (RIP-7212).** The contract verifies every passkey (Touch ID) signature on chain.
+  Without it, each payment would need a Solidity P-256 verifier. Gas cost of `pay()` on Whitechain: not measured.
+- **USDT with EIP-2612 `permit`.** The buyer grants the capped allowance with a signature, so the relayer can pay
+  all the gas and the buyer never needs WBT.
+- **A public RPC with no key** (`https://rpc.testnet.whitechain.io`), so the frame, the dashboard and "Verify us" read
+  the chain straight from the browser.
+- **Verified source.** SiteboundV2 is verified on the Whitechain explorer (Blockscout) and on Sourcify.
+
+## Multi-chain: planned, blocked for now
+
+Sitebound is not tied to Whitechain. The plan is one SiteboundV2 per EVM chain, with the same frame and button, and a
+"pay from any chain" option for buyers. It is not built, for these reasons:
+
+- **No bridge route into Whitechain.** "Pay from any chain" needs a route that moves a buyer's stablecoin into
+  Whitechain. The Relay bridge's chain API (checked 6 Nov) lists no Whitechain: none of its 58 mainnet chains, and its
+  testnet list has only Base Sepolia and Sepolia, so we dropped the feature. Other bridges: not checked.
+- **The relayer needs gas on every chain.** Our relayer pays the gas for register, setup and every payment, from one
+  hot wallet on one chain (`CHAIN_ID` in `worker/wrangler.toml`). Each new chain needs its own funded wallet, a
+  Worker and monitoring. On testnet our gas comes from a faucet that gives 2 WBT a day. As a team of two with a
+  testnet budget, we kept to one chain (our view).
+- **One trusted DNS checker.** The relayer is also the only attestor (1-of-1). Copying that key to more chains copies
+  the single point of trust; we want k-of-n attestors or an on-chain DNSSEC proof first.
+- **Per-chain differences.** Each chain needs the P-256 precompile at `0x100`, or a Solidity verifier at a gas cost
+  we have not measured. Its stablecoin also needs its own `permit` domain: Whitechain's USDT has no `version()`
+  getter, so we found its domain by matching `DOMAIN_SEPARATOR`.
+
+What already carries over: the passkey signs the chain id and the contract address (`src/SiteboundV2.sol:647`), so a
+payment signed for one chain cannot be replayed on another. The DNS record `sitebound=<payout>` names an EVM address
+that works on any EVM chain.
 
 ## Website settings (SiteboundV2)
 
@@ -131,6 +171,7 @@ quote signer can be a contract wallet (ERC-1271).
 | Receipt | `web/receipt/` | One payment's receipt, read from the chain: `/receipt/?id=<paymentId>` or `?tx=<hash>`. |
 | Pay link | `web/pay/` | Builds a standalone pay page for the owner's own origin. |
 | Landing | `web/landing/` | The public page, served at the site root. |
+| Portfolio | `web/portfolio/` | The real-domain demo at https://0xmujahid.xyz (its own Pages project; `deploy/pages.sh` does not deploy it). |
 | Demo site | `web/demo-shop/` | A site whose checkout is only the `<sitebound-pay>` element. |
 | Attack demos | `web/attack/` | An address swap on a classic checkout, the same script against Sitebound, and a fake site embedding the frame. |
 
@@ -221,7 +262,9 @@ sh scripts/add-site.sh https://site.example 0xPayoutAddress   # prints the regis
 - Frame, landing, onboarding, dashboard: https://sitebound-pay.pages.dev
 - Demo site: https://sitebound-demo.pages.dev
 - Real-domain demo: https://0xmujahid.xyz, the owner's portfolio with a "Buy me a coffee" section (3, 5 or 10 USDT)
-  that uses the `<sitebound-pay>` button (`web/portfolio/index.html`). Registered on chain: not checked.
+  that uses the `<sitebound-pay>` button (`web/portfolio/index.html`). Registered on V2 at block 12,416,278
+  (06:20 IST, 7 Nov), tx `0x964220005b082172d8b06777eb0535ae4a5204633bd1ad8bd39830426279002c`, payout
+  `0x0eCFCF7d2b8c76794Af34b061a9886786fE6709f` (`splitOf`, measured 07:25 IST, 7 Nov).
 - Relayer Worker: https://sitebound-relayer.sitebound-relayer.workers.dev (`/health`)
 - First USDT payment: TBD
 - Explorer: https://explorer.testnet.whitechain.io
