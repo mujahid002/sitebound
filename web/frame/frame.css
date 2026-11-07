@@ -82,11 +82,18 @@ h1, h2, p, ol { margin: 0; }
 .rows dt { color: var(--muted); }
 .rows dd { margin: 0; text-align: right; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 
-/* Checkout frame. The site line is the security signal: fixed box, fixed place, every state. */
-.site { padding: 12px 14px; border: 1px solid var(--ink); border-radius: 10px; }
+/* Checkout frame, laid out like a card-network confirmation: who is paid, how much, one button.
+   The site row is the security signal: fixed box, fixed place, every state. */
+.conf { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 0.85rem; font-weight: 600; }
+.chain { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; }
+.chain img { display: block; height: 14px; width: auto; }
+.sheet { border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.sheet .k, .due .k { color: var(--muted); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.site { padding: 14px 16px; border-bottom: 1px solid var(--line); }
 .siteline { margin: 0; display: grid; gap: 2px; }
-.siteline .k { color: var(--muted); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 .siteline b { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; overflow-wrap: anywhere; }
+.due { display: grid; gap: 2px; padding: 14px 16px; }
+.due .meta { margin-top: 4px; font-size: 0.8rem; }
 .fee { color: var(--muted); font-size: 0.8rem; text-align: center; }
 .msg { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 1.4em; line-height: 1.35; }
 .msg.busy::before {
@@ -95,10 +102,14 @@ h1, h2, p, ol { margin: 0; }
 }
 .msg.err { padding: 8px 10px; border: 1px solid var(--err); border-radius: 8px; text-align: left; }
 .msg:empty { padding: 0; border: 0; }
-.alt { display: grid; gap: 4px; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--line); }
-.alt .ghost { height: 40px; font-size: 0.9rem; }
-.first { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 0.85rem; color: var(--muted); }
-.first b { color: var(--ink); font-weight: 600; }
+.textlink {
+  justify-self: center; min-height: 36px; padding: 0 8px; border: 0; background: transparent; color: var(--muted);
+  font: inherit; font-size: 0.85rem; text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+  display: inline-flex; align-items: center;
+}
+#setup:not([hidden]) ~ #have { display: none; }
+.textlink:hover:not(:disabled) { color: var(--ink); }
+.textlink:disabled { opacity: 0.55; cursor: progress; }
 .title.ok { color: var(--accent); }
 .progress { display: grid; gap: 0; padding: 0; margin: 0; list-style: none; border-top: 1px solid var(--line); counter-reset: p; }
 .progress li {

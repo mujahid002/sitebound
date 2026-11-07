@@ -297,8 +297,8 @@ async function main() {
     return `frame says "${(await frame.locator('#line').textContent()).trim()}"`;
   });
 
-  await step('buyer sets up in the popup: passkey, permit, bind via the relayer', async () => {
-    const [popup] = await Promise.all([buyerCtx.waitForEvent('page'), frame.locator('#setup').click()]);
+  await step('buyer sets up in the popup (first-visit button opens it): passkey, permit, bind via the relayer', async () => {
+    const [popup] = await Promise.all([buyerCtx.waitForEvent('page'), frame.locator('#pay').click()]);
     track('setup', popup);
     const popupAuth = await authenticator(popup);
     await popup.locator('.wp-wallet').first().click(); // the wallet chooser opens on load; the stub only has window.ethereum
@@ -317,7 +317,7 @@ async function main() {
     // Keychain) is shared by all tabs, so hand the same credential to the shop tab.
     const copied = !(await shopAuth.list()).some((c) => c.credentialId === creds[0].credentialId);
     if (copied) await shopAuth.add(creds[0]);
-    await until(frame, 'p.msg:has-text("Setup complete")', '#msg.err', 10_000);
+    await until(frame, 'p.msg:has-text("Setup done")', '#msg.err', 10_000);
     return `bound to ${buyer.address}, caps 50/200, allowance 200 USDT${copied ? '; credential copied to the shop tab authenticator' : ''}`;
   });
 
