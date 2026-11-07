@@ -43,7 +43,7 @@ function setKnown(on) {
   syncPay();
 }
 function syncPay() {
-  $('pay').textContent = known ? 'Confirm with Touch ID' : 'Set up Touch ID (one time)';
+  $('pay').textContent = 'Confirm payment';
   $('have').hidden = known || !!problem;
 }
 // Set while a signed payment may be on its way to the chain: closing then would hide the result from the shop.
@@ -64,7 +64,6 @@ const registryP = siteHash && !problem
 $('amount').textContent = $('line-amount').textContent = validAmount ? amountText : '—';
 $('site').textContent = site;
 $('order').textContent = order && `Order ${order}`;
-$('fee').textContent = `Fee ${C.relayerFee} USDT. You pay no gas.`;
 if (!ao || ao.length !== 1) {
   $('warn').hidden = false;
   $('warn').textContent = ao?.length > 1
