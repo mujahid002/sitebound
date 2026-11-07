@@ -108,7 +108,12 @@ function loadKit() {
   return kitModule;
 }
 
-async function open(origin, { scroll = true } = {}) {
+// The setup is its own page, so Back returns to this one. https sites get the short ?site=host form.
+const setupUrl = (origin) => '../onboard/?site=' + (origin.startsWith('https://') ? hostOf(origin) : encodeURIComponent(origin));
+function open(origin, { replace = false } = {}) {
+  replace ? location.replace(setupUrl(origin)) : location.assign(setupUrl(origin));
+}
+async function openInline(origin, { scroll = true } = {}) {
   panel.close({ restore: false });
   show('');
   state('loading');
@@ -156,7 +161,7 @@ if (demoLink && C.demoShop) demoLink.href = C.demoShop + '/';
 const shared = new URLSearchParams(location.search).get('site');
 if (shared) {
   const { origin } = toOrigin(shared);
-  if (origin) open(origin, { scroll: false }).then(() => kitSection.scrollIntoView({ block: 'start' }));
+  if (origin) open(origin, { replace: true });
 }
 
 // ---------------------------------------------------------------- verify us

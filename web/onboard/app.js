@@ -67,7 +67,9 @@ function App() {
   const [boot, setBoot] = useState({ status: 'loading' });
   useEffect(() => { loadConfig().then((r) => setBoot(r.error ? { status: 'error', error: r.error } : { status: 'ready', cfg: r.cfg })); }, []);
 
-  const site = parseSite(new URLSearchParams(location.search).get('site'));
+  // A bare host (?site=example.com) is short for https://example.com; anything else must already be an exact origin.
+  const rawSite = new URLSearchParams(location.search).get('site');
+  const site = parseSite(rawSite && /^[a-z0-9.-]+(:\d+)?$/.test(rawSite) ? `https://${rawSite}` : rawSite);
   let body;
   if (site.error) body = html`<${BadSite} site=${site} />`;
   else if (boot.status === 'loading') body = html`<p class="lede" role="status">Loading your site setup…</p>`;
