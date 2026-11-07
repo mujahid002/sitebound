@@ -1,6 +1,6 @@
 # Whitechain prize checklist
 
-Sitebound is entered for Whitechain's **Operate: Stablecoin Payments for Business** prize at ETHGlobal Mumbai 2026.
+This is Sitebound's checklist for Whitechain's **Operate: Stablecoin Payments for Business** prize at ETHGlobal Mumbai 2026.
 The requirements below are the ones on the [ETHGlobal prizes page](https://ethglobal.com/events/mumbai/prizes)
 (read 07:56 IST, 7 Nov 2026). Times are IST. Everything here is on Whitechain Sepolia testnet; testnet USDT has no
 real value, and the contract is not audited.
