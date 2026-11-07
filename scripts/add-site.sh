@@ -52,5 +52,8 @@ if [ -n "$tx" ]; then
   echo "$EXPLORER/tx/$tx"
   case "$out" in *'"pending":true'*) echo "$canon was already registered: the new payout goes live after the contract's delay.";; esac
 else
-  echo "$canon is already registered to $payout (no transaction needed)."
+  case "$out" in
+    *'"pending":true'*) echo "$canon: this payout is already proposed and goes live after the contract's delay (no transaction needed).";;
+    *) echo "$canon is already registered to $payout (no transaction needed).";;
+  esac
 fi
