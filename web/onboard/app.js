@@ -92,7 +92,7 @@ function BadSite({ site }) {
     notorigin: `The site must be just the origin, with no path, slash or capitals${site.hint ? `. Try ${site.hint}` : ''}.`,
     https: 'Sitebound only works with https sites.',
   }[site.error];
-  return html`<${Empty} title="We need your site first" action=${html`<a class="btn" href="../landing/index.html#site">Type your website</a>`}>${msg}<//>`;
+  return html`<${Empty} title="We need your site first" action=${html`<a class="btn" href="../landing/#site">Type your website</a>`}>${msg}<//>`;
 }
 
 // Also used inline by the landing page (web/landing/kit.js), which passes the optional props.
@@ -191,7 +191,7 @@ export function Shop({ cfg, site, onChangeSite, onInfo, snippetExtra }) {
       <p class="lede">Four short steps. Your checkout code never holds a payment address.</p>
       ${onChangeSite
         ? html`<button type="button" class="quiet-link link-btn" onClick=${onChangeSite}>Not your site? Change it</button>`
-        : html`<a class="quiet-link" href="../landing/index.html#site">Not your site? Change it</a>`}
+        : html`<a class="quiet-link" href="../landing/#site">Not your site? Change it</a>`}
     </div>
 
     ${chain.status === 'none' && html`<${Notice} kind="warn" title="The Sitebound contract is not deployed yet">

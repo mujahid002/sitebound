@@ -12,7 +12,7 @@ rsync -a --exclude dev --exclude demo-shop --exclude attack --exclude landing "$
 rsync -a "$root/web/landing/" "$tmp/pay/"
 sed -i.bak -e 's#\.\./#/#g' -e 's#href="\./"#href="/"#' "$tmp/pay/index.html" "$tmp/pay/main.js" "$tmp/pay/kit.js"
 rm -f "$tmp"/pay/*.bak
-printf '/landing / 301\n/landing/ / 301\n' > "$tmp/pay/_redirects"
+printf '/landing / 301\n/landing/ / 301\n/landing/index.html / 301\n' > "$tmp/pay/_redirects"
 rsync -a "$root/web/demo-shop/" "$tmp/demo/"
 cp "$root/web/config.js" "$tmp/demo/"
 mkdir -p "$tmp/demo/demo-shop" && cp "$root/web/demo-shop/shop.css" "$tmp/demo/demo-shop/"

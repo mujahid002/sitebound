@@ -141,7 +141,7 @@ function App() {
 
   let body;
   if (site.error) {
-    body = html`<${Empty} title="Which website?" action=${html`<a class="btn" href="../landing/index.html#site">Type your website</a>`}>
+    body = html`<${Empty} title="Which website?" action=${html`<a class="btn" href="../landing/#site">Type your website</a>`}>
       Open the dashboard with <span class="mono">?site=https://your-site.com</span>, using the exact address you registered.<//>`;
   } else if (boot.status === 'loading') {
     body = html`<p class="lede" role="status">Loading your dashboard…</p>`;

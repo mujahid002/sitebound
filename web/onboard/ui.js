@@ -7,7 +7,7 @@ import { copyText, short, addrUrl, txUrl, backupText, useOwnWallet } from './lib
 export const html = htm.bind(h);
 
 export function Brand() {
-  return html`<a class="brand-link" href="../landing/index.html" aria-label="Sitebound home">
+  return html`<a class="brand-link" href="../landing/" aria-label="Sitebound home">
     <svg class="mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
       <path d="M10 4.5H9A5.5 5.5 0 0 0 3.5 10V22A5.5 5.5 0 0 0 9 27.5H10M22 4.5H23A5.5 5.5 0 0 1 28.5 10V22A5.5 5.5 0 0 1 23 27.5H22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
       <circle class="mark-dot" cx="16" cy="16" r="5.5"/>
