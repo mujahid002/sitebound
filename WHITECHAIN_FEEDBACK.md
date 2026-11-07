@@ -1,7 +1,7 @@
 # Whitechain builder feedback
 
 From building Sitebound on Whitechain Sepolia (chain 1874) at ETHGlobal Mumbai, 4 to 7 Nov 2026.
-Draft. Only things we measured; the rest is marked "not checked".
+Only things we measured; the rest is marked "not checked".
 
 ## What was easy
 
@@ -30,6 +30,19 @@ Draft. Only things we measured; the rest is marked "not checked".
   a docs note ("P-256 at 0x100; for local tests use `anvil --hardfork osaka` or etch a verifier") would help.
 - **Getting test USDT.** The faucet gives 2 WBT per day and needs a GitHub account older than 30 days. There is no
   USDT faucet; the path is swapping WBT to USDT on YetiTrade (not checked yet).
+
+## What kept us on one chain
+
+We planned Sitebound for several EVM chains, with Whitechain as the home chain and "pay from any chain" for buyers.
+These blocked it this weekend:
+
+- **No bridge route into Whitechain** (Relay, above). Without one, a buyer holding USDT elsewhere cannot pay a
+  Whitechain site in one step. A listing on Relay or another bridge would unblock it. Other bridges: not checked.
+- **Gas for the relayer.** Our relayer pays the gas for every register, setup and payment, so each chain needs a
+  funded hot wallet. On Whitechain Sepolia the faucet gives 2 WBT a day, which also had to cover deploys and
+  rehearsals. Running funded relayers on more chains was beyond a two-person testnet budget (our view).
+- **No USDT faucet.** Every test payment needs test USDT, and the only path we found is a WBT swap (not checked).
+  A USDT faucet next to the WBT one would make demos and judging much easier.
 
 ## What broke
 
