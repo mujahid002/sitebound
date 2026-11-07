@@ -1,7 +1,7 @@
 // First-time setup, top-level on the frame origin (a popup from the checkout frame):
 // wallet connect -> passkey -> permit + Bind signatures -> relayer (or the wallet) puts them on-chain.
 import { units, credentialHashOf, pubKeyXY, jsonOf, errText, BIND_TYPES, PERMIT_TYPES, bindDomain, permitDomain, SITEBOUND_ABI, TOKEN_ABI } from './lib.js';
-import { connect, notDeployed } from './wallet.js';
+import { connect, notDeployed, choose, cancelled } from './wallet.js';
 
 const C = window.SITEBOUND;
 const $ = (id) => document.getElementById(id);
@@ -14,21 +14,28 @@ function say(text, err = false) {
   $('msg').textContent = text;
 }
 
-$('connect').onclick = async () => {
-  $('connect').disabled = true;
-  say('Check your wallet to connect…');
+// Pick a wallet (EIP-6963 chooser), then switch it to the right chain. Opens on page load and from the buttons.
+async function pick() {
+  $('connect').disabled = $('change').disabled = true;
+  say('');
   try {
-    signer = await connect(window.ethereum);
+    const { provider, info } = await choose();
+    say(`Check ${info.name} to switch network…`);
+    signer = await connect(provider);
     account = await signer.getAddress();
+    $('wallet-name').textContent = info.name;
     $('account').textContent = `${account.slice(0, 6)}…${account.slice(-4)}`;
     $('s-connect').hidden = true;
     $('s-caps').hidden = false;
     say('');
   } catch (e) {
-    $('connect').disabled = false;
-    say(errText(e), true);
+    say(cancelled(e) ? '' : errText(e), !cancelled(e));
+  } finally {
+    $('connect').disabled = $('change').disabled = false;
   }
-};
+}
+$('connect').onclick = pick;
+$('change').onclick = pick;
 
 async function createPasskey() {
   const who = `Sitebound ${account.slice(0, 6)}…${account.slice(-4)}`;
@@ -67,7 +74,7 @@ $('s-caps').onsubmit = async (e) => {
     const blocked = notDeployed();
     if (blocked) throw new Error(blocked);
     const { perPayCap, totalCap, expiry } = readCaps();
-    $('go').disabled = true;
+    $('go').disabled = $('change').disabled = true;
     $('steps').hidden = false;
     say('');
 
@@ -94,7 +101,7 @@ $('s-caps').onsubmit = async (e) => {
     finished();
   } catch (e) {
     if (k !== 'caps') step(k, 'error');
-    $('go').disabled = false;
+    $('go').disabled = $('change').disabled = false;
     $('self').hidden = k !== 'submit';
     say(errText(e), true);
   }
@@ -155,4 +162,4 @@ function finished() {
   opener?.postMessage({ type: 'sitebound:setup-done' }, location.origin);
 }
 $('finish').onclick = () => close();
-if (!window.ethereum) say('No browser wallet found. Install one (MetaMask, Rabby, …), then reload this page.', true);
+pick();

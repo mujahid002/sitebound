@@ -1,5 +1,6 @@
 // Injected (EIP-1193) wallet helpers for "Pay from my wallet" and the setup popup.
 import { SITEBOUND_ABI } from './lib.js';
+import { pickWallet } from './wallet-picker.js';
 
 const C = window.SITEBOUND;
 const CHAIN = '0x' + C.chainId.toString(16);
@@ -18,6 +19,10 @@ async function useChain(eth) {
     });
   }
 }
+
+// The wallet chooser (EIP-6963 list), already asking the picked wallet for its accounts.
+export const choose = () => pickWallet({ chainId: C.chainId, chainName: 'Whitechain Testnet' });
+export const cancelled = (e) => e?.code === 'CANCELLED';
 
 // The provider is built after the chain switch: ethers refuses a network that changes under it.
 export async function connect(eth) {
