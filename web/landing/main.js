@@ -115,7 +115,7 @@ async function open(origin, { scroll = true } = {}) {
   input.value = hostOf(origin);
   addToRing(origin);
   orbit.highlight(origin);
-  history.replaceState(null, '', '?site=' + encodeURIComponent(origin) + '#kit');
+  history.replaceState(null, '', '?site=' + hostOf(origin));
   kitSection.hidden = false;
   kitSection.setAttribute('aria-busy', 'true');
   if (!kitRoot.firstChild) kitRoot.innerHTML = '<p class="lede kit-loading" role="status">Loading your site setup…</p>';
