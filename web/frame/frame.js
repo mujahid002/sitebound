@@ -30,7 +30,22 @@ const problem =
   : !topOrigin ? 'Your browser does not say which site opened this checkout.'
   : notDeployed();
 
-let pending = null, sendWin = null, setupWin = null;
+let pending = null, sendWin = null, setupWin = null, setupViaLink = false;
+
+// Has this browser finished Touch ID setup for the checkout? Storage can throw in a third-party iframe, so the
+// answer is also kept in memory. It only picks the button and the wording; the contract is what checks the passkey.
+const FLAG = 'sitebound.passkeySetup.v1';
+let known = false;
+try { known = localStorage.getItem(FLAG) === '1'; } catch {}
+function setKnown(on) {
+  known = on;
+  try { on ? localStorage.setItem(FLAG, '1') : localStorage.removeItem(FLAG); } catch {}
+  syncPay();
+}
+function syncPay() {
+  $('pay').textContent = known ? 'Confirm with Touch ID' : 'Set up Touch ID (one time)';
+  $('have').hidden = known || !!problem;
+}
 // The site's config version is part of what the passkey signs. Read it ahead of the click, so nothing slow sits
 // between the click and the passkey prompt; read it again after each attempt in case the site changed.
 const readVersion = () => (siteHash && !problem ? new ethers.Contract(C.address, SITEBOUND_ABI, rpc).configVersion(siteHash) : Promise.resolve(null));
@@ -39,7 +54,7 @@ let versionP = readVersion().catch(() => null);
 $('amount').textContent = $('line-amount').textContent = validAmount ? amountText : '—';
 $('site').textContent = site;
 $('order').textContent = order && `Order ${order}`;
-$('fee').textContent = `+${C.relayerFee} USDT network fee, taken from your wallet. You need no gas.`;
+$('fee').textContent = `Fee ${C.relayerFee} USDT. You pay no gas.`;
 if (!ao || ao.length !== 1) {
   $('warn').hidden = false;
   $('warn').textContent = ao?.length > 1
@@ -54,10 +69,11 @@ function say(text, { err = false, tx = null, busy = false } = {}) {
   if (tx) m.append(' ', Object.assign(document.createElement('a'), { className: 'link', href: `${C.explorer}/tx/${tx}`, target: '_blank', rel: 'noopener', textContent: 'View transaction' }));
 }
 function lock(on) {
-  for (const id of ['pay', 'pay-wallet', 'continue']) $(id).disabled = on || !!problem;
+  for (const id of ['pay', 'pay-wallet', 'continue', 'have']) $(id).disabled = on || !!problem;
 }
 const busy = (text) => (lock(true), say(text, { busy: true }));
 const fail = (text, opts) => (lock(false), say(text, { err: true, ...opts }));
+const needSetup = (text) => (setKnown(false), fail(text));
 
 async function pay(mode) {
   const relayerFee = mode === 'relayer' ? units(C.relayerFee) : 0n;
@@ -66,7 +82,7 @@ async function pay(mode) {
   versionP = readVersion().catch(() => null);
   if (configVersion == null) return fail('Could not read this website’s settings from Whitechain. Check your connection and try again.');
   const challenge = challengeOf({ chainId: C.chainId, address: C.address, siteHash, configVersion, orderId, amount, relayerFee, deadline });
-  $('continue').hidden = true;
+  $('continue').hidden = $('setup').hidden = true;
   busy('Waiting for Touch ID…');
   let cred;
   try {
@@ -75,8 +91,11 @@ async function pay(mode) {
     });
   } catch (e) {
     if (e.name !== 'NotAllowedError') return fail(errText(e));
-    $('pay').textContent = 'Try again';
-    return fail('Touch ID was cancelled, or this device has no Sitebound passkey yet. Try again, or set up below.');
+    // The browser gives the same error for a cancelled prompt and for no passkey on this device. Without the
+    // setup flag the buyer never finished setup here; with it, the likely case is a cancel.
+    if (!known) return needSetup('This device has no Sitebound passkey. Set up again.');
+    Object.assign($('setup'), { hidden: false, textContent: 'Not working? Set up Touch ID again' });
+    return fail('Touch ID cancelled. Try again.');
   }
   try {
     const r = cred.response;
@@ -84,7 +103,8 @@ async function pay(mode) {
     checkClientData(clientDataJSON, { challenge, frameOrigin: location.origin, topOrigin });
     const input = payInputOf({ rawId: cred.rawId, authenticatorData: r.authenticatorData, clientDataJSON, signature: r.signature, orderId, amount, relayerFee, deadline });
     const { wallet } = await new ethers.Contract(C.address, SITEBOUND_ABI, rpc).buyers(input.credentialHash);
-    if (wallet === ethers.ZeroAddress) throw new Error('This passkey is not linked to a wallet yet. Choose “Set up” below.');
+    if (wallet === ethers.ZeroAddress) return needSetup('This Touch ID is not linked to Sitebound yet. Set up again.');
+    setKnown(true);
     if (mode === 'relayer') return await settle(await viaRelayer(input));
     if (window.ethereum) {
       busy('Confirm in your wallet…');
@@ -107,10 +127,10 @@ async function viaRelayer(input) {
     const req = quote ? { ...input, quoteExpiry: quote.expiry, quoteSig: quote.sig } : input;
     res = await fetch(`${C.relayerUrl}/pay`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: jsonOf(req) });
   } catch {
-    throw new Error('Could not reach the payment service. Try again, or choose “Pay from my wallet instead”.');
+    throw new Error('Could not reach the payment service. Try again, or choose “Use a crypto wallet instead”.');
   }
   const body = await res.json().catch(() => ({}));
-  if (!res.ok || !/^0x[0-9a-fA-F]{64}$/.test(body.txHash ?? '')) throw new Error(body.error || `The payment was refused (${res.status}). Try again, or choose “Pay from my wallet instead”.`);
+  if (!res.ok || !/^0x[0-9a-fA-F]{64}$/.test(body.txHash ?? '')) throw new Error(body.error || `The payment was refused (${res.status}). Try again, or choose “Use a crypto wallet instead”.`);
   return body.txHash;
 }
 
@@ -125,6 +145,7 @@ async function settle(txHash) {
   } catch (e) {
     return fail(errText(e), { tx: txHash });
   }
+  setKnown(true);
   for (const id of ['checkout', 'actions', 'warn']) $(id).hidden = true;
   $('receipt').hidden = false;
   $('r-amount').textContent = `${amountText} USDT`;
@@ -138,7 +159,9 @@ async function settle(txHash) {
 
 const close = () => parentOrigin && parent.postMessage({ type: 'sitebound:close' }, parentOrigin);
 
-$('pay').onclick = () => pay('relayer');
+// First visit: the click itself opens setup, so the browser allows the pop-up. Never await before window.open.
+$('pay').onclick = () => (known ? pay('relayer') : openSetup());
+$('have').onclick = () => pay('relayer');
 $('pay-wallet').onclick = () => pay('wallet');
 $('close').onclick = $('done').onclick = close;
 addEventListener('keydown', (e) => e.key === 'Escape' && close());
@@ -154,18 +177,36 @@ $('continue').onclick = () => {
     if (sendWin === w) fail('The wallet window closed before paying. Try again.');
   }, 500);
 };
-$('setup').onclick = (e) => {
+function openSetup() {
   setupWin = open('setup.html', 'sitebound-setup', 'popup,width=460,height=760');
-  if (setupWin) e.preventDefault();
+  if (!setupWin) {
+    Object.assign($('setup'), { hidden: false, textContent: 'Set up Touch ID' });
+    fail('Your browser blocked the setup window.');
+    return false;
+  }
+  busy('Finish setup in the new window');
+  const w = setupWin;
+  const watch = setInterval(() => {
+    if (!w.closed) return;
+    clearInterval(watch);
+    if (setupWin === w && !known) (lock(false), say('The setup window closed before it finished.'));
+  }, 500);
+  return true;
+}
+// The fallback link opens setup in a tab we hold no handle to; setup-done from our own origin still counts.
+$('setup').onclick = (e) => {
+  setupViaLink = !openSetup();
+  if (!setupViaLink) e.preventDefault();
 };
 
 addEventListener('message', (e) => {
   if (e.origin !== location.origin || !e.data) return;
   const d = e.data;
-  if (e.source === setupWin && d.type === 'sitebound:setup-done') {
-    $('pay').textContent = 'Pay with Touch ID';
+  if (d.type === 'sitebound:setup-done' && (e.source === setupWin || (setupViaLink && e.source !== window))) {
+    setKnown(true);
+    $('setup').hidden = true;
     lock(false);
-    say('Setup complete. Pay with Touch ID.');
+    say('Setup done. Confirm with Touch ID.');
   }
   if (e.source !== sendWin) return;
   if (d.type === 'sitebound:send-ready') sendWin.postMessage({ type: 'sitebound:send', input: jsonOf(pending), quote: quote && { expiry: String(quote.expiry), sig: quote.sig }, site, amount: amountText }, location.origin);
@@ -178,4 +219,5 @@ addEventListener('message', (e) => {
 });
 
 lock(false);
+syncPay();
 if (problem) say(problem, { err: true });

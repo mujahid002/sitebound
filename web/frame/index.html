@@ -22,27 +22,32 @@
       <button id="close" class="x" type="button" aria-label="Close">&times;</button>
     </header>
 
-    <section class="site" aria-label="Website you are paying">
-      <h1 id="line" class="siteline"><span class="sr-only">Pay <span id="line-amount"></span> USDT to </span><span class="k" aria-hidden="true">You are paying this website</span><b id="site"></b></h1>
-    </section>
+    <p class="conf">
+      <span>Confirm payment</span>
+      <span class="chain">on <picture><source srcset="../assets/whitechain-light.svg" media="(prefers-color-scheme: dark)"><img src="../assets/whitechain.svg" alt="Whitechain" width="77" height="14"></picture></span>
+    </p>
 
-    <section id="checkout">
-      <p class="amount"><span id="amount">&mdash;</span> <small>USDT</small></p>
-      <p id="order" class="meta"></p>
+    <section id="checkout" class="sheet">
+      <div class="site" aria-label="Website you are paying">
+        <h1 id="line" class="siteline"><span class="sr-only">Pay <span id="line-amount"></span> USDT to </span><span class="k" aria-hidden="true">Website</span><b id="site"></b></h1>
+      </div>
+      <div class="due">
+        <span class="k">Amount</span>
+        <p class="amount"><span id="amount">&mdash;</span> <small>USDT</small></p>
+        <p id="order" class="meta"></p>
+      </div>
     </section>
 
     <p id="warn" class="warn" role="note" hidden></p>
 
     <div id="actions" class="stack">
-      <button id="pay" class="btn" type="button">Pay with Touch ID</button>
+      <button id="pay" class="btn" type="button">Confirm with Touch ID</button>
       <p id="fee" class="fee"></p>
       <p id="msg" class="msg" role="status" aria-live="polite"></p>
       <button id="continue" class="btn" type="button" hidden>Continue in wallet window</button>
-      <div class="alt">
-        <button id="pay-wallet" class="ghost" type="button">Pay from my wallet instead</button>
-        <p class="note">No network fee. Your wallet pays gas in WBT.</p>
-      </div>
-      <p id="first" class="first"><b>First time here?</b> Set up once: connect your wallet, choose a spending limit, confirm with Touch ID. <a id="setup" class="link" href="setup.html" target="_blank" rel="opener">Set up</a></p>
+      <a id="setup" class="textlink" href="setup.html" target="_blank" rel="opener" hidden>Set up Touch ID</a>
+      <button id="have" class="textlink" type="button" hidden>Already set up? Confirm with Touch ID</button>
+      <button id="pay-wallet" class="textlink" type="button">Use a crypto wallet instead</button>
     </div>
 
     <section id="receipt" class="stack" hidden aria-live="polite">
