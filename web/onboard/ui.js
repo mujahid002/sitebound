@@ -98,8 +98,8 @@ export function WalletNote({ cfg, wallet, own }) {
   };
   const words = w.mnemonic.phrase.split(' ');
   return html`<div class="wallet-note">
-    <p class="hint">This wallet lives in this browser. Back it up if you want to use it elsewhere.
-      <button type="button" class="link-btn inline-link" aria-expanded=${open} onClick=${() => setOpen(!open)}>Back up this wallet</button>
+    <p class="hint">This wallet lives in this browser. Back it up if you want to use it elsewhere.${' '}
+      <button type="button" class="link-btn inline-link" aria-expanded=${open} onClick=${() => setOpen(!open)}>Back up this wallet</button>${own && ' '}
       ${own && html`<button type="button" class="link-btn inline-link" onClick=${() => useOwnWallet(true)}>I already have a wallet</button>`}</p>
     ${wallet.kept === false && html`<p class="hint err" role="alert">This browser would not store the wallet. It is lost when you close this page, so back it up now.</p>`}
     ${open && html`<div class="backup">
